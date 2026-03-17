@@ -9,12 +9,12 @@ import { useState, useEffect } from "react";
 import { updateUsername, updateProfile, updatePassword, deleteAccount } from "@/lib/actions";
 import { uploadImage } from "@/lib/supabase";
 import { toast } from "sonner";
-import { Settings, User, Bell, Shield, Camera, Check, Loader2, Image as ImageIcon, Sliders } from "lucide-react";
+import { Settings, User, Bell, Shield, Camera, Check, Loader2, Image as ImageIcon, Sliders, Globe, Plus, Trash2, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { AvatarEditorModal } from "@/components/avatar-editor-modal";
 import { ProfileBannerSelector } from "@/components/profile-banner-selector";
 import { Textarea } from "@/components/ui/textarea";
-import { Slider } from "@/components/ui/slider";
+import { detectPlatform, getPlatformIcon, getPlatformLabel, SocialLink } from "@/lib/social-links";
 
 const BANNER_STYLES: Record<string, string> = {
   'banner-1': 'linear-gradient(135deg, #6366f1 0%, #a855f7 50%, #ec4899 100%)',
@@ -39,6 +39,11 @@ export default function SettingsPage() {
   const [loading, setLoading] = useState(false);
   const [avatarLoading, setAvatarLoading] = useState(false);
   const [activeTab, setActiveTab] = useState("account");
+  const [deleteConfirm, setDeleteConfirm] = useState("");
+  
+  // Social Links
+  const [socialLinks, setSocialLinks] = useState<SocialLink[]>([]);
+  const [newLinkUrl, setNewLinkUrl] = useState("");
 
   // New features state
   const [banner, setBanner] = useState(session?.user?.banner_url || null);
@@ -50,18 +55,26 @@ export default function SettingsPage() {
     if (session?.user?.name) setName(session.user.name);
     if (session?.user?.bio) setBio(session.user.bio);
     if (session?.user?.banner_url) setBanner(session.user.banner_url);
+    if (session?.user?.social_links) {
+        try {
+            setSocialLinks(typeof session.user.social_links === 'string' ? JSON.parse(session.user.social_links) : session.user.social_links);
+        } catch (e) {
+            setSocialLinks([]);
+        }
+    }
   }, [session]);
 
   const handleUpdateProfile = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     try {
-      const res = await updateProfile({ name, username, bio });
+      const res = await updateProfile({ name, username, bio, social_links: socialLinks });
       if (res.success && res.user) {
         await update({ 
           name: res.user.name, 
           username: res.user.username, 
-          bio: res.user.bio 
+          bio: res.user.bio,
+          social_links: socialLinks
         });
         setName(res.user.name);
         setUsername(res.user.username);
@@ -76,6 +89,22 @@ export default function SettingsPage() {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleAddSocialLink = () => {
+    if (!newLinkUrl) return;
+    const platform = detectPlatform(newLinkUrl);
+    const newLink: SocialLink = {
+        platform,
+        url: newLinkUrl,
+        name: getPlatformLabel(platform)
+    };
+    setSocialLinks([...socialLinks, newLink]);
+    setNewLinkUrl("");
+  };
+
+  const handleRemoveSocialLink = (index: number) => {
+    setSocialLinks(socialLinks.filter((_, i) => i !== index));
   };
 
   const handleUpdatePassword = async (e: React.FormEvent) => {
@@ -146,12 +175,17 @@ export default function SettingsPage() {
   };
   
   const handleDeleteAccount = async () => {
-    if (!window.confirm("هل أنت متأكد من حذف حسابك نهائياً؟ لا يمكن التراجع عن هذا الإجراء.")) return;
+    if (deleteConfirm !== session.user.username) {
+        toast.error("برجاء كتابة اسم المستخدم بشكل صحيح للتأكيد");
+        return;
+    }
+    
+    if (!window.confirm("هل أنت متأكد تماماً؟ سيتم مسح بياناتك نهائياً!")) return;
     
     setLoading(true);
-    const res = await deleteAccount();
+    const res = await deleteAccount(deleteConfirm);
     if (res.success) {
-      toast.success("تم حذف الحساب بنجاح");
+      toast.success("تم حذف الحساب بنجاح. نراك لاحقاً!");
       signOut({ callbackUrl: "/login" });
     } else {
       toast.error(res.error || "فشل حذف الحساب");
@@ -274,7 +308,49 @@ export default function SettingsPage() {
                   </div>
                 </div>
 
-                {/* 3. Account Info Section */}
+                {/* 3. Social Links Section */}
+                <div className="bg-card/40 backdrop-blur-sm rounded-[2rem] border border-border p-8 shadow-sm space-y-6">
+                  <h2 className="text-xl font-black flex items-center gap-2">
+                    <Globe className="w-5 h-5 text-primary" />
+                    <span>روابط التواصل والأعمال</span>
+                  </h2>
+                  
+                  <div className="flex gap-2">
+                    <Input 
+                      value={newLinkUrl}
+                      onChange={(e) => setNewLinkUrl(e.target.value)}
+                      placeholder="ضع رابط (X, YouTube, Resume, etc.)"
+                      className="h-12 rounded-xl bg-muted/40 font-medium"
+                    />
+                    <Button onClick={handleAddSocialLink} className="h-12 w-12 rounded-xl p-0">
+                      <Plus className="w-5 h-5" />
+                    </Button>
+                  </div>
+
+                  <div className="space-y-3">
+                    {socialLinks.map((link, i) => {
+                      const Icon = getPlatformIcon(link.platform);
+                      return (
+                        <div key={i} className="flex items-center justify-between p-4 rounded-2xl bg-muted/30 border border-border/50 group">
+                          <div className="flex items-center gap-3">
+                            <div className="p-2 rounded-lg bg-card text-primary shadow-sm">
+                              <Icon className="w-4 h-4" />
+                            </div>
+                            <div className="flex flex-col">
+                              <span className="text-sm font-black">{link.name}</span>
+                              <span className="text-[10px] text-muted-foreground truncate max-w-[150px]">{link.url}</span>
+                            </div>
+                          </div>
+                          <button onClick={() => handleRemoveSocialLink(i)} className="p-2 text-muted-foreground hover:text-red-500 opacity-0 group-hover:opacity-100 transition-all">
+                            <X className="w-4 h-4" />
+                          </button>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* 4. Account Info Section */}
                 <div className="bg-card/40 backdrop-blur-sm rounded-[2rem] border border-border p-8 shadow-sm">
                   <h2 className="text-xl font-black mb-6 flex items-center gap-2">
                     <User className="w-5 h-5 text-primary" />
@@ -364,13 +440,24 @@ export default function SettingsPage() {
                     <Shield className="w-5 h-5 text-red-500" />
                     <h2 className="text-xl font-black text-red-500">حذف الحساب</h2>
                   </div>
-                  <p className="text-sm text-muted-foreground font-medium leading-relaxed">
-                    من خلال حذف حسابك، ستفقد جميع منشوراتك، دروسك، وإعجاباتك. لا يمكن التراجع عن هذا الإجراء.
-                  </p>
+                  <div className="space-y-4">
+                    <p className="text-sm text-muted-foreground font-medium leading-relaxed">
+                      من خلال حذف حسابك، ستفقد جميع منشوراتك، دروسك، وإعجاباتك. لا يمكن التراجع عن هذا الإجراء.
+                    </p>
+                    <div className="bg-red-500/5 p-4 rounded-2xl border border-red-500/10 space-y-2">
+                        <label className="text-[10px] font-black text-red-500/60 uppercase tracking-widest mr-1">لتأكيد الحذف، اكتب اسم المستخدم: <span className="text-red-500 underline">@{session.user.username}</span></label>
+                        <Input 
+                            value={deleteConfirm}
+                            onChange={(e) => setDeleteConfirm(e.target.value)}
+                            placeholder={session.user.username}
+                            className="h-12 rounded-xl border-red-500/20 bg-card focus-visible:ring-red-500 text-red-500 font-bold"
+                        />
+                    </div>
+                  </div>
                   <Button 
                     variant="destructive"
                     onClick={handleDeleteAccount}
-                    disabled={loading}
+                    disabled={loading || deleteConfirm !== session.user.username}
                     className="w-full h-14 rounded-2xl text-base font-black transition-all shadow-lg hover:shadow-red-500/20"
                   >
                     {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : "حذف حسابي نهائياً"}

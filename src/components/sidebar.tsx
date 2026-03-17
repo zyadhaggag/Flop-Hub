@@ -42,7 +42,7 @@ export function Sidebar({ onPostClick, className }: { onPostClick?: () => void, 
         );
       })}
 
-      <div className="mt-8 p-4 rounded-2xl bg-card border border-border space-y-3 relative overflow-hidden group shadow-sm hover:shadow-md transition-shadow">
+      <div className="mt-8 p-4 rounded-2xl bg-card border border-border shadow-sm dark:shadow-none space-y-3 relative overflow-hidden group hover:shadow-md transition-shadow">
         <div className="absolute top-0 right-0 w-24 h-24 bg-primary/5 rounded-full blur-3xl -mr-12 -mt-12 group-hover:bg-primary/10 transition-colors" />
         <div className="flex items-center gap-2 text-primary font-bold relative">
           <Quote className="w-4 h-4" />

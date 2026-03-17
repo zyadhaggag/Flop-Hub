@@ -37,8 +37,8 @@ export default async function SavedPage() {
                 <PostCard 
                   key={post.id} 
                   id={post.id}
-                  user={{ id: post.user_id, name: post.username, handle: post.username, avatar: post.avatar_url }}
-                  time={new Date(post.created_at).toLocaleTimeString("ar-SA", { hour: '2-digit', minute: '2-digit' })}
+                  user={{ id: post.user_id, name: post.name || post.username, handle: post.username, avatar: post.avatar_url }}
+                  time={post.created_at}
                   title={post.title}
                   story={post.story}
                   lesson={post.lesson}

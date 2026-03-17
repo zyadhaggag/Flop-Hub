@@ -130,6 +130,7 @@ export function PostCard({ id, user, time, title, story, lesson, imageUrl, helpf
     if (res.success) {
       setNewComment("");
       setReplyingTo(null);
+      setShowComments(true); // Auto-open comments to show the new one
       await fetchComments();
       toast.success("تمت إضافة الرد");
     } else {
@@ -201,9 +202,9 @@ export function PostCard({ id, user, time, title, story, lesson, imageUrl, helpf
   const userInitial = user.name ? user.name[0] : '?';
 
   return (
-    <Card className="p-0 rounded-xl sm:rounded-[2.5rem] border-border/40 shadow-sm hover:shadow-2xl transition-all duration-500 relative bg-card/40 backdrop-blur-xl group overflow-hidden">
+    <Card suppressHydrationWarning className="p-0 rounded-xl sm:rounded-[2.5rem] border-border/40 shadow-sm dark:shadow-none hover:shadow-2xl hover:dark:shadow-primary/5 transition-all duration-500 relative bg-card group overflow-hidden">
       {/* Header */}
-      <div className="p-3 sm:p-5 flex items-center justify-between border-b border-border/30 bg-muted/10">
+      <div className="p-3 sm:p-5 flex items-center justify-between border-b border-border/30 bg-muted/30">
         <div className="flex items-center gap-3">
           <Link href={`/u/${user.handle}`}>
             <Avatar className="w-11 h-11 border-2 border-background ring-2 ring-primary/5 hover:ring-primary/20 transition-all cursor-pointer shadow-sm">
@@ -230,6 +231,7 @@ export function PostCard({ id, user, time, title, story, lesson, imageUrl, helpf
                 variant="ghost" 
                 size="sm" 
                 onClick={handleFollow} 
+                suppressHydrationWarning
                 className={cn(
                   "h-9 px-5 rounded-2xl text-[11px] font-black transition-all gap-2 border border-transparent shadow-sm",
                   isFollowing 
@@ -242,7 +244,7 @@ export function PostCard({ id, user, time, title, story, lesson, imageUrl, helpf
              </Button>
           )}
           <DropdownMenu>
-            <DropdownMenuTrigger className="p-2 rounded-2xl text-muted-foreground outline-none hover:bg-primary/10 hover:text-primary transition-all duration-300 border-none flex items-center justify-center cursor-pointer">
+            <DropdownMenuTrigger suppressHydrationWarning className="p-2 rounded-2xl text-muted-foreground outline-none hover:bg-primary/10 hover:text-primary transition-all duration-300 border-none flex items-center justify-center cursor-pointer">
               <MoreHorizontal className="w-5 h-5" />
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-[180px] p-2 rounded-2xl border-border/50 bg-card/95 backdrop-blur-lg shadow-2xl font-tajawal animate-in zoom-in-95">
@@ -330,6 +332,7 @@ export function PostCard({ id, user, time, title, story, lesson, imageUrl, helpf
               {isLongStory && (
                 <button 
                   onClick={() => setIsExpanded(!isExpanded)}
+                  suppressHydrationWarning
                   className="text-primary text-xs font-black mt-3 hover:underline flex items-center gap-1"
                 >
                   <span>{isExpanded ? "عرض أقل" : "إقرأ المزيد"}</span>
@@ -350,7 +353,7 @@ export function PostCard({ id, user, time, title, story, lesson, imageUrl, helpf
               </div>
             )}
 
-            <div className="p-4 sm:p-7 rounded-xl sm:rounded-[2.5rem] bg-primary/5 border border-primary/10 relative group/lesson overflow-hidden shadow-inner backdrop-blur-sm mt-4">
+            <div className="p-4 sm:p-7 rounded-xl sm:rounded-[2.5rem] bg-primary/5 border border-primary/10 relative group/lesson overflow-hidden mt-4">
                {/* Decorative element */}
                <div className="absolute top-0 right-0 w-24 h-24 bg-primary/5 rounded-full blur-3xl -mr-12 -mt-12 group-hover/lesson:bg-primary/10 transition-colors" />
                
@@ -420,7 +423,7 @@ export function PostCard({ id, user, time, title, story, lesson, imageUrl, helpf
       </div>
 
       {/* Persistent Comment Input - Always Visible */}
-      <div className="px-6 py-4 border-t border-border/10 bg-muted/5">
+      <div className="px-6 py-4 border-t border-border/10 bg-muted/30 dark:bg-muted/5">
         <form onSubmit={handleAddComment} className="flex gap-3 items-center">
           <Avatar className="w-8 h-8 shrink-0 border border-border/50">
             <AvatarImage src={session?.user?.image || ""} />
@@ -429,6 +432,7 @@ export function PostCard({ id, user, time, title, story, lesson, imageUrl, helpf
           <div className="flex-1 relative group">
             <Input 
               value={newComment}
+              id={`comment-input-${id}`}
               onChange={(e) => setNewComment(e.target.value)}
               placeholder="اكتب تعليقك هنا..."
               className="rounded-2xl h-10 bg-background border-border/40 text-sm focus:ring-primary/20 pr-10 transition-all hover:border-primary/30"
@@ -447,7 +451,7 @@ export function PostCard({ id, user, time, title, story, lesson, imageUrl, helpf
 
       {/* Comments View Section */}
       {showComments && (
-        <div className="bg-muted/10 px-6 py-8 border-t border-border/20 space-y-8 animate-in slide-in-from-top-4 duration-500">
+        <div className="bg-muted/20 px-6 py-8 border-t border-border/10 space-y-8 animate-in slide-in-from-top-4 duration-500">
            {/* Threaded Comments List */}
            <div className="space-y-6 max-h-[500px] overflow-y-auto custom-scrollbar pl-2 ml-1" dir="rtl">
               {loadingComments ? (
@@ -465,14 +469,14 @@ export function PostCard({ id, user, time, title, story, lesson, imageUrl, helpf
                         <AvatarFallback className="text-xs font-black">{c.name?.[0] || '?'}</AvatarFallback>
                       </Avatar>
                       <div className="flex flex-col flex-1">
-                        <div className="bg-card border border-border/40 p-4 rounded-[1.5rem] rounded-tr-none shadow-sm relative group/c">
-                          <span className="text-xs font-black text-primary mb-1 block">@{c.username}</span>
-                          <p className="text-[14px] leading-relaxed text-foreground/90 font-medium">{c.content}</p>
+                        <div className="bg-card border border-border/50 p-4 rounded-[1.5rem] rounded-tr-none shadow-sm relative group/c">
+                          <span className="text-[11px] font-black text-primary mb-1.5 block">@{c.username}</span>
+                          <p className="text-[14px] leading-relaxed text-foreground font-medium break-words">{c.content}</p>
                           
-                          <div className="mt-3 flex items-center gap-4 opacity-0 group-hover/c:opacity-100 transition-opacity">
+                          <div className="mt-3 flex items-center gap-4 transition-opacity">
                              <button 
                                onClick={() => setReplyingTo(replyingTo === c.id ? null : c.id)}
-                               className="text-[10px] font-black text-muted-foreground hover:text-primary transition-colors uppercase tracking-widest"
+                               className="text-[10px] font-black text-muted-foreground hover:text-primary transition-colors uppercase tracking-widest flex items-center gap-1"
                              >
                                رد على التعليق
                              </button>
@@ -508,9 +512,9 @@ export function PostCard({ id, user, time, title, story, lesson, imageUrl, helpf
                                    <AvatarImage src={reply.avatar_url} />
                                    <AvatarFallback className="text-[10px] uppercase font-black">{reply.name?.[0]}</AvatarFallback>
                                  </Avatar>
-                                 <div className="bg-background/80 border border-border/30 p-3.5 rounded-2xl rounded-tr-none flex-1 shadow-xs group-hover/r:bg-background transition-colors">
+                                 <div className="bg-card border border-border/40 p-3.5 rounded-2xl rounded-tr-none flex-1 shadow-xs group-hover/r:border-primary/20 transition-all">
                                    <span className="text-[11px] font-black text-primary/80 mb-0.5 block">@{reply.username}</span>
-                                   <p className="text-sm font-medium leading-relaxed">{reply.content}</p>
+                                   <p className="text-sm font-medium leading-relaxed text-foreground/90 break-words">{reply.content}</p>
                                  </div>
                                </div>
                              ))}
@@ -539,6 +543,7 @@ export function PostCard({ id, user, time, title, story, lesson, imageUrl, helpf
                 </Avatar>
                 <Input 
                   value={newComment}
+                  id={`main-comment-input-${id}`}
                   onChange={(e) => setNewComment(e.target.value)}
                   placeholder="أضف تعليقاً يثري الحكاية..."
                   className="flex-1 bg-transparent border-none focus-visible:ring-0 text-[15px] font-medium h-12"

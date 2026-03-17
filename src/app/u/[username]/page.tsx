@@ -5,19 +5,19 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { PostCard } from "@/components/post-card";
-import { Settings, MapPin, Calendar, Link as LinkIcon, UserPlus, UserMinus } from "lucide-react";
+import { Settings, MapPin, Calendar, Link as LinkIcon, UserPlus, UserMinus, ChevronLeft, Globe } from "lucide-react";
 import { sql } from "@/lib/db";
 import { getSuggestedUsers, getTrendingLessons } from "@/lib/actions";
 import { notFound } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { EditProfileModal } from "@/components/edit-profile-modal";
 import { ProfileFollowButton } from "@/components/profile-follow-button";
-import { ArrowLeft, ChevronLeft } from "lucide-react";
 import Link from "next/link";
 
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/lib/auth";
 import { Metadata } from "next";
+import { detectPlatform, getPlatformIcon, getPlatformLabel, getPlatformColor } from "@/lib/social-links";
 
 export async function generateMetadata({ params }: { params: { username: string } }): Promise<Metadata> {
   const { username: rawUsername } = await params;
@@ -37,7 +37,7 @@ export default async function ProfilePage({ params }: { params: { username: stri
 
   // Fetch real user data
   const users = await sql`
-    SELECT id, username, name, email, bio, image_url, banner_url, created_at
+    SELECT id, username, name, email, bio, image_url, banner_url, created_at, social_links
     FROM users 
     WHERE LOWER(TRIM(username)) = LOWER(TRIM(${username}))
   `;
@@ -55,15 +55,20 @@ export default async function ProfilePage({ params }: { params: { username: stri
     : false;
 
   // Fetch user stats
-  const postCount = await sql`SELECT COUNT(*) FROM posts WHERE user_id = ${user.id}`;
-  const followersCount = await sql`SELECT COUNT(*) FROM followers WHERE following_id = ${user.id}`;
-  const followingCount = await sql`SELECT COUNT(*) FROM followers WHERE follower_id = ${user.id}`;
+  const postCountRes = await sql`SELECT COUNT(*) FROM posts WHERE user_id = ${user.id}`;
+  const followersCountRes = await sql`SELECT COUNT(*) FROM followers WHERE following_id = ${user.id}`;
+  const followingCountRes = await sql`SELECT COUNT(*) FROM followers WHERE follower_id = ${user.id}`;
+
+  const postCount = Number((postCountRes[0] as any)?.count || 0);
+  const followersCount = Number((followersCountRes[0] as any)?.count || 0);
+  const followingCount = Number((followingCountRes[0] as any)?.count || 0);
 
   // Fetch user posts
   const posts = await sql`
     SELECT 
       p.*, 
       u.username, 
+      u.name as user_name,
       u.image_url as avatar_url,
       (SELECT COUNT(*) FROM reactions r WHERE r.post_id = p.id) as helpful_count,
       (SELECT COUNT(*) FROM comments c WHERE c.post_id = p.id) as comments_count,
@@ -130,14 +135,14 @@ export default async function ProfilePage({ params }: { params: { username: stri
                  )}
               </div>
 
-              <div className="space-y-4">
+              <div className="space-y-6">
                 <div className="space-y-1">
                   <h1 className="text-3xl font-black tracking-tight">{user.name || user.username}</h1>
                   <span className="text-primary font-bold text-sm tracking-widest uppercase opacity-70">@{user.username}</span>
                 </div>
                 
-                <p className="text-base font-medium leading-relaxed max-w-md text-muted-foreground/90 italic">
-                  {user.bio || "لا يوجد وصف لهذا الملف الشخصي حتى الآن... هذا المستخدم يفضل ترك بصمته من خلال أفعاله!"}
+                <p className="text-base font-medium leading-relaxed max-w-2xl text-muted-foreground/90 italic">
+                  {user.bio || "لا يوجد وصف لهذا الملف الشخصي حتى الآن..."}
                 </p>
 
                 <div className="flex flex-wrap gap-5 text-xs text-muted-foreground font-bold">
@@ -151,50 +156,85 @@ export default async function ProfilePage({ params }: { params: { username: stri
                   </div>
                 </div>
 
-                <div className="flex items-center gap-10 pt-4">
+                <div className="flex items-center gap-10 pt-2">
                    <div className="flex flex-col">
-                      <span className="font-black text-2xl text-foreground font-tajawal tracking-tight">{(followersCount[0] as any)?.count || 0}</span>
+                      <span className="font-black text-2xl text-foreground font-tajawal tracking-tight">{followersCount}</span>
                       <span className="text-[10px] text-muted-foreground uppercase tracking-widest font-bold">متابع</span>
                    </div>
                    <div className="flex flex-col">
-                      <span className="font-black text-2xl text-foreground font-tajawal tracking-tight">{(followingCount[0] as any)?.count || 0}</span>
+                      <span className="font-black text-2xl text-foreground font-tajawal tracking-tight">{followingCount}</span>
                       <span className="text-[10px] text-muted-foreground uppercase tracking-widest font-bold">يتابع</span>
                    </div>
                    <div className="flex flex-col">
-                      <span className="font-black text-2xl text-foreground font-tajawal tracking-tight">{(postCount[0] as any)?.count || 0}</span>
+                      <span className="font-black text-2xl text-foreground font-tajawal tracking-tight">{postCount}</span>
                       <span className="text-[10px] text-muted-foreground uppercase tracking-widest font-bold">منشور</span>
                    </div>
                 </div>
+
+                {/* Social Links Chips */}
+                {user.social_links && (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 pt-4">
+                    {(typeof user.social_links === 'string' ? JSON.parse(user.social_links) : user.social_links).map((link: any, i: number) => {
+                      const Icon = getPlatformIcon(link.platform);
+                      const color = getPlatformColor(link.platform);
+                      return (
+                        <a 
+                          key={i} 
+                          href={link.url.startsWith('http') ? link.url : (link.platform === 'phone' ? `tel:${link.url}` : (link.platform === 'email' ? `mailto:${link.url}` : `https://${link.url}`))}
+                          target="_blank" 
+                          rel="noopener noreferrer"
+                          className="flex items-center justify-between p-3.5 rounded-2xl bg-muted/30 border border-border/50 hover:border-primary/30 transition-all group/link hover:bg-muted/50 shadow-sm"
+                        >
+                          <div className="flex items-center gap-3 min-w-0">
+                            <div className="p-2 rounded-xl bg-card shadow-sm group-hover/link:scale-110 transition-transform" style={{ color }}>
+                              <Icon className="w-4 h-4" />
+                            </div>
+                            <div className="flex flex-col min-w-0">
+                                <span className="text-[11px] font-black truncate">{link.name}</span>
+                                <span className="text-[10px] text-muted-foreground font-bold truncate opacity-60">انقر للمواصلة</span>
+                            </div>
+                          </div>
+                          <ChevronLeft className="w-3 h-3 text-muted-foreground group-hover/link:text-primary transition-colors" />
+                        </a>
+                      );
+                    })}
+                  </div>
+                )}
               </div>
             </div>
           </div>
 
           {/* Profile Content - Posts Only */}
-          <div className="bg-card rounded-[2.5rem] border border-border overflow-hidden">
-            <div className="px-8 pt-8 pb-4 border-b border-border/50">
+          <div className="bg-card rounded-[2.5rem] border border-border overflow-hidden shadow-sm">
+            <div className="px-8 pt-8 pb-4 border-b border-border/50 flex items-center justify-between">
               <h2 className="text-xl font-black font-tajawal">المنشورات</h2>
+              <span className="text-xs font-bold text-muted-foreground bg-muted/50 px-3 py-1 rounded-full">{posts.length} منشور</span>
             </div>
             
             <div className="p-6">
               {posts.length > 0 ? (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="grid grid-cols-1 gap-3">
+                <div className="grid grid-cols-1 gap-4">
                   {posts.map((post: any) => (
-                    <Link key={post.id} href={`/post/${post.id}`}>
-                      <div className="group bg-card/60 hover:bg-primary/5 border border-border/50 hover:border-primary/30 p-5 rounded-[1.5rem] transition-all duration-300 flex items-center justify-between shadow-sm hover:shadow-md">
-                        <div className="flex flex-col gap-1">
-                          <h3 className="text-base font-black group-hover:text-primary transition-colors line-clamp-1">{post.title}</h3>
-                          <span className="text-[10px] text-muted-foreground font-bold uppercase tracking-wider">
-                            {new Date(post.created_at).toLocaleDateString("ar-SA", { day: 'numeric', month: 'long', year: 'numeric' })}
-                          </span>
-                        </div>
-                        <div className="w-8 h-8 rounded-full bg-muted/50 flex items-center justify-center group-hover:bg-primary group-hover:text-white transition-all">
-                          <ChevronLeft className="w-4 h-4" />
-                        </div>
-                      </div>
-                    </Link>
+                    <PostCard 
+                        key={post.id} 
+                        id={post.id}
+                        user={{
+                            id: user.id,
+                            name: user.name || user.username,
+                            handle: user.username,
+                            avatar: user.image_url || ""
+                        }}
+                        time={new Date(post.created_at).toISOString()}
+                        title={post.title}
+                        story={post.story}
+                        lesson={post.lesson}
+                        imageUrl={post.image_url}
+                        helpfulCount={Number(post.helpful_count)}
+                        commentsCount={Number(post.comments_count)}
+                        hasReacted={post.has_reacted}
+                        isSaved={post.is_saved}
+                    />
                   ))}
-                </div>
                 </div>
               ) : (
                 <div className="text-center py-20 bg-muted/10 rounded-[2rem] border border-dashed border-border/50 text-muted-foreground">

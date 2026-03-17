@@ -10,7 +10,8 @@ interface ProfileBannerSelectorProps {
 
 const PRESETS = [
   'preset-1', 'preset-2', 'preset-3', 'preset-4', 'preset-5',
-  'preset-6', 'preset-7', 'preset-8', 'preset-9', 'preset-10'
+  'preset-6', 'preset-7', 'preset-8', 'preset-9', 'preset-10',
+  'preset-11', 'preset-12', 'preset-13', 'preset-14', 'preset-15'
 ];
 
 const BANNER_STYLES = {
@@ -24,6 +25,11 @@ const BANNER_STYLES = {
   'banner-8': 'radial-gradient(circle at center, #7c3aed 0%, #000 100%)',
   'banner-9': 'linear-gradient(45deg, #ff00cc, #3333ff)',
   'banner-10': 'repeating-linear-gradient(45deg, #222 0, #222 1px, transparent 0, transparent 50%) #1a1a1a',
+  'banner-11': 'linear-gradient(135deg, #fceabb 0%, #f8b500 100%)',
+  'banner-12': 'linear-gradient(to right, #24c6dc, #514a9d)',
+  'banner-13': 'linear-gradient(to right, #11998e, #38ef7d)',
+  'banner-14': 'linear-gradient(to right, #ff9966, #ff5e62)',
+  'banner-15': 'radial-gradient(circle, #fe8c00 0%, #f83600 100%)',
 };
 
 export function ProfileBannerSelector({ currentBanner, onSelect }: ProfileBannerSelectorProps) {

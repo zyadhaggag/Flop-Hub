@@ -69,16 +69,16 @@ export function CreatePostModal({ open, onOpenChange }: { open: boolean, onOpenC
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[600px] p-0 overflow-hidden rounded-[2.5rem] border-none shadow-2xl bg-card" dir="rtl">
-        <DialogHeader className="p-8 pb-4">
-          <DialogTitle className="text-2xl font-black tracking-tight flex items-center justify-between">
-            <span>شارك منشور فشلك</span>
+        <DialogHeader className="p-6 pb-2">
+          <DialogTitle className="text-xl font-black tracking-tight flex items-center justify-between">
+            <span>شارك بمنشور فشل</span>
           </DialogTitle>
         </DialogHeader>
 
-        <div className="p-8 space-y-8 max-h-[75vh] overflow-y-auto custom-scrollbar">
+        <div className="p-6 space-y-6 max-h-[70vh] overflow-y-auto custom-scrollbar">
           {/* User Info */}
-          <div className="flex items-center gap-4 bg-muted/30 p-4 rounded-2xl border border-border/50">
-            <Avatar className="w-12 h-12 border-2 border-primary/20">
+          <div className="flex items-center gap-3 bg-muted/30 p-3 rounded-2xl border border-border/50">
+            <Avatar className="w-10 h-10 border-2 border-primary/20">
               <AvatarImage src={userAvatar || undefined} />
               <AvatarFallback className="bg-primary/10 text-primary font-black">{userName[0]}</AvatarFallback>
             </Avatar>
@@ -108,7 +108,7 @@ export function CreatePostModal({ open, onOpenChange }: { open: boolean, onOpenC
             </label>
             <Textarea 
               placeholder="احكِ لنا ما الذي حدث فعلاً؟ أين كان الخطأ؟ كن صريحاً، فنحن هنا لنتعلم..." 
-              className="min-h-[180px] rounded-2xl bg-muted/40 border-border focus-visible:ring-primary resize-none p-5 text-base leading-relaxed transition-all focus:bg-card"
+              className="min-h-[140px] rounded-2xl bg-muted/40 border-border focus-visible:ring-primary resize-none p-4 text-base leading-relaxed transition-all focus:bg-card"
               value={formData.story}
               onChange={(e) => {
                 if (e.target.value.length <= 1000) {
@@ -127,11 +127,11 @@ export function CreatePostModal({ open, onOpenChange }: { open: boolean, onOpenC
           {/* Lesson */}
           <div className="space-y-3 p-6 rounded-[2rem] bg-primary/[0.03] border-2 border-dashed border-primary/20 relative group/lesson overflow-hidden">
             <div className="absolute top-0 right-0 w-32 h-32 bg-primary/5 rounded-full blur-3xl -mr-16 -mt-16 group-focus-within/lesson:bg-primary/10 transition-colors" />
-            <label className="text-xs font-black text-primary uppercase tracking-widest flex items-center gap-2 mb-2 relative z-10">
+            <label className="text-xs font-black text-primary uppercase tracking-widest flex items-center gap-2 mb-1 relative z-10">
               <div className="p-1 rounded-md bg-primary/10 shadow-[0_0_10px_rgba(147,51,234,0.3)]">
                 <Lightbulb className="w-3 h-3 fill-primary" />
               </div>
-              <span>الدرس الذهبي المستخلص</span>
+              <span>الدرس الذهبي لم يتكرر</span>
             </label>
             <Textarea 
               placeholder="ما هي الحكمة التي خرجت بها؟" 
@@ -155,10 +155,10 @@ export function CreatePostModal({ open, onOpenChange }: { open: boolean, onOpenC
           </div>
         </div>
 
-        <DialogFooter className="p-8 bg-muted/5 border-t border-border/50 flex items-center justify-between sm:justify-between">
-          <Button variant="ghost" onClick={() => onOpenChange(false)} className="rounded-2xl px-8 font-bold hover:bg-muted" disabled={loading}>إلغاء</Button>
+        <DialogFooter className="p-6 bg-muted/5 border-t border-border/50 flex items-center justify-between sm:justify-between">
+          <Button variant="ghost" onClick={() => onOpenChange(false)} className="rounded-2xl px-6 font-bold hover:bg-muted" disabled={loading}>إلغاء</Button>
           <Button 
-            className="bg-primary text-white rounded-2xl px-12 h-14 font-black text-base shadow-lg shadow-primary/20 hover:shadow-primary/40 active:scale-95 transition-all" 
+            className="bg-primary text-white rounded-2xl px-10 h-12 font-black text-base shadow-lg shadow-primary/20 hover:shadow-primary/40 active:scale-95 transition-all" 
             onClick={handleSubmit} 
             disabled={loading}
           >

@@ -23,6 +23,7 @@ export const metadata: Metadata = {
 };
 
 import { OnboardingModal } from "@/components/onboarding-modal";
+import { BottomNav } from "@/components/bottom-nav";
 
 export default function RootLayout({
   children,
@@ -31,7 +32,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="ar" dir="rtl" className={`${tajawal.variable}`} suppressHydrationWarning>
-      <body className="font-tajawal antialiased bg-background text-foreground overflow-x-hidden min-h-screen selection:bg-primary/20 transition-colors duration-300">
+      <body className="font-tajawal antialiased bg-background text-foreground overflow-x-hidden min-h-screen selection:bg-primary/20 transition-colors duration-300 pb-20 md:pb-0">
         <NextTopLoader 
           color="#7c3aed"
           initialPosition={0.08}
@@ -46,6 +47,7 @@ export default function RootLayout({
         <Providers>
           {children}
           <OnboardingModal />
+          <BottomNav />
           <Toaster position="top-center" richColors theme="system" />
         </Providers>
       </body>

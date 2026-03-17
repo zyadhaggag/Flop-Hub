@@ -44,10 +44,10 @@ export function RightSidebar({ suggestedUsers = [], trendingLessons = [], classN
     <div className="w-80 flex flex-col gap-6 p-4 hidden lg:flex sticky top-20 h-fit">
       {/* Suggested Users */}
       {users.length > 0 && (
-        <div className="bg-card/40 backdrop-blur-sm rounded-[2rem] border border-border/50 p-6 shadow-sm">
+        <div className="bg-card rounded-[2rem] border border-border/50 p-6 shadow-sm">
           <div className="flex items-center gap-2 mb-6 text-muted-foreground font-black text-xs uppercase tracking-widest">
             <Users className="w-4 h-4 text-primary" />
-            <span>مبدعون</span>
+            <span>رواد النجاح</span>
           </div>
           <div className="space-y-6">
             {users.map((user: any) => (
@@ -93,7 +93,7 @@ export function RightSidebar({ suggestedUsers = [], trendingLessons = [], classN
       )}
 
       {/* Trending Lessons */}
-      <div className="bg-card/40 backdrop-blur-sm rounded-3xl border border-border/50 p-5 shadow-sm">
+      <div className="bg-card rounded-3xl border border-border/50 p-5 shadow-sm">
         <div className="flex items-center gap-2 mb-6 text-muted-foreground font-bold text-sm">
           <TrendingUp className="w-4 h-4 text-primary" />
           <span className="tracking-tight">الدروس الرائجة</span>
@@ -102,7 +102,7 @@ export function RightSidebar({ suggestedUsers = [], trendingLessons = [], classN
           {trendingLessons.map((lesson: any, i: number) => (
             <Link 
               key={lesson.id} 
-              href={`/p/${lesson.id}`}
+              href={`/post/${lesson.id}`}
               className="flex items-center gap-4 group cursor-pointer hover:bg-primary/5 p-2 -m-2 rounded-xl transition-all"
             >
               <span className="text-2xl font-black text-primary/10 group-hover:text-primary/30 transition-colors w-6 italic">{i + 1}</span>

@@ -15,7 +15,7 @@ import {
   DropdownMenuTrigger
 } from "@/components/ui/dropdown-menu";
 import { Bell, Heart, LogOut, User as UserIcon, Settings, UserPlus, Lightbulb as BulbIcon, Sun, Moon } from "lucide-react";
-import { getNotifications, markAllNotificationsRead } from "@/lib/actions";
+import { getNotifications, markAllNotificationsRead, markNotificationRead } from "@/lib/actions";
 import { cn } from "@/lib/utils";
 import { useTheme } from "next-themes";
 import Link from "next/link";
@@ -23,7 +23,7 @@ import Link from "next/link";
 export default function NavbarActions() {
   const { data: session } = useSession();
   const router = useRouter();
-  const { theme, setTheme } = useTheme();
+  const { theme, setTheme, resolvedTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
   const [notifications, setNotifications] = useState<any[]>([]);
 
@@ -63,7 +63,7 @@ export default function NavbarActions() {
       <Button 
         variant="ghost" 
         size="icon" 
-        onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
+        onClick={() => setTheme(resolvedTheme === 'dark' ? 'light' : 'dark')}
         className="rounded-full w-9 h-9 text-muted-foreground hover:bg-primary/10 hover:text-primary transition-all"
       >
         <Sun className="h-[1.2rem] w-[1.2rem] rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
@@ -97,19 +97,21 @@ export default function NavbarActions() {
                 : `/u/${data.fromUser}`;
 
               return (
-                <Link key={n.id} href={href}>
+                <Link key={n.id} href={href} onClick={() => markNotificationRead(n.id)}>
                   <DropdownMenuItem className={cn(
                     "p-3 rounded-xl gap-3 cursor-pointer border-b border-border/20 last:border-0 transition-colors focus:bg-primary/5",
                     n.read ? "opacity-50" : "hover:bg-primary/5"
                   )}>
                     <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
-                      {n.type === 'helpful' ? <BulbIcon className="w-4 h-4 text-primary fill-primary/20" /> : <UserPlus className="w-4 h-4 text-primary" />}
+                      {n.type === 'helpful' ? <BulbIcon className="w-4 h-4 text-primary fill-primary/20" /> : 
+                       n.type === 'follow' ? <UserPlus className="w-4 h-4 text-primary" /> :
+                       <Heart className="w-4 h-4 text-primary" />}
                     </div>
                     <div className="flex flex-col gap-0.5">
                       <span className="text-[13px] font-bold leading-tight">
-                        {n.type === 'helpful' ? `${data.fromUser} استفاد من منشورك` : 
+                        {n.type === 'helpful' ? `${data.fromUser} رأى درسك مفيداً` : 
                          n.type === 'follow' ? `${data.fromUser} بدأ بمتابعتك` : 
-                         `${data.fromUser} علق على منشورك`}
+                         `${data.fromUser} علق على قصة شاركتها`}
                       </span>
                       <span className="text-[10px] text-muted-foreground">{new Date(n.created_at).toLocaleTimeString("ar-SA", { hour: '2-digit', minute: '2-digit' })}</span>
                     </div>

@@ -8,6 +8,9 @@ import { useState, useEffect } from "react";
 import { useTheme } from "next-themes";
 import { Sidebar, menuItems } from "./sidebar";
 import { cn } from "@/lib/utils";
+import { searchPosts } from "@/lib/actions";
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
+import { User, FileText, Loader2 } from "lucide-react";
 
 const NavbarActions = dynamic(() => import("./navbar-actions"), { 
   ssr: false,
@@ -15,23 +18,40 @@ const NavbarActions = dynamic(() => import("./navbar-actions"), {
 });
 
 export function Navbar() {
-  const [isMenuOpen, setIsMenuOpen] = useState(false);
   const { theme, setTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [searchResults, setSearchResults] = useState<{ posts: any[], users: any[] }>({ posts: [], users: [] });
+  const [isSearching, setIsSearching] = useState(false);
+  const [showResults, setShowResults] = useState(false);
 
   useEffect(() => setMounted(true), []);
 
+  useEffect(() => {
+    const timer = setTimeout(async () => {
+      if (searchQuery.trim().length > 1) {
+        setIsSearching(true);
+        try {
+          const results = await searchPosts(searchQuery);
+          setSearchResults(results);
+          setShowResults(true);
+        } catch (e) {
+          console.error(e);
+        } finally {
+          setIsSearching(false);
+        }
+      } else {
+        setShowResults(false);
+      }
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
+
   return (
-    <nav className="sticky top-0 z-50 w-full border-b border-border bg-background/80 backdrop-blur-md">
+    <nav className="sticky top-0 z-50 w-full border-b border-border bg-background backdrop-blur-md transition-colors duration-300">
       <div className="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between gap-4">
         <div className="flex items-center gap-3">
-          {/* Mobile Menu Button */}
-          <button 
-            onClick={() => setIsMenuOpen(!isMenuOpen)}
-            className="md:hidden p-2 hover:bg-muted rounded-xl transition-colors text-muted-foreground"
-          >
-            {isMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
-          </button>
+          {/* Hamburger menu removed in favor of BottomNav */}
 
           {/* Logo */}
           <Link href="/" className="flex items-center gap-3 group">
@@ -44,73 +64,94 @@ export function Navbar() {
           </Link>
         </div>
 
-        {/* Search */}
         <div className="flex-1 max-w-xl relative hidden md:block">
-          <div className="absolute inset-y-0 left-3 flex items-center pointer-events-none text-muted-foreground">
-            <Search className="w-4 h-4" />
+          <div className="absolute inset-y-0 left-3 flex items-center pointer-events-none text-muted-foreground z-10">
+            {isSearching ? <Loader2 className="w-4 h-4 animate-spin" /> : <Search className="w-4 h-4" />}
           </div>
-          <form onSubmit={(e) => {
-            e.preventDefault();
-            const query = (e.currentTarget.elements.namedItem('search') as HTMLInputElement).value;
-            if (query.trim()) window.location.href = `/search?q=${encodeURIComponent(query)}`;
-          }}>
-            {mounted ? (
-              <Input
-                name="search"
-                placeholder="ابحث عن قصص، دروس، أو مستخدمين..."
-                className="h-10 bg-muted/50 border-none rounded-xl pl-10 focus-visible:ring-primary/20 font-tajawal text-sm"
-              />
-            ) : (
-              <div className="h-10 bg-muted/50 rounded-xl w-full animate-pulse" />
+          <div className="relative">
+            <Input
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              onFocus={() => searchQuery.length > 1 && setShowResults(true)}
+              placeholder="ابحث عن قصص، دروس، أو مستخدمين..."
+              className="h-10 bg-muted/50 border-none rounded-xl pl-10 focus-visible:ring-primary/20 font-tajawal text-sm"
+              autoComplete="off"
+            />
+            
+            {showResults && (
+              <div className="absolute top-12 left-0 right-0 bg-card/95 backdrop-blur-xl border border-border/50 rounded-2xl shadow-2xl overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200 z-[60]">
+                <div className="max-h-[400px] overflow-y-auto p-2 space-y-4">
+                  {searchResults.users.length > 0 && (
+                    <div className="space-y-1">
+                      <div className="px-3 py-2 text-[10px] font-black text-muted-foreground uppercase tracking-widest flex items-center gap-2">
+                        <User className="w-3 h-3" />
+                        <span>الأشخاص</span>
+                      </div>
+                      {searchResults.users.map((user) => (
+                        <Link 
+                          key={user.id} 
+                          href={`/u/${user.username}`}
+                          onClick={() => setShowResults(false)}
+                          className="flex items-center gap-3 p-2 rounded-xl hover:bg-primary/5 transition-colors group"
+                        >
+                          <Avatar className="w-8 h-8 border border-border/50">
+                            <AvatarImage src={user.avatar_url} />
+                            <AvatarFallback className="text-[10px] bg-primary/10 text-primary font-bold">{user.name?.[0] || '?'}</AvatarFallback>
+                          </Avatar>
+                          <div className="flex flex-col">
+                            <span className="text-sm font-bold group-hover:text-primary transition-colors">{user.name}</span>
+                            <span className="text-[10px] text-muted-foreground">@{user.username}</span>
+                          </div>
+                        </Link>
+                      ))}
+                    </div>
+                  )}
+
+                  {searchResults.posts.length > 0 && (
+                    <div className="space-y-1">
+                      <div className="px-3 py-2 text-[10px] font-black text-muted-foreground uppercase tracking-widest flex items-center gap-2">
+                        <FileText className="w-3 h-3" />
+                        <span>القصص والدروس</span>
+                      </div>
+                      {searchResults.posts.map((post) => (
+                        <Link 
+                          key={post.id} 
+                          href={`/post/${post.id}`}
+                          onClick={() => setShowResults(false)}
+                          className="flex flex-col p-3 rounded-xl hover:bg-primary/5 transition-colors group border border-transparent hover:border-primary/10"
+                        >
+                          <span className="text-sm font-bold group-hover:text-primary transition-all line-clamp-1">{post.title}</span>
+                          <span className="text-[10px] text-muted-foreground line-clamp-1 mt-0.5">{post.lesson}</span>
+                        </Link>
+                      ))}
+                    </div>
+                  )}
+
+                  {searchResults.users.length === 0 && searchResults.posts.length === 0 && !isSearching && (
+                    <div className="p-8 text-center space-y-2">
+                      <div className="text-2xl opacity-20">🔍</div>
+                      <p className="text-sm font-bold text-muted-foreground">لا توجد نتائج لـ "{searchQuery}"</p>
+                    </div>
+                  )}
+                </div>
+                
+                <Link 
+                  href={`/search?q=${encodeURIComponent(searchQuery)}`}
+                  onClick={() => setShowResults(false)}
+                  className="block p-3 bg-muted/30 text-center text-xs font-black text-primary hover:bg-primary/5 transition-colors border-t border-border/50"
+                >
+                  مشاهدة جميع النتائج
+                </Link>
+              </div>
             )}
-          </form>
+          </div>
+          {/* Overlay to close on outside click */}
+          {showResults && <div className="fixed inset-0 z-50 pointer-events-auto" onClick={() => setShowResults(false)} />}
         </div>
 
         {/* Actions */}
         <NavbarActions />
       </div>
-
-      {/* Mobile Menu Overlay */}
-      {isMenuOpen && (
-        <div className="md:hidden fixed inset-0 z-[100] bg-background animate-in fade-in slide-in-from-top-4 duration-300 flex flex-col">
-          <div className="h-16 flex items-center justify-between px-6 border-b border-border">
-            <Link href="/" onClick={() => setIsMenuOpen(false)} className="flex items-center gap-3">
-              <img src="/logo.svg" alt="Logo" className="w-8 h-8" />
-              <span className="text-xl font-black">FlopHub</span>
-            </Link>
-            <button 
-              onClick={() => setIsMenuOpen(false)} 
-              className="p-2 hover:bg-muted rounded-xl transition-colors"
-            >
-              <X className="w-6 h-6" />
-            </button>
-          </div>
-          
-          <div className="flex-1 overflow-y-auto p-6 flex flex-col gap-2">
-            {menuItems.map((item) => (
-              <Link
-                key={item.id}
-                href={item.href}
-                onClick={() => setIsMenuOpen(false)}
-                className="flex items-center gap-4 p-4 rounded-2xl hover:bg-primary/5 text-muted-foreground hover:text-primary transition-all active:scale-95"
-              >
-                <div className="w-10 h-10 rounded-xl bg-muted/50 flex items-center justify-center text-muted-foreground group-hover:text-primary">
-                  <item.icon className="w-5 h-5" />
-                </div>
-                <span className="text-lg font-bold">{item.label}</span>
-              </Link>
-            ))}
-          </div>
-
-          <div className="p-8 border-t border-border bg-muted/20">
-            <p className="text-xs text-muted-foreground text-center font-medium opacity-60 uppercase tracking-widest">
-              FlopHub © 2024
-              <br />
-              الفشل هو بداية النجاح
-            </p>
-          </div>
-        </div>
-      )}
     </nav>
   );
 }

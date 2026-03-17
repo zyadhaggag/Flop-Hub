@@ -27,8 +27,8 @@ export default async function PostPage({ params }: { params: { id: string } }) {
         <div className="flex-1 max-w-2xl mx-auto w-full">
           <PostCard 
             id={post.id}
-            user={{ id: post.user_id, name: post.username, handle: post.username, avatar: post.avatar_url }}
-            time={new Date(post.created_at).toLocaleTimeString("ar-SA", { hour: '2-digit', minute: '2-digit' })}
+            user={{ id: post.user_id, name: post.name || post.username, handle: post.username, avatar: post.avatar_url }}
+            time={post.created_at}
             title={post.title}
             story={post.story}
             lesson={post.lesson}

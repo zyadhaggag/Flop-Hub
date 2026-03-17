@@ -7,12 +7,14 @@ import { Search as SearchIcon, Users } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import Link from "next/link";
 
-export async function generateMetadata({ searchParams }: { searchParams: { q: string } }) {
-  return { title: `نتائج البحث عن: ${searchParams.q || ""}` };
+export async function generateMetadata({ searchParams }: { searchParams: Promise<{ q: string }> }) {
+  const { q } = await searchParams;
+  return { title: `نتائج البحث عن: ${q || ""}` };
 }
 
-export default async function SearchPage({ searchParams }: { searchParams: { q: string } }) {
-  const query = searchParams.q || "";
+export default async function SearchPage({ searchParams }: { searchParams: Promise<{ q: string }> }) {
+  const { q } = await searchParams;
+  const query = q || "";
   const { posts, users } = query ? await searchPosts(query) : { posts: [], users: [] };
   const suggestedUsers = await getSuggestedUsers();
   const trendingLessons = await getTrendingLessons();

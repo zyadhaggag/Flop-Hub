@@ -39,7 +39,7 @@ export function HomeClientWrapper({
 
   const handleSortChange = async (value: string) => {
     setSort(value as any);
-    const newPosts = await getPosts(value === 'trending' ? 'trending' : 'latest', PAGE_SIZE, 0);
+    const newPosts = await getPosts(value as any, PAGE_SIZE, 0);
     setPosts(newPosts);
     setHasMore(newPosts.length === PAGE_SIZE);
   };
@@ -47,7 +47,7 @@ export function HomeClientWrapper({
   const handleLoadMore = async () => {
     if (loadingMore || !hasMore) return;
     setLoadingMore(true);
-    const nextPosts = await getPosts(sort === 'trending' ? 'trending' : 'latest', PAGE_SIZE, posts.length);
+    const nextPosts = await getPosts(sort, PAGE_SIZE, posts.length);
     if (nextPosts.length > 0) {
       setPosts(prev => [...prev, ...nextPosts]);
       setHasMore(nextPosts.length === PAGE_SIZE);

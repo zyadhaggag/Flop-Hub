@@ -13,24 +13,25 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Camera, Image as ImageIcon, Sparkles, Loader2, ArrowRight, ArrowLeft, Check } from "lucide-react";
+import { Camera, Image as ImageIcon, Sparkles, Loader2, ArrowRight, ArrowLeft, Check, Plus, X, Globe } from "lucide-react";
 import { updateProfile } from "@/lib/actions";
 import { ProfileBannerSelector } from "./profile-banner-selector";
 import { uploadImage } from "@/lib/supabase";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { detectPlatform, getPlatformIcon, getPlatformLabel, SocialLink } from "@/lib/social-links";
 
-const BANNER_STYLES: Record<string, string> = {
-  'banner-1': 'linear-gradient(135deg, #6366f1 0%, #a855f7 50%, #ec4899 100%)',
-  'banner-2': 'linear-gradient(135deg, #3b82f6 0%, #2dd4bf 100%)',
-  'banner-3': 'linear-gradient(135deg, #f59e0b 0%, #ef4444 100%)',
-  'banner-4': 'linear-gradient(135deg, #10b981 0%, #3b82f6 100%)',
-  'banner-5': 'linear-gradient(135deg, #000000 0%, #1e293b 100%)',
-  'banner-6': 'radial-gradient(#ffffff 0.5px, transparent 0.5px) #000',
-  'banner-7': 'linear-gradient(#1f2937 1px, transparent 1px), linear-gradient(90deg, #1f2937 1px, transparent 1px) #111827',
-  'banner-8': 'radial-gradient(circle at center, #7c3aed 0%, #000 100%)',
-  'banner-9': 'linear-gradient(45deg, #ff00cc, #3333ff)',
-  'banner-10': 'repeating-linear-gradient(45deg, #222 0, #222 1px, transparent 0, transparent 50%) #1a1a1a',
+const BANNER_STYLES: Record<string, { image: string, color?: string }> = {
+  'banner-1': { image: 'linear-gradient(135deg, #6366f1 0%, #a855f7 50%, #ec4899 100%)' },
+  'banner-2': { image: 'linear-gradient(135deg, #3b82f6 0%, #2dd4bf 100%)' },
+  'banner-3': { image: 'linear-gradient(135deg, #f59e0b 0%, #ef4444 100%)' },
+  'banner-4': { image: 'linear-gradient(135deg, #10b981 0%, #3b82f6 100%)' },
+  'banner-5': { image: 'linear-gradient(135deg, #000000 0%, #1e293b 100%)' },
+  'banner-6': { image: 'radial-gradient(#ffffff 0.5px, transparent 0.5px)', color: '#000' },
+  'banner-7': { image: 'linear-gradient(#1f2937 1px, transparent 1px), linear-gradient(90deg, #1f2937 1px, transparent 1px)', color: '#111827' },
+  'banner-8': { image: 'radial-gradient(circle at center, #7c3aed 0%, #000 100%)' },
+  'banner-9': { image: 'linear-gradient(45deg, #ff00cc, #3333ff)' },
+  'banner-10': { image: 'repeating-linear-gradient(45deg, #222 0, #222 1px, transparent 0, transparent 50%)', color: '#1a1a1a' },
 };
 
 export function OnboardingModal() {
@@ -44,6 +45,8 @@ export function OnboardingModal() {
   const [banner, setBanner] = useState<string | null>(null);
   const [avatar, setAvatar] = useState<string | null>(null);
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
+  const [socialLinks, setSocialLinks] = useState<SocialLink[]>([]);
+  const [newLinkUrl, setNewLinkUrl] = useState("");
 
   useEffect(() => {
     if (session?.user && !session.user.bio && !session.user.banner_url) {
@@ -54,6 +57,22 @@ export function OnboardingModal() {
 
   const handleNext = () => setStep(s => s + 1);
   const handleBack = () => setStep(s => s - 1);
+
+  const handleAddSocialLink = () => {
+    if (!newLinkUrl) return;
+    const platform = detectPlatform(newLinkUrl);
+    const newLink: SocialLink = {
+      platform,
+      url: newLinkUrl,
+      name: getPlatformLabel(platform)
+    };
+    setSocialLinks([...socialLinks, newLink]);
+    setNewLinkUrl("");
+  };
+
+  const handleRemoveSocialLink = (index: number) => {
+    setSocialLinks(socialLinks.filter((_, i) => i !== index));
+  };
 
   const handleAvatarSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -78,7 +97,8 @@ export function OnboardingModal() {
         name, 
         bio, 
         banner_url: banner || undefined,
-        image_url: finalAvatar
+        image_url: finalAvatar,
+        social_links: socialLinks
       });
 
       if (res.success) {
@@ -86,7 +106,8 @@ export function OnboardingModal() {
           name, 
           bio, 
           banner_url: banner,
-          image: finalAvatar
+          image: finalAvatar,
+          social_links: socialLinks
         });
         toast.success("تم تخصيص حسابك بنجاح!");
         setIsOpen(false);
@@ -108,7 +129,7 @@ export function OnboardingModal() {
         <div className="bg-primary/5 h-1.5 w-full flex">
           <div 
             className="h-full bg-primary transition-all duration-500" 
-            style={{ width: `${(step / 3) * 100}%` }}
+            style={{ width: `${(step / 4) * 100}%` }}
           />
         </div>
 
@@ -132,10 +153,14 @@ export function OnboardingModal() {
                     {banner ? (
                        <div 
                          className="absolute inset-0 bg-cover bg-center" 
+                         suppressHydrationWarning
                          style={{ 
-                            background: banner.startsWith('preset-') 
-                              ? BANNER_STYLES[banner.replace('preset-', 'banner-')] || `linear-gradient(135deg, #6366f1 0%, #a855f7 100%)`
+                            backgroundImage: banner.startsWith('preset-') 
+                              ? BANNER_STYLES[banner.replace('preset-', 'banner-')]?.image || `linear-gradient(135deg, #6366f1 0%, #a855f7 100%)`
                               : `url(${banner})`,
+                            backgroundColor: banner.startsWith('preset-') 
+                              ? BANNER_STYLES[banner.replace('preset-', 'banner-')]?.color 
+                              : undefined,
                             backgroundSize: banner === 'preset-6' ? '20px 20px' : banner === 'preset-7' ? '30px 30px' : banner === 'preset-10' ? '10px 10px' : 'cover'
                          }} 
                        />
@@ -192,10 +217,48 @@ export function OnboardingModal() {
                 </div>
               </div>
             )}
+
+            {step === 4 && (
+              <div className="space-y-6 animate-in slide-in-from-left-4 duration-300">
+                <div className="space-y-3">
+                  <label className="text-sm font-black text-foreground mr-1">روابط التواصل والأعمال</label>
+                  <div className="flex gap-2">
+                    <Input 
+                      value={newLinkUrl}
+                      onChange={(e) => setNewLinkUrl(e.target.value)}
+                      placeholder="رابط (Twitter, Insta, etc.)"
+                      className="h-12 rounded-xl bg-muted/40 font-bold"
+                    />
+                    <Button onClick={handleAddSocialLink} type="button" className="h-12 w-12 rounded-xl p-0">
+                      <Plus className="w-5 h-5" />
+                    </Button>
+                  </div>
+                </div>
+
+                <div className="space-y-3 max-h-[180px] overflow-y-auto no-scrollbar">
+                  {socialLinks.map((link, i) => {
+                    const Icon = getPlatformIcon(link.platform);
+                    return (
+                      <div key={i} className="flex items-center justify-between p-3 rounded-xl bg-muted/40 border border-border/50">
+                        <div className="flex items-center gap-3">
+                           <div className="p-2 rounded-lg bg-card text-primary shadow-sm">
+                             <Icon className="w-4 h-4" />
+                           </div>
+                           <span className="text-sm font-black">{link.name}</span>
+                        </div>
+                        <button onClick={() => handleRemoveSocialLink(i)} className="text-muted-foreground hover:text-red-500">
+                          <X className="w-4 h-4" />
+                        </button>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
           </div>
 
           <DialogFooter className="flex-row-reverse gap-3 pt-6 border-t border-border mt-4">
-            {step < 3 ? (
+            {step < 4 ? (
               <Button onClick={handleNext} className="h-12 flex-1 rounded-2xl font-black gap-2 text-base">
                 متابعة
                 <ArrowLeft className="w-5 h-5" />
