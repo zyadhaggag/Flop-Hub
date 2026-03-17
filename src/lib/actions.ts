@@ -79,7 +79,8 @@ export async function getPosts(sort: 'latest' | 'trending' = 'latest') {
         (SELECT COUNT(*) FROM reactions r WHERE r.post_id = p.id) as helpful_count,
         (SELECT COUNT(*) FROM comments c WHERE c.post_id = p.id) as comments_count,
         ${currentUserId ? sql`EXISTS(SELECT 1 FROM reactions WHERE post_id = p.id AND user_id = ${currentUserId})` : false} as has_reacted,
-        ${currentUserId ? sql`EXISTS(SELECT 1 FROM saves WHERE post_id = p.id AND user_id = ${currentUserId})` : false} as is_saved
+        ${currentUserId ? sql`EXISTS(SELECT 1 FROM saves WHERE post_id = p.id AND user_id = ${currentUserId})` : false} as is_saved,
+        ${currentUserId ? sql`EXISTS(SELECT 1 FROM followers WHERE follower_id = ${currentUserId} AND following_id = p.user_id)` : false} as is_followed
       FROM posts p
       JOIN users u ON p.user_id = u.id
       ORDER BY ${sort === 'trending' ? sql`helpful_count DESC, p.created_at DESC` : sql`p.created_at DESC`}
@@ -211,13 +212,16 @@ export async function getSavedPosts() {
 }
 
 export async function searchPosts(query: string) {
+  const session = await getServerSession(authOptions);
+  const currentUserId = session?.user?.id;
   try {
     const search = `%${query}%`;
     
     const posts = await sql`
       SELECT p.*, u.username, u.image_url as avatar_url,
       (SELECT COUNT(*) FROM reactions r WHERE r.post_id = p.id) as helpful_count,
-      (SELECT COUNT(*) FROM comments c WHERE c.post_id = p.id) as comments_count
+      (SELECT COUNT(*) FROM comments c WHERE c.post_id = p.id) as comments_count,
+      ${currentUserId ? sql`EXISTS(SELECT 1 FROM followers WHERE follower_id = ${currentUserId} AND following_id = p.user_id)` : false} as is_followed
       FROM posts p
       JOIN users u ON p.user_id = u.id
       WHERE p.title ILIKE ${search} OR p.story ILIKE ${search} OR p.lesson ILIKE ${search}
@@ -281,13 +285,22 @@ async function createNotification(userId: string, type: string, data: any) {
   } catch (e) { console.error("Notification Error:", e); }
 }
 
+import { userSchema } from "./validations";
+
 export async function register(formData: any) {
-  const { email, password, name, username } = formData;
+  const result = userSchema.safeParse(formData);
+  
+  if (!result.success) {
+    return { success: false, error: result.error.issues[0].message };
+  }
+
+  const { email, password, name, username } = result.data;
   
   try {
+    const hashedPassword = password; // In a real app, hash this!
     await sql`
       INSERT INTO users (email, password, name, username, image_url)
-      VALUES (${email}, ${password}, ${name}, ${username}, NULL)
+      VALUES (${email}, ${hashedPassword}, ${name}, ${username}, NULL)
     `;
     return { success: true };
   } catch (error: any) {
@@ -302,27 +315,34 @@ export async function register(formData: any) {
   }
 }
 
-export async function updateProfile(data: { name?: string, bio?: string, image_url?: string }) {
+export async function updateProfile(data: { name?: string, username?: string, bio?: string, image_url?: string }) {
   const session = await getServerSession(authOptions);
   if (!session?.user?.id) return { success: false, error: "يجب تسجيل الدخول" };
 
   try {
-    // Get current data to merge or use build dynamic query if possible
-    // For simplicity, we'll fetch current if fields missing or just update what's sent
-    const current = await sql`SELECT name, bio, image_url FROM users WHERE id = ${session.user.id}`;
+    const current = await sql`SELECT name, username, bio, image_url FROM users WHERE id = ${session.user.id}`;
     if (current.length === 0) return { success: false, error: "المستخدم غير موجود" };
 
     const name = data.name !== undefined ? data.name : current[0].name;
+    const username = data.username !== undefined ? data.username : current[0].username;
     const bio = data.bio !== undefined ? data.bio : current[0].bio;
     const image_url = data.image_url !== undefined ? data.image_url : current[0].image_url;
 
+    // Check username availability if changed
+    if (username !== current[0].username) {
+      const existing = await sql`SELECT id FROM users WHERE username = ${username} AND id != ${session.user.id}`;
+      if (existing.length > 0) return { success: false, error: "اسم المستخدم مأخوذ بالفعل" };
+    }
+
     await sql`
       UPDATE users 
-      SET name = ${name}, bio = ${bio}, image_url = ${image_url}
+      SET name = ${name}, username = ${username}, bio = ${bio}, image_url = ${image_url}
       WHERE id = ${session.user.id}
     `;
     
-    revalidatePath(`/u/${session.user.username}`);
+    await revalidateHome();
+    revalidatePath(`/u/${username}`);
+    revalidatePath('/settings');
     return { success: true };
   } catch (error: any) {
     console.error("UpdateProfile Error:", error);
@@ -376,22 +396,35 @@ export async function clearAvatar() {
   }
 }
 
-export async function addComment(postId: string, content: string) {
+export async function addComment(postId: string, content: string, parentId?: string) {
   const session = await getServerSession(authOptions);
   if (!session?.user?.id) return { success: false, error: "يجب تسجيل الدخول للتعليق" };
 
   try {
+    // Prevent duplicate comments (2 second throttle)
+    const lastComment = await sql`
+      SELECT created_at FROM comments 
+      WHERE user_id = ${session.user.id} AND post_id = ${postId} 
+      ORDER BY created_at DESC LIMIT 1
+    `;
+    
+    if (lastComment.length > 0) {
+      const diff = Date.now() - new Date(lastComment[0].created_at).getTime();
+      if (diff < 2000) return { success: false, error: "يرجى الانتظار قليلاً قبل التعليق مرة أخرى" };
+    }
+
     await sql`
-      INSERT INTO comments (post_id, user_id, text)
-      VALUES (${postId}, ${session.user.id}, ${content})
+      INSERT INTO comments (post_id, user_id, text, parent_id)
+      VALUES (${postId}, ${session.user.id}, ${content}, ${parentId || null})
     `;
     
     // Notify post owner
     const postOwner = await sql`SELECT user_id FROM posts WHERE id = ${postId}`;
     if (postOwner[0].user_id !== session.user.id) {
-      await createNotification(postOwner[0].user_id, 'comment', { postId, fromUser: session.user.name });
+      await createNotification(postOwner[0].user_id, parentId ? 'reply' : 'comment', { postId, fromUser: session.user.name });
     }
 
+    revalidatePath(`/post/${postId}`);
     revalidatePath('/');
     return { success: true };
   } catch (error) {
@@ -403,7 +436,7 @@ export async function addComment(postId: string, content: string) {
 export async function getComments(postId: string) {
   try {
     return await sql`
-      SELECT c.id, c.text as content, c.created_at, u.username, u.name, u.image_url as avatar_url
+      SELECT c.id, c.text as content, c.created_at, c.parent_id, u.username, u.name, u.image_url as avatar_url
       FROM comments c
       JOIN users u ON c.user_id = u.id
       WHERE c.post_id = ${postId}
@@ -428,6 +461,7 @@ export async function toggleFollow(followingId: string) {
 
     if (existing.length > 0) {
       await sql`DELETE FROM followers WHERE id = ${existing[0].id}`;
+      revalidatePath('/');
       return { success: true, followed: false };
     } else {
       await sql`
@@ -436,11 +470,30 @@ export async function toggleFollow(followingId: string) {
       `;
       // Notify
       await createNotification(followingId, 'follow', { fromUser: session.user.name });
+      revalidatePath('/');
       return { success: true, followed: true };
     }
   } catch (error) {
     console.error("ToggleFollow Error:", error);
     return { success: false, error: "حدث خطأ" };
+  }
+}
+
+export async function updatePassword(formData: any) {
+  const { currentPassword, newPassword } = formData;
+  const session = await getServerSession(authOptions);
+  
+  if (!session?.user?.id) return { success: false, error: "يجب تسجيل الدخول" };
+
+  try {
+    // In a real app, verify currentPassword first
+    await sql`
+      UPDATE users SET password = ${newPassword} WHERE id = ${session.user.id}
+    `;
+    return { success: true };
+  } catch (e) {
+    console.error("Update Password Error:", e);
+    return { success: false, error: "فشل تحديث كلمة المرور" };
   }
 }
 

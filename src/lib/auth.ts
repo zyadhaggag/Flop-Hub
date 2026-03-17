@@ -113,11 +113,15 @@ export const authOptions: NextAuthOptions = {
       if (user) {
         token.id = user.id;
         token.username = user.username;
+        token.name = user.name;
+        token.picture = user.image;
       }
       
       // Handle session update
-      if (trigger === "update" && session?.username) {
-        token.username = session.username;
+      if (trigger === "update" && session) {
+        if (session.username) token.username = session.username;
+        if (session.name) token.name = session.name;
+        if (session.image) token.picture = session.image;
       }
       
       return token;
@@ -126,6 +130,8 @@ export const authOptions: NextAuthOptions = {
       if (session.user) {
         session.user.id = token.id;
         session.user.username = token.username;
+        session.user.name = token.name;
+        session.user.image = token.picture as string;
       }
       return session;
     },

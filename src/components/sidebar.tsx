@@ -5,9 +5,8 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
 
-const menuItems = [
+export const menuItems = [
   { id: "home", label: "الرئيسية", icon: Home, href: "/" },
-  { id: "lessons", label: "الدروس", icon: Lightbulb, href: "/lessons" },
   { id: "saved", label: "المحفوظات", icon: Bookmark, href: "/saved" },
   { id: "settings", label: "الإعدادات", icon: Settings, href: "/settings" },
 ];

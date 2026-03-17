@@ -17,6 +17,9 @@ export const metadata: Metadata = {
     template: "%s | FlopHub"
   },
   description: "شارك قصص فشلك، وتعلم من الآخرين. الفشل هو بداية النجاح.",
+  icons: {
+    icon: "/top.svg",
+  },
 };
 
 export default function RootLayout({

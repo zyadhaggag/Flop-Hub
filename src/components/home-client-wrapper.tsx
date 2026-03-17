@@ -53,24 +53,24 @@ export function HomeClientWrapper({
         </div>
 
         <Tabs defaultValue="foryou" className="w-full" dir="rtl" onValueChange={handleSortChange}>
-          <TabsList className="bg-transparent border-b border-border w-full justify-start rounded-none h-auto p-0 gap-8">
+          <TabsList className="bg-transparent border-none w-full justify-start rounded-none h-auto p-0 gap-2 sm:gap-8">
             <TabsTrigger 
               value="foryou" 
-              className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none px-4 py-3 gap-2"
+              className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none px-6 py-4 gap-2 text-sm font-bold transition-all hover:bg-primary/5 h-14"
             >
               <Sparkles className="w-4 h-4" />
               <span>لك</span>
             </TabsTrigger>
             <TabsTrigger 
               value="trending" 
-              className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none px-4 py-3 gap-2 opacity-50 data-[state=active]:opacity-100"
+              className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none px-6 py-4 gap-2 text-sm font-bold opacity-50 data-[state=active]:opacity-100 transition-all hover:bg-primary/5 h-14"
             >
               <TrendingUp className="w-4 h-4" />
               <span>الرائج</span>
             </TabsTrigger>
             <TabsTrigger 
               value="latest" 
-              className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none px-4 py-3 gap-2 opacity-50 data-[state=active]:opacity-100"
+              className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none px-6 py-4 gap-2 text-sm font-bold opacity-50 data-[state=active]:opacity-100 transition-all hover:bg-primary/5 h-14"
             >
               <Clock className="w-4 h-4" />
               <span>الأحدث</span>
@@ -92,6 +92,7 @@ export function HomeClientWrapper({
                commentsCount={parseInt(post.comments_count)}
                hasReacted={post.has_reacted}
                isSaved={post.is_saved}
+               isFollowed={post.is_followed}
              />
           ))}
           {posts.length === 0 && (

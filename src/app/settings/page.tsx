@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useSession } from "next-auth/react";
 import { useState, useEffect } from "react";
-import { updateUsername, updateProfile } from "@/lib/actions";
+import { updateUsername, updateProfile, updatePassword } from "@/lib/actions";
 import { uploadImage } from "@/lib/supabase";
 import { toast } from "sonner";
 import { Settings, User, Bell, Shield, Camera, Check, Loader2, Image as ImageIcon } from "lucide-react";
@@ -14,7 +14,10 @@ import { cn } from "@/lib/utils";
 
 export default function SettingsPage() {
   const { data: session, update } = useSession();
+  const [name, setName] = useState("");
   const [username, setUsername] = useState("");
+  const [password, setPassword] = useState("");
+  const [newPassword, setNewPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [avatarLoading, setAvatarLoading] = useState(false);
   const [activeTab, setActiveTab] = useState("account");
@@ -23,19 +26,37 @@ export default function SettingsPage() {
     if (session?.user?.username) {
       setUsername(session.user.username);
     }
+    if (session?.user?.name) {
+      setName(session.user.name);
+    }
   }, [session]);
 
-  const handleUpdateUsername = async (e: React.FormEvent) => {
+  const handleUpdateProfile = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!username.trim() || username === session?.user?.username) return;
-
     setLoading(true);
-    const res = await updateUsername(username);
+    const res = await updateProfile({ name, username });
     if (res.success) {
-      await update({ username });
-      toast.success("تم تحديث اسم المستخدم بنجاح");
+      await update({ name, username });
+      toast.success("تم تحديث الملف الشخصي بنجاح");
     } else {
       toast.error(res.error || "حدث خطأ");
+    }
+    setLoading(false);
+  };
+
+  const handleUpdatePassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!password || !newPassword) return;
+    
+    setLoading(true);
+    const res = await updatePassword({ currentPassword: password, newPassword });
+    
+    if (res.success) {
+      toast.success("تم تحديث كلمة المرور بنجاح");
+      setPassword("");
+      setNewPassword("");
+    } else {
+      toast.error(res.error || "فشل تحديث كلمة المرور");
     }
     setLoading(false);
   };
@@ -61,11 +82,7 @@ export default function SettingsPage() {
       }
     } catch (err: any) {
       console.error(err);
-      if (err.message?.includes("row-level security")) {
-        toast.error("خطأ في صلاحيات الرفع. يرجى التأكد من إعدادات سوبا بيز (RLS)");
-      } else {
-        toast.error("فشل رفع الصورة. تأكد من حجم الملف والاتصال بالإنترنت.");
-      }
+      toast.error("خطأ في الصلاحيات أو التحميل. يرجى التأكد من إعدادات سوبا بيز (RLS)");
     }
     setAvatarLoading(false);
   };
@@ -74,8 +91,8 @@ export default function SettingsPage() {
 
   const tabs = [
     { id: "account", label: "الحساب", icon: User },
+    { id: "security", label: "الأمان", icon: Shield },
     { id: "notifications", label: "الإشعارات", icon: Bell },
-    { id: "privacy", label: "الخصوصية", icon: Shield },
   ];
 
   return (
@@ -96,13 +113,13 @@ export default function SettingsPage() {
             </div>
           </div>
 
-          <div className="flex gap-2 bg-muted/30 p-1.5 rounded-2xl border border-border/50">
+          <div className="flex gap-2 bg-muted/30 p-1.5 rounded-2xl border border-border/50 overflow-x-auto no-scrollbar">
             {tabs.map((tab) => (
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
                 className={cn(
-                  "flex-1 flex items-center justify-center gap-2 py-3 px-4 rounded-xl text-sm font-bold transition-all",
+                  "flex-none sm:flex-1 flex items-center justify-center gap-2 py-3 px-4 rounded-xl text-sm font-bold transition-all whitespace-nowrap",
                   activeTab === tab.id 
                     ? "bg-card text-primary shadow-sm border border-border/50" 
                     : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
@@ -117,15 +134,24 @@ export default function SettingsPage() {
           <div className="space-y-6">
             {activeTab === "account" && (
               <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-300">
-                {/* Username Section */}
+                {/* Profile Section */}
                 <div className="bg-card/40 backdrop-blur-sm rounded-[2rem] border border-border p-8 shadow-sm">
                   <h2 className="text-xl font-black mb-6 flex items-center gap-2">
                     <User className="w-5 h-5 text-primary" />
-                    <span>تغيير اسم المستخدم</span>
+                    <span>تعديل الملف الشخصي</span>
                   </h2>
-                  <form onSubmit={handleUpdateUsername} className="space-y-4">
+                  <form onSubmit={handleUpdateProfile} className="space-y-4">
                     <div className="space-y-2">
-                      <label className="text-xs font-black text-muted-foreground uppercase tracking-widest mr-1">اسم المستخدم الجديد</label>
+                      <label className="text-xs font-black text-muted-foreground uppercase tracking-widest mr-1">الاسم الكامل</label>
+                      <Input 
+                        value={name}
+                        onChange={(e) => setName(e.target.value)}
+                        className="h-14 rounded-2xl bg-muted/40 border-border focus:bg-muted/60 transition-all font-bold"
+                        placeholder="الاسم الحقيقي"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-xs font-black text-muted-foreground uppercase tracking-widest mr-1">اسم المستخدم</label>
                       <div className="relative">
                         <Input 
                           value={username}
@@ -135,10 +161,9 @@ export default function SettingsPage() {
                         />
                         <span className="absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground font-bold">@</span>
                       </div>
-                      <p className="text-[10px] text-muted-foreground mr-1">يمكن للآخرين العثور عليك باستخدام هذا الاسم.</p>
                     </div>
                     <Button 
-                      disabled={loading || username === session.user.username}
+                      disabled={loading}
                       className="w-full h-14 rounded-2xl text-base font-black bg-primary hover:bg-primary/90 transition-all shadow-lg shadow-primary/20"
                     >
                       {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : "حفظ التغييرات"}
@@ -180,7 +205,44 @@ export default function SettingsPage() {
               </div>
             )}
 
-            {activeTab !== "account" && (
+            {activeTab === "security" && (
+              <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-300">
+                <div className="bg-card/40 backdrop-blur-sm rounded-[2rem] border border-border p-8 shadow-sm">
+                  <h2 className="text-xl font-black mb-6 flex items-center gap-2">
+                    <Shield className="w-5 h-5 text-primary" />
+                    <span>تغيير كلمة المرور</span>
+                  </h2>
+                  <form onSubmit={handleUpdatePassword} className="space-y-4">
+                    <div className="space-y-2">
+                      <label className="text-xs font-black text-muted-foreground uppercase tracking-widest mr-1">كلمة المرور الحالية</label>
+                      <Input 
+                        type="password"
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                        className="h-14 rounded-2xl bg-muted/40 border-border"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-xs font-black text-muted-foreground uppercase tracking-widest mr-1">كلمة المرور الجديدة</label>
+                      <Input 
+                        type="password"
+                        value={newPassword}
+                        onChange={(e) => setNewPassword(e.target.value)}
+                        className="h-14 rounded-2xl bg-muted/40 border-border"
+                      />
+                    </div>
+                    <Button 
+                      disabled={loading || !password || !newPassword}
+                      className="w-full h-14 rounded-2xl text-base font-black bg-primary hover:bg-primary/90 transition-all shadow-lg shadow-primary/20"
+                    >
+                      {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : "تحديث كلمة المرور"}
+                    </Button>
+                  </form>
+                </div>
+              </div>
+            )}
+
+            {(activeTab !== "account" && activeTab !== "security") && (
               <div className="text-center py-20 bg-muted/10 rounded-[2rem] border border-dashed border-border/50 text-muted-foreground animate-in zoom-in-95 duration-300">
                 <div className="text-5xl mb-4 opacity-20">⚙️</div>
                 <p className="font-bold text-lg">هذه الإعدادات ستكون متاحة قريباً.</p>
