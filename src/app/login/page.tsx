@@ -1,0 +1,188 @@
+"use client";
+
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Lightbulb, Eye, EyeOff, ArrowLeft, Moon } from "lucide-react";
+import Link from "next/link";
+import { useState } from "react";
+import { signIn } from "next-auth/react";
+import { useRouter } from "next/navigation";
+import { toast } from "sonner";
+
+export default function LoginPage() {
+  const [showPassword, setShowPassword] = useState(false);
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [loading, setLoading] = useState(false);
+  const router = useRouter();
+
+  const handleLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+
+    try {
+      const result = await signIn("credentials", {
+        email,
+        password,
+        redirect: false,
+      });
+
+      if (result?.error) {
+        toast.error("خطأ في تسجيل الدخول. تأكد من البيانات.");
+      } else {
+        toast.success("تم تسجيل الدخول بنجاح!");
+        router.push("/");
+        router.refresh();
+      }
+    } catch (error) {
+      toast.error("حدث خطأ غير متوقع.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+
+  return (
+    <div className="h-screen overflow-hidden flex dir-rtl bg-background dark text-foreground">
+      {/* Right Side: Form */}
+      <div className="flex-1 flex flex-col items-center justify-center p-8 bg-background overflow-y-auto custom-scrollbar h-full">
+        <div className="w-full max-w-md space-y-8">
+          <div className="text-center space-y-2">
+            <h1 className="text-4xl font-black tracking-tight text-white">مرحباً بعودتك</h1>
+            <p className="text-muted-foreground font-medium">سجّل دخولك لمشاركة قصتك الملهمة</p>
+          </div>
+
+          <form onSubmit={handleLogin} className="space-y-5">
+            <div className="space-y-2">
+              <label className="text-xs font-black text-muted-foreground uppercase tracking-widest mr-1">البريد الإلكتروني</label>
+              <Input 
+                type="email"
+                required
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="example@email.com" 
+                className="h-14 rounded-2xl bg-muted/40 border-border focus-visible:ring-primary text-base font-bold transition-all focus:bg-muted/60"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <div className="flex justify-between items-center px-1">
+                <label className="text-xs font-black text-muted-foreground uppercase tracking-widest">كلمة المرور</label>
+                <Link href="#" className="text-xs text-primary font-bold hover:underline">نسيت كلمة المرور؟</Link>
+              </div>
+              <div className="relative">
+                <Input 
+                  type={showPassword ? "text" : "password"}
+                  required
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="********" 
+                  className="h-14 rounded-2xl bg-muted/40 border-border focus-visible:ring-primary pl-12 text-base font-bold transition-all focus:bg-muted/60"
+                />
+                <button 
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-primary transition-colors"
+                >
+                  {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                </button>
+              </div>
+            </div>
+
+            <Button 
+              type="submit" 
+              disabled={loading}
+              className="w-full h-14 rounded-2xl text-lg font-black bg-primary hover:bg-primary/90 shadow-lg shadow-primary/20 transition-all gap-3 group active:scale-[0.98]"
+            >
+              <span>{loading ? "جاري التحقق..." : "تسجيل الدخول"}</span>
+              {!loading && <ArrowLeft className="w-5 h-5 group-hover:-translate-x-1 transition-transform" />}
+            </Button>
+          </form>
+
+          <div className="relative py-4">
+            <div className="absolute inset-0 flex items-center"><span className="w-full border-t border-border"></span></div>
+            <div className="relative flex justify-center text-xs uppercase"><span className="bg-background px-4 text-muted-foreground font-black tracking-widest">أو</span></div>
+          </div>
+
+          <div className="grid grid-cols-1 gap-4">
+            <Button 
+              onClick={() => signIn("google", { callbackUrl: "/" })}
+              variant="outline" 
+              className="h-14 rounded-2xl gap-3 border-border hover:bg-muted/50 transition-all font-bold text-base"
+            >
+              <svg className="w-5 h-5" viewBox="0 0 24 24">
+                 <path fill="#EA4335" d="M12.48 10.92v3.28h7.84c-.24 1.84-.909 3.235-1.921 4.241-1.011 1.006-2.589 2.053-5.919 2.053-5.112 0-9.283-4.148-9.283-9.28s4.171-9.28 9.283-9.28c2.775 0 4.796 1.091 6.29 2.493l2.316-2.316C19.167 1.135 15.908 0 12.48 0 5.617 0 .04 5.577.04 12.44s5.577 12.44 12.44 12.44c3.344 0 6.007-1.109 8.274-3.486 2.314-2.314 3.037-5.568 3.037-8.243 0-.78-.067-1.503-.199-2.251H12.48z"></path>
+              </svg>
+              <span>تسجيل الدخول عبر Google</span>
+            </Button>
+            <Button variant="outline" disabled className="h-14 rounded-2xl gap-3 border-border opacity-50 cursor-not-allowed font-bold text-base grayscale">
+              <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+                 <path d="M12.152 6.896c-.948 0-2.415-1.078-3.96-1.04-2.04.027-3.91 1.183-4.961 3.014-2.117 3.675-.546 9.103 1.519 12.09 1.013 1.454 2.208 3.09 3.792 3.039 1.52-.065 2.09-.987 3.935-.987 1.831 0 2.35.987 3.96.948 1.637-.026 2.676-1.48 3.676-2.948 1.156-1.688 1.636-3.325 1.662-3.415-.039-.013-3.182-1.221-3.22-4.857-.026-3.04 2.48-4.494 2.597-4.559-1.429-2.09-3.623-2.324-4.39-2.376-2-.156-3.675 1.09-4.61 1.09zM15.53 3.83c.843-1.012 1.4-2.427 1.245-3.83-1.207.052-2.662.805-3.532 1.82a3.655 3.655 0 00-1.297 3.713c1.35.104 2.753-.702 3.584-1.703z"></path>
+              </svg>
+              <span>تسجيل الدخول عبر Apple (قريباً)</span>
+            </Button>
+          </div>
+
+          <div className="text-center text-sm pt-6 border-t border-border/50">
+            <span className="text-muted-foreground font-medium">ليس لديك حساب؟</span>
+            <Link href="/signup" className="text-primary font-black hover:underline mr-2 text-base">سجّل الآن مجاناً</Link>
+          </div>
+        </div>
+      </div>
+
+      {/* Left Side: Branding */}
+      <div className="hidden lg:flex flex-1 bg-primary relative overflow-hidden flex-col items-center justify-center text-white p-12">
+        <div className="absolute inset-0 opacity-20 pointer-events-none">
+           <div className="absolute top-10 right-10 w-[500px] h-[500px] bg-white rounded-full blur-[120px]" />
+           <div className="absolute bottom-20 left-10 w-[400px] h-[400px] bg-indigo-200 rounded-full blur-[100px]" />
+        </div>
+
+        <div className="relative z-10 w-full max-w-lg space-y-16">
+          <div className="space-y-6">
+            <div className="flex items-center gap-5">
+              <div className="w-20 h-20 bg-white rounded-3xl flex items-center justify-center shadow-2xl rotate-3 hover:rotate-0 transition-transform duration-500">
+                 <span className="text-primary font-black text-5xl italic font-serif">F</span>
+              </div>
+              <div className="flex flex-col">
+                <span className="text-5xl font-black tracking-tighter">FlopHub</span>
+                <span className="text-xl opacity-80 font-bold tracking-widest uppercase">الفشل بداية التعلم</span>
+              </div>
+            </div>
+            
+            <div className="inline-flex items-center gap-3 bg-white/10 px-6 py-2.5 rounded-full border border-white/20 backdrop-blur-xl shadow-xl">
+               <Lightbulb className="w-5 h-5 text-yellow-300 fill-yellow-300/30" />
+               <span className="text-sm font-black tracking-tight uppercase">المكان الوحيد للاحتفاء بالفشل 💡</span>
+            </div>
+          </div>
+
+          <div className="space-y-8">
+            <h2 className="text-7xl font-black leading-[1.1] tracking-tight">
+              حول <span className="text-transparent bg-clip-text bg-gradient-to-l from-white to-gray-400 underline underline-offset-[12px] decoration-white/30">تعثرك</span>
+              <br />
+              إلى درس ذهبي.
+            </h2>
+            <p className="text-2xl opacity-80 leading-relaxed font-bold max-w-md italic">
+              "الناجحون هم من فشلوا كثيراً ولم يستسلموا أبداً. نحن هنا لنروي تلك الحكايا."
+            </p>
+          </div>
+
+          {/* Stats */}
+          <div className="grid grid-cols-3 gap-10 pt-10 border-t border-white/20">
+             <div className="flex flex-col gap-1">
+                <span className="text-4xl font-black text-white">+12K</span>
+                <span className="text-xs opacity-60 font-black uppercase tracking-widest">قصة فشل</span>
+             </div>
+             <div className="flex flex-col gap-1">
+                <span className="text-4xl font-black text-white">+4K</span>
+                <span className="text-xs opacity-60 font-black uppercase tracking-widest">درس مستخلص</span>
+             </div>
+             <div className="flex flex-col gap-1">
+                <span className="text-4xl font-black text-white">+8K</span>
+                <span className="text-xs opacity-60 font-black uppercase tracking-widest">عالم مبدع</span>
+             </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
