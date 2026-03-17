@@ -471,7 +471,7 @@ export function PostCard({ id, user, time, title, story, lesson, imageUrl, helpf
                       <div className="flex flex-col flex-1">
                         <div className="bg-card border border-border/50 p-4 rounded-[1.5rem] rounded-tr-none shadow-sm relative group/c">
                           <span className="text-[11px] font-black text-primary mb-1.5 block">@{c.username}</span>
-                          <p className="text-[14px] leading-relaxed text-foreground font-medium break-words">{c.content}</p>
+                          <p className="text-[14px] leading-relaxed text-foreground font-medium break-words">{c.text}</p>
                           
                           <div className="mt-3 flex items-center gap-4 transition-opacity">
                              <button 
@@ -514,7 +514,7 @@ export function PostCard({ id, user, time, title, story, lesson, imageUrl, helpf
                                  </Avatar>
                                  <div className="bg-card border border-border/40 p-3.5 rounded-2xl rounded-tr-none flex-1 shadow-xs group-hover/r:border-primary/20 transition-all">
                                    <span className="text-[11px] font-black text-primary/80 mb-0.5 block">@{reply.username}</span>
-                                   <p className="text-sm font-medium leading-relaxed text-foreground/90 break-words">{reply.content}</p>
+                                   <p className="text-sm font-medium leading-relaxed text-foreground/90 break-words">{reply.text}</p>
                                  </div>
                                </div>
                              ))}

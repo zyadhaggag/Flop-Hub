@@ -166,7 +166,7 @@ export async function addComment(postId: string, content: string, parentId?: str
 
   try {
     const result = await sql`
-      INSERT INTO comments (post_id, user_id, content, parent_id)
+      INSERT INTO comments (post_id, user_id, text, parent_id)
       VALUES (${postId}, ${session.user.id}, ${content}, ${parentId || null})
       RETURNING *
     `;
