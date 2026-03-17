@@ -340,12 +340,11 @@ export function PostCard({ id, user, time, title, story, lesson, imageUrl, helpf
             
             {imageUrl && (
               <div className="relative aspect-[16/9] w-full overflow-hidden rounded-2xl sm:rounded-[2.5rem] border border-border/40 shadow-xl shadow-black/5 mt-4 group/image">
-                 <NextImage 
+                 <img 
                    src={imageUrl} 
                    alt={title} 
-                   fill
-                   className="object-cover transition-transform duration-1000 group-hover/image:scale-110" 
-                   sizes="(max-width: 768px) 100vw, 800px"
+                   loading="lazy"
+                   className="w-full h-full object-cover transition-transform duration-1000 group-hover/image:scale-110" 
                  />
                  <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent pointer-events-none" />
               </div>

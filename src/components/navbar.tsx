@@ -72,37 +72,42 @@ export function Navbar() {
 
       {/* Mobile Menu Overlay */}
       {isMenuOpen && (
-        <div className="md:hidden fixed inset-0 z-50 bg-background/98 backdrop-blur-2xl animate-in fade-in slide-in-from-top-4 duration-300">
-          <div className="flex flex-col p-6 h-full">
-            <div className="flex items-center justify-between mb-8">
-              <Link href="/" onClick={() => setIsMenuOpen(false)} className="flex items-center gap-3">
-                <img src="/logo.svg" alt="Logo" className="w-8 h-8" />
-                <span className="text-xl font-black">FlopHub</span>
+        <div className="md:hidden fixed inset-0 z-[100] bg-background animate-in fade-in slide-in-from-top-4 duration-300 flex flex-col">
+          <div className="h-16 flex items-center justify-between px-6 border-b border-border">
+            <Link href="/" onClick={() => setIsMenuOpen(false)} className="flex items-center gap-3">
+              <img src="/logo.svg" alt="Logo" className="w-8 h-8" />
+              <span className="text-xl font-black">FlopHub</span>
+            </Link>
+            <button 
+              onClick={() => setIsMenuOpen(false)} 
+              className="p-2 hover:bg-muted rounded-xl transition-colors"
+            >
+              <X className="w-6 h-6" />
+            </button>
+          </div>
+          
+          <div className="flex-1 overflow-y-auto p-6 flex flex-col gap-2">
+            {menuItems.map((item) => (
+              <Link
+                key={item.id}
+                href={item.href}
+                onClick={() => setIsMenuOpen(false)}
+                className="flex items-center gap-4 p-4 rounded-2xl hover:bg-primary/5 text-muted-foreground hover:text-primary transition-all active:scale-95"
+              >
+                <div className="w-10 h-10 rounded-xl bg-muted/50 flex items-center justify-center text-muted-foreground group-hover:text-primary">
+                  <item.icon className="w-5 h-5" />
+                </div>
+                <span className="text-lg font-bold">{item.label}</span>
               </Link>
-              <button onClick={() => setIsMenuOpen(false)} className="p-2 hover:bg-muted rounded-xl">
-                <X className="w-6 h-6" />
-              </button>
-            </div>
-            
-            <div className="flex flex-col gap-3">
-              {menuItems.map((item) => (
-                <Link
-                  key={item.id}
-                  href={item.href}
-                  onClick={() => setIsMenuOpen(false)}
-                  className="flex items-center gap-4 p-4 rounded-2xl hover:bg-primary/5 text-muted-foreground hover:text-primary transition-colors"
-                >
-                  <item.icon className="w-6 h-6" />
-                  <span className="text-lg font-bold">{item.label}</span>
-                </Link>
-              ))}
-            </div>
+            ))}
+          </div>
 
-            <div className="mt-auto pb-10">
-              <p className="text-xs text-muted-foreground text-center">
-                FlopHub © 2024 - الفشل هو بداية النجاح
-              </p>
-            </div>
+          <div className="p-8 border-t border-border bg-muted/20">
+            <p className="text-xs text-muted-foreground text-center font-medium opacity-60 uppercase tracking-widest">
+              FlopHub © 2024
+              <br />
+              الفشل هو بداية النجاح
+            </p>
           </div>
         </div>
       )}

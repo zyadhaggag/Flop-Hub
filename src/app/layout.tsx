@@ -22,6 +22,8 @@ export const metadata: Metadata = {
   },
 };
 
+import { OnboardingModal } from "@/components/onboarding-modal";
+
 export default function RootLayout({
   children,
 }: {
@@ -43,6 +45,7 @@ export default function RootLayout({
         />
         <Providers>
           {children}
+          <OnboardingModal />
           <Toaster position="top-center" richColors theme="system" />
         </Providers>
       </body>

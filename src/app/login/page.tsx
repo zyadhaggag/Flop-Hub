@@ -56,6 +56,7 @@ export default function LoginPage() {
             <div className="space-y-2">
               <label className="text-xs font-black text-muted-foreground uppercase tracking-widest mr-1">البريد الإلكتروني</label>
               <Input 
+                id="email-input"
                 type="email"
                 required
                 value={email}
@@ -72,6 +73,7 @@ export default function LoginPage() {
               </div>
               <div className="relative">
                 <Input 
+                  id="password-input"
                   type={showPassword ? "text" : "password"}
                   required
                   value={password}

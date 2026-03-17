@@ -4,9 +4,9 @@ import { Navbar } from "@/components/navbar";
 import { Sidebar } from "@/components/sidebar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { useSession } from "next-auth/react";
+import { useSession, signOut } from "next-auth/react";
 import { useState, useEffect } from "react";
-import { updateUsername, updateProfile, updatePassword } from "@/lib/actions";
+import { updateUsername, updateProfile, updatePassword, deleteAccount } from "@/lib/actions";
 import { uploadImage } from "@/lib/supabase";
 import { toast } from "sonner";
 import { Settings, User, Bell, Shield, Camera, Check, Loader2, Image as ImageIcon, Sliders } from "lucide-react";
@@ -144,6 +144,20 @@ export default function SettingsPage() {
       toast.error("فشل تحديث الغلاف");
     }
   };
+  
+  const handleDeleteAccount = async () => {
+    if (!window.confirm("هل أنت متأكد من حذف حسابك نهائياً؟ لا يمكن التراجع عن هذا الإجراء.")) return;
+    
+    setLoading(true);
+    const res = await deleteAccount();
+    if (res.success) {
+      toast.success("تم حذف الحساب بنجاح");
+      signOut({ callbackUrl: "/login" });
+    } else {
+      toast.error(res.error || "فشل حذف الحساب");
+      setLoading(false);
+    }
+  };
 
   if (!session) return null;
 
@@ -193,10 +207,78 @@ export default function SettingsPage() {
             {activeTab === "account" && (
               <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-300">
                 {/* Profile Section */}
+                {/* 1. Banner Section */}
+                <div className="bg-card/40 backdrop-blur-sm rounded-[2rem] border border-border p-8 shadow-sm space-y-6">
+                  <div className="flex items-center justify-between px-1">
+                    <div className="space-y-1">
+                      <h2 className="text-xl font-black flex items-center gap-2">
+                        <ImageIcon className="w-5 h-5 text-primary" />
+                        <span>تنسيق الغلاف</span>
+                      </h2>
+                      <p className="text-[11px] text-muted-foreground font-medium">اختر نمطاً جمالياً لخلفية ملفك الشخصي</p>
+                    </div>
+                    <span className="text-[10px] font-bold bg-primary/10 text-primary px-2 py-1 rounded-lg">جديد</span>
+                  </div>
+                  
+                  {/* Live Preview */}
+                  <div className="relative h-32 rounded-3xl border border-border overflow-hidden bg-muted group shadow-inner">
+                    <div 
+                      className={cn(
+                        "absolute inset-0 transition-all duration-700",
+                        !banner && "bg-gradient-to-br from-primary/20 via-violet-500/10 to-transparent"
+                      )}
+                      style={
+                        banner?.startsWith('preset-') 
+                        ? { 
+                            background: BANNER_STYLES[banner.replace('preset-', 'banner-') as keyof typeof BANNER_STYLES],
+                            backgroundSize: banner === 'preset-6' ? '20px 20px' : banner === 'preset-7' ? '30px 30px' : banner === 'preset-10' ? '10px 10px' : 'cover'
+                          }
+                        : banner ? { backgroundImage: `url(${banner})`, backgroundSize: 'cover', backgroundPosition: 'center' } : {}
+                      }
+                    />
+                    <div className="absolute inset-0 bg-black/5 opacity-0 group-hover:opacity-100 transition-opacity" />
+                  </div>
+
+                  <ProfileBannerSelector currentBanner={banner} onSelect={handleBannerSelect} />
+                </div>
+
+                {/* 2. Avatar Upload Section */}
+                <div className="bg-card/40 backdrop-blur-sm rounded-[2rem] border border-border p-8 shadow-sm">
+                  <h2 className="text-xl font-black mb-6 flex items-center gap-2">
+                    <Camera className="w-5 h-5 text-primary" />
+                    <span>تغيير صورة البروفايل</span>
+                  </h2>
+                  <div className="flex flex-col items-center gap-6">
+                    <div className="relative group">
+                      <div className="w-24 h-24 rounded-full overflow-hidden border-4 border-primary/20 bg-muted flex items-center justify-center relative">
+                        {session.user.image ? (
+                          <img src={session.user.image} alt={session.user.name || ""} className="w-full h-full object-cover" />
+                        ) : (
+                          <User className="w-10 h-10 text-muted-foreground" />
+                        )}
+                        {avatarLoading && (
+                          <div className="absolute inset-0 bg-background/60 flex items-center justify-center">
+                            <Loader2 className="w-6 h-6 animate-spin text-primary" />
+                          </div>
+                        )}
+                      </div>
+                      <label className="absolute bottom-0 right-0 w-8 h-8 rounded-full bg-primary text-white flex items-center justify-center cursor-pointer shadow-lg hover:scale-110 transition-transform">
+                        <Camera className="w-4 h-4" />
+                        <input type="file" accept="image/*" onChange={handleAvatarSelect} className="hidden" disabled={avatarLoading} />
+                      </label>
+                    </div>
+                    <div className="text-center">
+                      <p className="font-bold text-sm">ارفع صورة جديدة</p>
+                      <p className="text-xs text-muted-foreground mt-1">يفضل أن تكون الصورة مربعة وبحجم أقل من 5 ميجابايت.</p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* 3. Account Info Section */}
                 <div className="bg-card/40 backdrop-blur-sm rounded-[2rem] border border-border p-8 shadow-sm">
                   <h2 className="text-xl font-black mb-6 flex items-center gap-2">
                     <User className="w-5 h-5 text-primary" />
-                    <span>تعديل الملف الشخصي</span>
+                    <span>تعديل المعلومات الشخصية</span>
                   </h2>
                   <form onSubmit={handleUpdateProfile} className="space-y-4">
                     <div className="space-y-2">
@@ -237,69 +319,6 @@ export default function SettingsPage() {
                       {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : "حفظ التغييرات"}
                     </Button>
                   </form>
-
-                  <div className="mt-8 pt-8 border-t border-border/50 space-y-6">
-                    <div className="flex items-center justify-between px-1">
-                      <div className="space-y-1">
-                        <label className="text-sm font-black text-foreground">تنسيق الغلاف</label>
-                        <p className="text-[11px] text-muted-foreground font-medium">اختر نمطاً جمالياً لخلفية ملفك الشخصي</p>
-                      </div>
-                      <span className="text-[10px] font-bold bg-primary/10 text-primary px-2 py-1 rounded-lg">جديد</span>
-                    </div>
-                    
-                    {/* Live Preview */}
-                    <div className="relative h-32 rounded-3xl border border-border overflow-hidden bg-muted group shadow-inner">
-                      <div 
-                        className={cn(
-                          "absolute inset-0 transition-all duration-700",
-                          !banner && "bg-gradient-to-br from-primary/20 via-violet-500/10 to-transparent"
-                        )}
-                        style={
-                          banner?.startsWith('preset-') 
-                          ? { 
-                              background: BANNER_STYLES[banner.replace('preset-', 'banner-') as keyof typeof BANNER_STYLES],
-                              backgroundSize: banner === 'preset-6' ? '20px 20px' : banner === 'preset-7' ? '30px 30px' : banner === 'preset-10' ? '10px 10px' : 'cover'
-                            }
-                          : banner ? { backgroundImage: `url(${banner})`, backgroundSize: 'cover', backgroundPosition: 'center' } : {}
-                        }
-                      />
-                      <div className="absolute inset-0 bg-black/5 opacity-0 group-hover:opacity-100 transition-opacity" />
-                    </div>
-
-                    <ProfileBannerSelector currentBanner={banner} onSelect={handleBannerSelect} />
-                  </div>
-                </div>
-
-                {/* Avatar Upload Section */}
-                <div className="bg-card/40 backdrop-blur-sm rounded-[2rem] border border-border p-8 shadow-sm">
-                  <h2 className="text-xl font-black mb-6 flex items-center gap-2">
-                    <Camera className="w-5 h-5 text-primary" />
-                    <span>تغيير صورة البروفايل</span>
-                  </h2>
-                  <div className="flex flex-col items-center gap-6">
-                    <div className="relative group">
-                      <div className="w-24 h-24 rounded-full overflow-hidden border-4 border-primary/20 bg-muted flex items-center justify-center relative">
-                        {session.user.image ? (
-                          <img src={session.user.image} alt={session.user.name || ""} className="w-full h-full object-cover" />
-                        ) : (
-                          <User className="w-10 h-10 text-muted-foreground" />
-                        )}
-                        {avatarLoading && (
-                          <div className="absolute inset-0 bg-background/60 flex items-center justify-center">
-                            <Loader2 className="w-6 h-6 animate-spin text-primary" />
-                          </div>
-                        )}
-                      </div>
-                      <label className="absolute bottom-0 right-0 w-8 h-8 rounded-full bg-primary text-white flex items-center justify-center cursor-pointer shadow-lg hover:scale-110 transition-transform">
-                        <Camera className="w-4 h-4" />
-                        <input type="file" accept="image/*" onChange={handleAvatarSelect} className="hidden" disabled={avatarLoading} />
-                      </label>
-                    </div>
-                    <div className="text-center">
-                      <p className="font-bold text-sm">ارفع صورة جديدة</p>
-                      <p className="text-xs text-muted-foreground mt-1">يفضل أن تكون الصورة مربعة وبحجم أقل من 5 ميجابايت.</p>
-                    </div>
-                  </div>
                 </div>
               </div>
             )}
@@ -337,6 +356,25 @@ export default function SettingsPage() {
                       {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : "تحديث كلمة المرور"}
                     </Button>
                   </form>
+                </div>
+
+                {/* Dangerous Area */}
+                <div className="bg-red-500/5 rounded-[2rem] border border-red-500/20 p-8 shadow-sm space-y-4">
+                  <div className="flex items-center gap-3">
+                    <Shield className="w-5 h-5 text-red-500" />
+                    <h2 className="text-xl font-black text-red-500">حذف الحساب</h2>
+                  </div>
+                  <p className="text-sm text-muted-foreground font-medium leading-relaxed">
+                    من خلال حذف حسابك، ستفقد جميع منشوراتك، دروسك، وإعجاباتك. لا يمكن التراجع عن هذا الإجراء.
+                  </p>
+                  <Button 
+                    variant="destructive"
+                    onClick={handleDeleteAccount}
+                    disabled={loading}
+                    className="w-full h-14 rounded-2xl text-base font-black transition-all shadow-lg hover:shadow-red-500/20"
+                  >
+                    {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : "حذف حسابي نهائياً"}
+                  </Button>
                 </div>
               </div>
             )}

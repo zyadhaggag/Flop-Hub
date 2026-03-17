@@ -265,7 +265,8 @@ export async function getPostById(id: string) {
       (SELECT COUNT(*) FROM reactions r WHERE r.post_id = p.id) as helpful_count,
       (SELECT COUNT(*) FROM comments c WHERE c.post_id = p.id) as comments_count,
       ${currentUserId ? sql`EXISTS(SELECT 1 FROM reactions WHERE post_id = p.id AND user_id = ${currentUserId})` : false} as has_reacted,
-      ${currentUserId ? sql`EXISTS(SELECT 1 FROM saves WHERE post_id = p.id AND user_id = ${currentUserId})` : false} as is_saved
+      ${currentUserId ? sql`EXISTS(SELECT 1 FROM saves WHERE post_id = p.id AND user_id = ${currentUserId})` : false} as is_saved,
+      ${currentUserId ? sql`EXISTS(SELECT 1 FROM followers WHERE follower_id = ${currentUserId} AND following_id = p.user_id)` : false} as is_followed
       FROM posts p
       JOIN users u ON p.user_id = u.id
       WHERE p.id = ${id}
@@ -308,11 +309,31 @@ export async function register(formData: any) {
 
   const { email, password, name, username } = result.data;
   
+  // Trusted email domains whitelist
+  const trustedDomains = [
+    "gmail.com", "outlook.com", "hotmail.com", "yahoo.com", 
+    "icloud.com", "me.com", "live.com", "msn.com"
+  ];
+  const domain = email.split("@")[1].toLowerCase();
+  
+  if (!trustedDomains.includes(domain)) {
+    // Robust check if email domain exists (DNS)
+    try {
+      const dns = require("dns").promises;
+      const mx = await dns.resolveMx(domain).catch(() => []);
+      if (mx.length === 0) {
+        return { success: false, error: "عذراً، هذا النطاق غير معتمد أو غير صالح. يرجى استخدام بريد معروف (Gmail, Outlook, etc.)" };
+      }
+    } catch (dnsErr) {
+      console.warn("DNS check failed, skipping:", dnsErr);
+    }
+  }
+
   try {
     const hashedPassword = password; // In a real app, hash this!
     await sql`
-      INSERT INTO users (email, password, name, username, image_url)
-      VALUES (${email}, ${hashedPassword}, ${name}, ${username}, NULL)
+      INSERT INTO users (email, password, name, username, image_url, is_onboarded)
+      VALUES (${email}, ${hashedPassword}, ${name}, ${username}, NULL, FALSE)
     `;
     return { success: true };
   } catch (error: any) {
@@ -541,4 +562,17 @@ export async function markNotificationAsRead(id: string) {
     `;
     return { success: true };
   } catch (e) { return { success: false }; }
+}
+
+export async function deleteAccount() {
+  const session = await getServerSession(authOptions);
+  if (!session?.user?.id) return { success: false, error: "يجب تسجيل الدخول" };
+
+  try {
+    await sql`DELETE FROM users WHERE id = ${session.user.id}`;
+    return { success: true };
+  } catch (error) {
+    console.error("DeleteAccount Error:", error);
+    return { success: false, error: "حدث خطأ أثناء حذف الحساب" };
+  }
 }

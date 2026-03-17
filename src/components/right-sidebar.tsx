@@ -100,13 +100,17 @@ export function RightSidebar({ suggestedUsers = [], trendingLessons = [], classN
         </div>
         <div className="space-y-5">
           {trendingLessons.map((lesson: any, i: number) => (
-            <div key={lesson.id} className="flex items-center gap-4 group cursor-pointer">
+            <Link 
+              key={lesson.id} 
+              href={`/p/${lesson.id}`}
+              className="flex items-center gap-4 group cursor-pointer hover:bg-primary/5 p-2 -m-2 rounded-xl transition-all"
+            >
               <span className="text-2xl font-black text-primary/10 group-hover:text-primary/30 transition-colors w-6 italic">{i + 1}</span>
               <div className="flex flex-col">
                 <span className="text-sm font-bold group-hover:text-primary transition-colors line-clamp-1">{lesson.title}</span>
                 <span className="text-[11px] text-muted-foreground font-medium">{lesson.helpful_count || 0} استفادوا</span>
               </div>
-            </div>
+            </Link>
           ))}
           {trendingLessons.length === 0 && (
             <p className="text-xs text-muted-foreground text-center py-4">قريباً...</p>
