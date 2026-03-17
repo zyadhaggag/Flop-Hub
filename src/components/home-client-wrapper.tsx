@@ -4,7 +4,7 @@ import { Sidebar } from "@/components/sidebar";
 import { CreatePost } from "@/components/create-post";
 import { PostCard } from "@/components/post-card";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Sparkles, TrendingUp, Clock, Loader2 } from "lucide-react";
+import { Sparkles, TrendingUp, Clock, Loader2, Plus } from "lucide-react";
 import { useState, useEffect } from "react";
 import dynamic from "next/dynamic";
 
@@ -32,22 +32,41 @@ export function HomeClientWrapper({
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [posts, setPosts] = useState(initialPosts);
   const [sort, setSort] = useState<'latest' | 'trending' | 'foryou'>('foryou');
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [hasMore, setHasMore] = useState(initialPosts.length === 5);
+
+  const PAGE_SIZE = 5;
 
   const handleSortChange = async (value: string) => {
     setSort(value as any);
-    const newPosts = await getPosts(value === 'trending' ? 'trending' : 'latest');
+    const newPosts = await getPosts(value === 'trending' ? 'trending' : 'latest', PAGE_SIZE, 0);
     setPosts(newPosts);
+    setHasMore(newPosts.length === PAGE_SIZE);
+  };
+
+  const handleLoadMore = async () => {
+    if (loadingMore || !hasMore) return;
+    setLoadingMore(true);
+    const nextPosts = await getPosts(sort === 'trending' ? 'trending' : 'latest', PAGE_SIZE, posts.length);
+    if (nextPosts.length > 0) {
+      setPosts(prev => [...prev, ...nextPosts]);
+      setHasMore(nextPosts.length === PAGE_SIZE);
+    } else {
+      setHasMore(false);
+    }
+    setLoadingMore(false);
   };
 
   useEffect(() => {
     setPosts(initialPosts);
+    setHasMore(initialPosts.length === PAGE_SIZE);
   }, [initialPosts]);
 
   return (
     <>
       <Sidebar onPostClick={() => setIsModalOpen(true)} />
 
-      <div className="flex-1 flex flex-col gap-6 max-w-2xl">
+      <div className="flex-1 flex flex-col gap-6 max-w-4xl">
         <div onClick={() => setIsModalOpen(true)} className="cursor-pointer">
           <CreatePost />
         </div>
@@ -83,8 +102,8 @@ export function HomeClientWrapper({
              <PostCard 
                key={post.id} 
                id={post.id}
-               user={{ id: post.user_id, name: post.username, handle: post.username, avatar: post.avatar_url }}
-               time={new Date(post.created_at).toLocaleTimeString("ar-SA", { hour: '2-digit', minute: '2-digit' })}
+               user={{ id: post.user_id, name: post.name || post.username, handle: post.username, avatar: post.avatar_url }}
+               time={post.created_at}
                title={post.title}
                story={post.story}
                lesson={post.lesson}
@@ -95,11 +114,25 @@ export function HomeClientWrapper({
                isFollowed={post.is_followed}
              />
           ))}
-          {posts.length === 0 && (
-            <div className="text-center py-20 text-muted-foreground bg-card rounded-2xl border border-dashed p-8">
-              <div className="text-4xl mb-4">🌱</div>
-              <h3 className="text-lg font-bold text-foreground">لا توجد منشورات بعد</h3>
-              <p className="text-sm">كن أول من يشارك فشله ويلهم الآخرين!</p>
+          {hasMore && (
+            <div className="flex justify-center pt-4">
+              <button 
+                onClick={handleLoadMore}
+                disabled={loadingMore}
+                className="group flex items-center gap-3 px-8 py-4 bg-primary/5 hover:bg-primary/10 text-primary rounded-2xl font-black transition-all border border-primary/20 hover:border-primary/40 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {loadingMore ? (
+                  <>
+                    <Loader2 className="w-5 h-5 animate-spin" />
+                    <span>جاري التحميل...</span>
+                  </>
+                ) : (
+                  <>
+                    <Plus className="w-5 h-5 group-hover:rotate-90 transition-transform" />
+                    <span>تحميل المزيد من القصص</span>
+                  </>
+                )}
+              </button>
             </div>
           )}
         </div>

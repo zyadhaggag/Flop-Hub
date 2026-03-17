@@ -11,7 +11,7 @@ import {
   DropdownMenuTrigger 
 } from "@/components/ui/dropdown-menu";
 import { Loader2, MessageCircle, Share2, MoreHorizontal, Lightbulb, Trash2, Edit2, Send, Bookmark, UserPlus, UserMinus, Plus, Check } from "lucide-react";
-import { toggleHelpful, deletePost, addComment, getComments, toggleFollow, toggleSave } from "@/lib/actions";
+import { toggleHelpful, deletePost, editPost, addComment, getComments, toggleFollow, toggleSave } from "@/lib/actions";
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { toast } from "sonner";
@@ -49,6 +49,24 @@ export function PostCard({ id, user, time, title, story, lesson, imageUrl, helpf
   const [newComment, setNewComment] = useState("");
   const [loadingComments, setLoadingComments] = useState(false);
   const [isFollowing, setIsFollowing] = useState(initialIsFollowed || false);
+  const [isEditing, setIsEditing] = useState(false);
+  const [editData, setEditData] = useState({ title, story, lesson, tags: [], imageUrl: imageUrl });
+  const [isSaving, setIsSaving] = useState(false);
+  const [formattedTime, setFormattedTime] = useState<string>("");
+
+  useEffect(() => {
+    setFormattedTime(new Date(time).toLocaleTimeString("ar-SA", { hour: '2-digit', minute: '2-digit' }));
+  }, [time]);
+  
+  useEffect(() => {
+    const handleFollowUpdate = (e: any) => {
+      if (e.detail.userId === user.id) {
+        setIsFollowing(e.detail.isFollowing);
+      }
+    };
+    window.addEventListener('user-follow-updated', handleFollowUpdate);
+    return () => window.removeEventListener('user-follow-updated', handleFollowUpdate);
+  }, [user.id]);
   const [isExpanded, setIsExpanded] = useState(false);
   const isOwner = session?.user?.id === user.id;
 
@@ -56,25 +74,34 @@ export function PostCard({ id, user, time, title, story, lesson, imageUrl, helpf
   const displayStory = isExpanded || !isLongStory ? story : story.substring(0, 280) + "...";
 
   const handleHelpful = async () => {
-    if (!session) return toast.error("يجب تسجيل الدخول للإستفادة");
-    setReacted(!reacted);
-    setCount(prev => reacted ? prev - 1 : prev + 1);
+    if (!session) return toast.error("يجب تسجيل الدخول للإعجاب");
+    
+    // Optimistic Update
+    const prevReacted = reacted;
+    const prevCount = count;
+    setReacted(!prevReacted);
+    setCount(prevReacted ? prevCount - 1 : prevCount + 1);
+
     const res = await toggleHelpful(id);
     if (!res.success) {
-      setReacted(reacted);
-      setCount(count);
+      setReacted(prevReacted);
+      setCount(prevCount);
       toast.error("حدث خطأ");
     }
   };
 
   const handleSave = async () => {
     if (!session) return toast.error("يجب تسجيل الدخول لحفظ المنشور");
-    setSaved(!saved);
+    
+    // Optimistic Update
+    const prevSaved = saved;
+    setSaved(!prevSaved);
+
     const res = await toggleSave(id);
     if (res.success) {
       toast.success(res.saved ? "تم الحفظ" : "تمت الإزالة من المحفوظات");
     } else {
-      setSaved(!saved);
+      setSaved(prevSaved);
       toast.error("حدث خطأ");
     }
   };
@@ -130,12 +157,36 @@ export function PostCard({ id, user, time, title, story, lesson, imageUrl, helpf
     }
   };
 
+  const handleSaveEdit = async () => {
+    setIsSaving(true);
+    const res = await editPost(id, editData);
+    if (res.success) {
+      toast.success("تم تحديث المنشور");
+      setIsEditing(false);
+      window.location.reload();
+    } else {
+      toast.error(res.error || "فشل التحديث");
+    }
+    setIsSaving(false);
+  };
+
   const handleFollow = async () => {
     if (!session) return toast.error("يجب تسجيل الدخول للمتابعة");
+    if (isOwner) return;
+
+    // Optimistic Update
+    const prevFollowing = isFollowing;
+    setIsFollowing(!prevFollowing);
+
     const res = await toggleFollow(user.id);
     if (res.success) {
-      setIsFollowing(!isFollowing);
-      toast.success(isFollowing ? "تم إلغاء المتابعة" : "تمت المتابعة");
+      window.dispatchEvent(new CustomEvent('user-follow-updated', { 
+        detail: { userId: user.id, isFollowing: res.followed } 
+      }));
+      toast.success(res.followed ? "تمت المتابعة" : "تم إلغاء المتابعة");
+    } else {
+      setIsFollowing(prevFollowing);
+      toast.error(res.error || "حدث خطأ");
     }
   };
 
@@ -167,9 +218,8 @@ export function PostCard({ id, user, time, title, story, lesson, imageUrl, helpf
               {user.name}
             </Link>
             <div className="flex items-center gap-2 text-[11px] text-muted-foreground font-bold">
-              <span className="opacity-70">@{user.handle}</span>
               <span className="w-1 h-1 rounded-full bg-muted-foreground/20" />
-              <span>{time}</span>
+              <span>{formattedTime}</span>
             </div>
           </div>
         </div>
@@ -198,10 +248,13 @@ export function PostCard({ id, user, time, title, story, lesson, imageUrl, helpf
             <DropdownMenuContent align="end" className="w-[180px] p-2 rounded-2xl border-border/50 bg-card/95 backdrop-blur-lg shadow-2xl font-tajawal animate-in zoom-in-95">
               {isOwner ? (
                 <>
-                  <DropdownMenuItem onClick={() => toast.info("قريباً...")} className="flex items-center gap-3 p-3 rounded-xl cursor-pointer hover:bg-primary/5">
-                    <Edit2 className="w-4 h-4 text-primary" />
-                    <span className="text-sm font-bold">تعديل</span>
-                  </DropdownMenuItem>
+                  <DropdownMenuItem 
+                      onClick={() => setIsEditing(true)}
+                      className="flex items-center gap-3 p-3 rounded-xl cursor-pointer hover:bg-primary/5 transition-colors focus:bg-primary/5"
+                    >
+                      <Edit2 className="w-4 h-4 text-primary" />
+                      <span className="text-sm font-bold">تعديل المنشور</span>
+                    </DropdownMenuItem>
                   <DropdownMenuItem onClick={handleDelete} className="flex items-center gap-3 p-3 rounded-xl cursor-pointer hover:bg-red-500/5 text-red-500">
                     <Trash2 className="w-4 h-4" />
                     <span className="text-sm font-bold">حذف</span>
@@ -218,50 +271,100 @@ export function PostCard({ id, user, time, title, story, lesson, imageUrl, helpf
         </div>
       </div>
 
-      <div className="p-6 pt-5 space-y-5 relative z-10">
-        <Link href={`/p/${id}`}>
-          <h3 className="font-black text-2xl leading-tight text-foreground hover:text-primary transition-colors cursor-pointer decoration-primary/30 underline-offset-8 group-hover:underline">{title}</h3>
-        </Link>
-        <div>
-          <p className="text-[16px] text-foreground/80 leading-relaxed whitespace-pre-wrap font-medium">
-            {displayStory}
-          </p>
-          {isLongStory && (
-            <button 
-              onClick={() => setIsExpanded(!isExpanded)}
-              className="text-primary text-xs font-black mt-3 hover:underline flex items-center gap-1"
-            >
-              <span>{isExpanded ? "عرض أقل" : "إقرأ المزيد"}</span>
-              <Plus className={cn("w-3 h-3 transition-transform", isExpanded && "rotate-45")} />
-            </button>
-          )}
-        </div>
-        
-        {imageUrl && (
-          <div className="relative aspect-[16/9] w-full overflow-hidden rounded-[2.5rem] border border-border/40 shadow-xl shadow-black/5 mt-4 group/image">
-             <NextImage 
-               src={imageUrl} 
-               alt={title} 
-               fill
-               className="object-cover transition-transform duration-1000 group-hover/image:scale-110" 
-               sizes="(max-width: 768px) 100vw, 800px"
-             />
-             <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent pointer-events-none" />
+      <div className="p-4 sm:p-5 space-y-4">
+        {isEditing ? (
+          <div className="space-y-4 animate-in fade-in duration-300">
+            <div className="space-y-2">
+              <label className="text-[10px] font-black text-muted-foreground uppercase tracking-widest mr-1">عنوان القصة</label>
+              <Input 
+                value={editData.title}
+                onChange={(e) => setEditData({ ...editData, title: e.target.value })}
+                className="h-12 rounded-xl bg-muted/40 border-border focus:bg-muted/60 transition-all font-bold"
+              />
+            </div>
+            <div className="space-y-2">
+              <label className="text-[10px] font-black text-muted-foreground uppercase tracking-widest mr-1">القصة (التفاصيل)</label>
+              <textarea 
+                value={editData.story}
+                onChange={(e) => setEditData({ ...editData, story: e.target.value })}
+                className="w-full min-h-[150px] p-4 rounded-xl bg-muted/40 border border-border focus:bg-muted/60 transition-all font-medium text-sm outline-none resize-none"
+              />
+            </div>
+            <div className="space-y-2">
+              <label className="text-[10px] font-black text-muted-foreground uppercase tracking-widest mr-1">الحكمة المستخلصة</label>
+              <Input 
+                value={editData.lesson}
+                onChange={(e) => setEditData({ ...editData, lesson: e.target.value })}
+                className="h-12 rounded-xl bg-muted/40 border-border focus:bg-muted/60 transition-all font-bold text-primary"
+              />
+            </div>
+            <div className="flex gap-2 pt-2">
+              <Button 
+                onClick={handleSaveEdit} 
+                className="flex-1 rounded-xl font-black h-11"
+                disabled={isSaving}
+              >
+                {isSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : "حفظ التعديلات"}
+              </Button>
+              <Button 
+                variant="outline" 
+                onClick={() => setIsEditing(false)} 
+                className="flex-1 rounded-xl font-black h-11 border-border"
+                disabled={isSaving}
+              >
+                إلغاء
+              </Button>
+            </div>
+          </div>
+        ) : (
+          <div className="space-y-5">
+            <Link href={`/post/${id}`}>
+              <h3 className="font-black text-2xl leading-tight text-foreground hover:text-primary transition-colors cursor-pointer break-words overflow-hidden decoration-primary/30 underline-offset-8 group-hover:underline">
+                {title}
+              </h3>
+            </Link>
+            <div>
+              <p className="text-[16px] text-foreground/80 leading-relaxed whitespace-pre-wrap font-medium break-words">
+                {displayStory}
+              </p>
+              {isLongStory && (
+                <button 
+                  onClick={() => setIsExpanded(!isExpanded)}
+                  className="text-primary text-xs font-black mt-3 hover:underline flex items-center gap-1"
+                >
+                  <span>{isExpanded ? "عرض أقل" : "إقرأ المزيد"}</span>
+                  <Plus className={cn("w-3 h-3 transition-transform", isExpanded && "rotate-45")} />
+                </button>
+              )}
+            </div>
+            
+            {imageUrl && (
+              <div className="relative aspect-[16/9] w-full overflow-hidden rounded-2xl sm:rounded-[2.5rem] border border-border/40 shadow-xl shadow-black/5 mt-4 group/image">
+                 <NextImage 
+                   src={imageUrl} 
+                   alt={title} 
+                   fill
+                   className="object-cover transition-transform duration-1000 group-hover/image:scale-110" 
+                   sizes="(max-width: 768px) 100vw, 800px"
+                 />
+                 <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent pointer-events-none" />
+              </div>
+            )}
+
+            <div className="p-4 sm:p-7 rounded-xl sm:rounded-[2.5rem] bg-primary/5 border border-primary/10 relative group/lesson overflow-hidden shadow-inner backdrop-blur-sm mt-4">
+               {/* Decorative element */}
+               <div className="absolute top-0 right-0 w-24 h-24 bg-primary/5 rounded-full blur-3xl -mr-12 -mt-12 group-hover/lesson:bg-primary/10 transition-colors" />
+               
+               <div className="flex items-center gap-2 text-primary font-black text-xs uppercase tracking-widest mb-4 relative z-10">
+                 <Lightbulb className="w-4 h-4 fill-primary/20" />
+                 <span>الحكمة المستخلصة</span>
+               </div>
+               <p className="text-[17px] leading-[1.8] text-foreground font-black italic relative z-10 border-r-4 border-primary/40 pr-5">
+                 "{lesson}"
+               </p>
+            </div>
           </div>
         )}
-
-        <div className="p-7 rounded-[2.5rem] bg-primary/5 border border-primary/10 relative group/lesson overflow-hidden shadow-inner backdrop-blur-sm mt-4">
-           {/* Decorative element */}
-           <div className="absolute top-0 right-0 w-24 h-24 bg-primary/5 rounded-full blur-3xl -mr-12 -mt-12 group-hover/lesson:bg-primary/10 transition-colors" />
-           
-           <div className="flex items-center gap-2 text-primary font-black text-xs uppercase tracking-widest mb-4 relative z-10">
-             <Lightbulb className="w-4 h-4 fill-primary/20" />
-             <span>الحكمة المستخلصة</span>
-           </div>
-           <p className="text-[17px] leading-[1.8] text-foreground font-black italic relative z-10 border-r-4 border-primary/40 pr-5">
-             "{lesson}"
-           </p>
-        </div>
 
         <div className="flex items-center justify-between pt-6 border-t border-border/20">
           <div className="flex items-center gap-3">
@@ -317,7 +420,33 @@ export function PostCard({ id, user, time, title, story, lesson, imageUrl, helpf
         </div>
       </div>
 
-      {/* Comments Section */}
+      {/* Persistent Comment Input - Always Visible */}
+      <div className="px-6 py-4 border-t border-border/10 bg-muted/5">
+        <form onSubmit={handleAddComment} className="flex gap-3 items-center">
+          <Avatar className="w-8 h-8 shrink-0 border border-border/50">
+            <AvatarImage src={session?.user?.image || ""} />
+            <AvatarFallback className="text-[10px]">{session?.user?.name?.[0] || '?'}</AvatarFallback>
+          </Avatar>
+          <div className="flex-1 relative group">
+            <Input 
+              value={newComment}
+              onChange={(e) => setNewComment(e.target.value)}
+              placeholder="اكتب تعليقك هنا..."
+              className="rounded-2xl h-10 bg-background border-border/40 text-sm focus:ring-primary/20 pr-10 transition-all hover:border-primary/30"
+            />
+            <Button 
+              type="submit" 
+              disabled={loadingComments || !newComment.trim()} 
+              size="icon" 
+              className="absolute left-1 top-1 h-8 w-8 rounded-xl bg-primary hover:scale-105 transition-transform shadow-lg shadow-primary/20"
+            >
+              <Send className="w-4 h-4" />
+            </Button>
+          </div>
+        </form>
+      </div>
+
+      {/* Comments View Section */}
       {showComments && (
         <div className="bg-muted/10 px-6 py-8 border-t border-border/20 space-y-8 animate-in slide-in-from-top-4 duration-500">
            {/* Threaded Comments List */}

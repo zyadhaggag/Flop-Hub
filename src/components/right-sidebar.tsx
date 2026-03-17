@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { TrendingUp, Users, UserPlus } from "lucide-react";
 import { toggleFollow } from "@/lib/actions";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { toast } from "sonner";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
@@ -12,17 +12,31 @@ import { cn } from "@/lib/utils";
 export function RightSidebar({ suggestedUsers = [], trendingLessons = [], className }: { suggestedUsers?: any[], trendingLessons?: any[], className?: string }) {
   const [users, setUsers] = useState(suggestedUsers);
 
+  useEffect(() => {
+    const handleFollowUpdate = (e: any) => {
+      setUsers((prev: any) => prev.map((u: any) => 
+        u.id === e.detail.userId ? { ...u, is_followed: e.detail.isFollowing } : u
+      ));
+    };
+    window.addEventListener('user-follow-updated', handleFollowUpdate);
+    return () => window.removeEventListener('user-follow-updated', handleFollowUpdate);
+  }, []);
+
   const handleFollow = async (userId: string) => {
     // Optimistic update
+    const prevIsFollowed = users.find(u => u.id === userId)?.is_followed;
     setUsers(prev => prev.map(u => u.id === userId ? { ...u, is_followed: !u.is_followed } : u));
     
     const res = await toggleFollow(userId);
-    if (!res.success) {
+    if (res.success) {
+      window.dispatchEvent(new CustomEvent('user-follow-updated', { 
+        detail: { userId, isFollowing: !prevIsFollowed } 
+      }));
+      toast.success(res.followed ? "تمت المتابعة" : "تم إلغاء المتابعة");
+    } else {
       toast.error(res.error || "خطأ");
       // Revert on failure
       setUsers(prev => prev.map(u => u.id === userId ? { ...u, is_followed: !u.is_followed } : u));
-    } else {
-      toast.success(res.followed ? "تمت المتابعة" : "تم إلغاء المتابعة");
     }
   };
 

@@ -8,12 +8,16 @@ declare module "next-auth" {
     user: {
       id: string;
       username?: string | null;
+      bio?: string | null;
+      banner_url?: string | null;
     } & DefaultSession["user"]
   }
 
   interface User {
     id: string;
     username?: string | null;
+    bio?: string | null;
+    banner_url?: string | null;
   }
 }
 
@@ -21,6 +25,8 @@ declare module "next-auth/jwt" {
   interface JWT {
     id: string;
     username?: string | null;
+    bio?: string | null;
+    banner_url?: string | null;
   }
 }
 
@@ -43,7 +49,7 @@ export const authOptions: NextAuthOptions = {
         
         try {
           const users = await sql`
-            SELECT id, email, name, password, image_url, username 
+            SELECT id, email, name, password, image_url, username, banner_url, bio
             FROM users 
             WHERE email = ${credentials.email}
           `;
@@ -58,6 +64,8 @@ export const authOptions: NextAuthOptions = {
             email: user.email,
             image: user.image_url,
             username: user.username,
+            banner_url: user.banner_url,
+            bio: user.bio,
           };
         } catch (error) {
           console.error("Auth error:", error);
@@ -76,7 +84,7 @@ export const authOptions: NextAuthOptions = {
         
         try {
           // Check if user exists
-          const existingUsers = await sql`SELECT id, username FROM users WHERE email = ${user.email}`;
+          const existingUsers = await sql`SELECT id, username, banner_url, bio FROM users WHERE email = ${user.email}`;
           
           if (existingUsers.length === 0) {
             // Create user for first time
@@ -100,6 +108,8 @@ export const authOptions: NextAuthOptions = {
           } else {
             user.id = existingUsers[0].id.toString();
             user.username = existingUsers[0].username;
+            user.banner_url = existingUsers[0].banner_url;
+            user.bio = existingUsers[0].bio;
           }
           return true;
         } catch (error) {
@@ -115,6 +125,8 @@ export const authOptions: NextAuthOptions = {
         token.username = user.username;
         token.name = user.name;
         token.picture = user.image;
+        token.banner_url = user.banner_url;
+        token.bio = user.bio;
       }
       
       // Handle session update
@@ -122,6 +134,8 @@ export const authOptions: NextAuthOptions = {
         if (session.username) token.username = session.username;
         if (session.name) token.name = session.name;
         if (session.image) token.picture = session.image;
+        if (session.banner_url) token.banner_url = session.banner_url;
+        if (session.bio) token.bio = session.bio;
       }
       
       return token;
@@ -132,6 +146,8 @@ export const authOptions: NextAuthOptions = {
         session.user.username = token.username;
         session.user.name = token.name;
         session.user.image = token.picture as string;
+        session.user.banner_url = token.banner_url;
+        session.user.bio = token.bio;
       }
       return session;
     },

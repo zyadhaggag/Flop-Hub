@@ -24,6 +24,17 @@ export async function createPost(input: PostInput) {
     const validated = postSchema.parse(input);
     const imageUrl = validated.imageUrl && validated.imageUrl.trim() !== "" ? validated.imageUrl : null;
     
+    // Check daily limit (3 posts per day)
+    const dailyCount = await sql`
+      SELECT COUNT(*) as count FROM posts 
+      WHERE user_id = ${session.user.id} 
+      AND created_at > NOW() - INTERVAL '24 hours'
+    `;
+    
+    if (parseInt(dailyCount[0].count) >= 3) {
+      return { success: false, error: "عذراً، يمكنك نشر 3 قصص فقط في اليوم الواحد." };
+    }
+
     const result = await sql`
       INSERT INTO posts (user_id, title, story, lesson, image_url)
       VALUES (${session.user.id}, ${validated.title}, ${validated.story}, ${validated.lesson}, ${imageUrl})
@@ -66,7 +77,7 @@ export async function editPost(postId: string, input: PostInput) {
   }
 }
 
-export async function getPosts(sort: 'latest' | 'trending' = 'latest') {
+export async function getPosts(sort: 'latest' | 'trending' = 'latest', limit: number = 5, offset: number = 0) {
   const session = await getServerSession(authOptions);
   const currentUserId = session?.user?.id;
 
@@ -75,6 +86,7 @@ export async function getPosts(sort: 'latest' | 'trending' = 'latest') {
       SELECT 
         p.*, 
         u.username, 
+        u.name,
         u.image_url as avatar_url,
         (SELECT COUNT(*) FROM reactions r WHERE r.post_id = p.id) as helpful_count,
         (SELECT COUNT(*) FROM comments c WHERE c.post_id = p.id) as comments_count,
@@ -84,7 +96,7 @@ export async function getPosts(sort: 'latest' | 'trending' = 'latest') {
       FROM posts p
       JOIN users u ON p.user_id = u.id
       ORDER BY ${sort === 'trending' ? sql`helpful_count DESC, p.created_at DESC` : sql`p.created_at DESC`}
-      LIMIT 20
+      LIMIT ${limit} OFFSET ${offset}
     `;
     return posts;
   } catch (error) {
@@ -315,35 +327,40 @@ export async function register(formData: any) {
   }
 }
 
-export async function updateProfile(data: { name?: string, username?: string, bio?: string, image_url?: string }) {
+export async function updateProfile(data: { name?: string, username?: string, bio?: string, image_url?: string, banner_url?: string }) {
   const session = await getServerSession(authOptions);
   if (!session?.user?.id) return { success: false, error: "يجب تسجيل الدخول" };
 
   try {
-    const current = await sql`SELECT name, username, bio, image_url FROM users WHERE id = ${session.user.id}`;
+    const current = await sql`SELECT name, username, bio, image_url, banner_url FROM users WHERE id = ${session.user.id}`;
     if (current.length === 0) return { success: false, error: "المستخدم غير موجود" };
 
     const name = data.name !== undefined ? data.name : current[0].name;
-    const username = data.username !== undefined ? data.username : current[0].username;
+    let username = data.username !== undefined ? data.username.trim().toLowerCase() : current[0].username;
     const bio = data.bio !== undefined ? data.bio : current[0].bio;
     const image_url = data.image_url !== undefined ? data.image_url : current[0].image_url;
+    const banner_url = data.banner_url !== undefined ? data.banner_url : current[0].banner_url;
+
+    // Sanitize username
+    username = username.replace(/[^a-z0-9_]/g, "");
 
     // Check username availability if changed
     if (username !== current[0].username) {
+      if (username.length < 3) return { success: false, error: "اسم المستخدم يجب أن يكون 3 أحرف على الأقل" };
       const existing = await sql`SELECT id FROM users WHERE username = ${username} AND id != ${session.user.id}`;
       if (existing.length > 0) return { success: false, error: "اسم المستخدم مأخوذ بالفعل" };
     }
 
     await sql`
       UPDATE users 
-      SET name = ${name}, username = ${username}, bio = ${bio}, image_url = ${image_url}
+      SET name = ${name}, username = ${username}, bio = ${bio}, image_url = ${image_url}, banner_url = ${banner_url}
       WHERE id = ${session.user.id}
     `;
     
     await revalidateHome();
     revalidatePath(`/u/${username}`);
     revalidatePath('/settings');
-    return { success: true };
+    return { success: true, user: { name, username, bio } };
   } catch (error: any) {
     console.error("UpdateProfile Error:", error);
     return { success: false, error: "حدث خطأ أثناء تحديث الملف الشخصي" };

@@ -11,19 +11,35 @@ import { getSuggestedUsers, getTrendingLessons } from "@/lib/actions";
 import { notFound } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { EditProfileModal } from "@/components/edit-profile-modal";
+import { ProfileFollowButton } from "@/components/profile-follow-button";
+import { ArrowLeft, ChevronLeft } from "lucide-react";
+import Link from "next/link";
 
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/lib/auth";
+import { Metadata } from "next";
+
+export async function generateMetadata({ params }: { params: { username: string } }): Promise<Metadata> {
+  const { username: rawUsername } = await params;
+  const username = decodeURIComponent(rawUsername).trim();
+  const users = await sql`SELECT name, username FROM users WHERE LOWER(TRIM(username)) = LOWER(TRIM(${username}))`;
+  if (users.length === 0) return { title: "User Not Found | FlopHub" };
+  const user = users[0];
+  return {
+    title: `${user.name || user.username} (@${user.username}) | FlopHub`,
+  };
+}
 
 export default async function ProfilePage({ params }: { params: { username: string } }) {
-  const { username } = await params;
+  const { username: rawUsername } = await params;
+  const username = decodeURIComponent(rawUsername).trim();
   const session = await getServerSession(authOptions);
 
   // Fetch real user data
   const users = await sql`
-    SELECT id, username, name, email, bio, image_url, created_at
+    SELECT id, username, name, email, bio, image_url, banner_url, created_at
     FROM users 
-    WHERE username = ${username}
+    WHERE LOWER(TRIM(username)) = LOWER(TRIM(${username}))
   `;
 
   if (users.length === 0) {
@@ -62,17 +78,33 @@ export default async function ProfilePage({ params }: { params: { username: stri
   const userInitial = user.name ? user.name[0] : (user.username ? user.username[0] : "?");
 
   return (
-    <div className="min-h-screen flex flex-col bg-background text-foreground">
+    <div className="min-h-screen flex flex-col bg-background text-foreground" dir="rtl">
       <Navbar />
       
-      <main className="flex-1 max-w-7xl mx-auto w-full flex gap-4 p-4 md:p-6 lg:p-8" dir="rtl">
-        <Sidebar />
+      <main className="flex-1 max-w-7xl mx-auto w-full flex gap-4 p-4 md:p-6 lg:p-8">
+        <Sidebar className="hidden md:flex shrink-0 w-64" />
 
-        <div className="flex-1 space-y-6 max-w-2xl">
+        <div className="flex-1 space-y-6 w-full max-w-4xl mx-auto">
           {/* Cover & Profile Header */}
           <div className="relative bg-card rounded-[2.5rem] border border-border shadow-sm overflow-hidden group">
-            <div className="h-44 bg-gradient-to-br from-primary/20 via-violet-500/10 to-transparent relative">
+            <div 
+              className={cn(
+                "h-44 relative transition-all duration-700",
+                !user.banner_url && "bg-gradient-to-br from-primary/20 via-violet-500/10 to-transparent"
+              )}
+              style={user.banner_url ? { 
+                backgroundImage: user.banner_url.startsWith('preset-') 
+                  ? undefined 
+                  : `url(${user.banner_url})`,
+                backgroundSize: 'cover',
+                backgroundPosition: 'center'
+              } : {}}
+            >
+               {user.banner_url?.startsWith('preset-') && (
+                 <div className={cn("absolute inset-0 transition-opacity", user.banner_url.replace('preset-', 'banner-'))} />
+               )}
                <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')] opacity-10" />
+               <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
             </div>
             <div className="px-8 pb-8 relative">
               <div className="absolute -top-16 right-8">
@@ -87,17 +119,14 @@ export default async function ProfilePage({ params }: { params: { username: stri
               <div className="flex justify-between items-start pt-6 mb-6">
                  <div /> {/* Spacer */}
                  {isOwnProfile ? (
-                   <EditProfileModal user={{ name: user.name, bio: user.bio, image_url: user.image_url }} />
+                   <Link href="/settings">
+                     <Button variant="outline" className="rounded-full font-black border-2 hover:bg-primary/5 hover:text-primary transition-all gap-2">
+                       <Settings className="w-4 h-4" />
+                       تعديل الملف الشخصي
+                     </Button>
+                   </Link>
                  ) : (
-                   <Button 
-                    className={cn(
-                      "rounded-2xl gap-2 font-black h-11 px-8 transition-all shadow-lg",
-                      isFollowing ? "bg-muted text-muted-foreground hover:bg-red-500/10 hover:text-red-500 border-border" : "bg-primary text-white shadow-primary/20 hover:shadow-primary/40"
-                    )}
-                   >
-                      {isFollowing ? <UserMinus className="w-4 h-4" /> : <UserPlus className="w-4 h-4" />}
-                      {isFollowing ? "إلغاء المتابعة" : "متابعة"}
-                   </Button>
+                   <ProfileFollowButton userId={user.id} initialIsFollowing={isFollowing} />
                  )}
               </div>
 
@@ -124,15 +153,15 @@ export default async function ProfilePage({ params }: { params: { username: stri
 
                 <div className="flex items-center gap-10 pt-4">
                    <div className="flex flex-col">
-                      <span className="font-black text-2xl text-foreground font-tajawal tracking-tight">{followersCount[0].count}</span>
+                      <span className="font-black text-2xl text-foreground font-tajawal tracking-tight">{(followersCount[0] as any)?.count || 0}</span>
                       <span className="text-[10px] text-muted-foreground uppercase tracking-widest font-bold">متابع</span>
                    </div>
                    <div className="flex flex-col">
-                      <span className="font-black text-2xl text-foreground font-tajawal tracking-tight">{followingCount[0].count}</span>
+                      <span className="font-black text-2xl text-foreground font-tajawal tracking-tight">{(followingCount[0] as any)?.count || 0}</span>
                       <span className="text-[10px] text-muted-foreground uppercase tracking-widest font-bold">يتابع</span>
                    </div>
                    <div className="flex flex-col">
-                      <span className="font-black text-2xl text-foreground font-tajawal tracking-tight">{postCount[0].count}</span>
+                      <span className="font-black text-2xl text-foreground font-tajawal tracking-tight">{(postCount[0] as any)?.count || 0}</span>
                       <span className="text-[10px] text-muted-foreground uppercase tracking-widest font-bold">منشور</span>
                    </div>
                 </div>
@@ -140,61 +169,40 @@ export default async function ProfilePage({ params }: { params: { username: stri
             </div>
           </div>
 
-          {/* Profile Content Tabs */}
+          {/* Profile Content - Posts Only */}
           <div className="bg-card rounded-[2.5rem] border border-border overflow-hidden">
-            <Tabs defaultValue="posts" className="w-full">
-              <div className="px-8 pt-6 border-b border-border/50">
-                <TabsList className="bg-transparent h-auto p-0 gap-8 border-none justify-start">
-                  <TabsTrigger 
-                    value="posts" 
-                    className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none px-1 pb-4 pt-0 font-black text-sm transition-all"
-                  >
-                    المنشورات
-                  </TabsTrigger>
-                  <TabsTrigger 
-                    value="lessons" 
-                    className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none px-1 pb-4 pt-0 font-black text-sm transition-all"
-                  >
-                    الدروس المستفادة
-                  </TabsTrigger>
-                </TabsList>
-              </div>
-              
-              <div className="p-6">
-                <TabsContent value="posts" className="space-y-6 mt-0 outline-none">
-                  {posts.length > 0 ? (
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      {posts.map((post: any) => (
-                        <PostCard 
-                          key={post.id}
-                          id={post.id}
-                          user={{ id: user.id, name: user.name || user.username, handle: user.username, avatar: user.image_url }}
-                          time={new Date(post.created_at).toLocaleDateString("ar-SA", { day: 'numeric', month: 'short' })}
-                          title={post.title}
-                          story={post.story}
-                          lesson={post.lesson}
-                          imageUrl={post.image_url}
-                          helpfulCount={parseInt(post.helpful_count)}
-                          commentsCount={parseInt(post.comments_count)}
-                          hasReacted={post.has_reacted}
-                          isSaved={post.is_saved}
-                        />
-                      ))}
-                    </div>
-                  ) : (
-                    <div className="text-center py-20 bg-muted/10 rounded-[2rem] border border-dashed border-border/50 text-muted-foreground">
-                      <div className="text-5xl mb-4 opacity-20">📭</div>
-                      <p className="font-bold text-lg">لا توجد منشورات حتى الآن.</p>
-                    </div>
-                  )}
-                </TabsContent>
-                
-                <TabsContent value="lessons" className="space-y-6 mt-0 outline-none">
-                   {/* Similar grid for lessons if needed, or just filtered posts */}
-                   <div className="text-center py-20 text-muted-foreground">قريباً...</div>
-                </TabsContent>
-              </div>
-            </Tabs>
+            <div className="px-8 pt-8 pb-4 border-b border-border/50">
+              <h2 className="text-xl font-black font-tajawal">المنشورات</h2>
+            </div>
+            
+            <div className="p-6">
+              {posts.length > 0 ? (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 gap-3">
+                  {posts.map((post: any) => (
+                    <Link key={post.id} href={`/post/${post.id}`}>
+                      <div className="group bg-card/60 hover:bg-primary/5 border border-border/50 hover:border-primary/30 p-5 rounded-[1.5rem] transition-all duration-300 flex items-center justify-between shadow-sm hover:shadow-md">
+                        <div className="flex flex-col gap-1">
+                          <h3 className="text-base font-black group-hover:text-primary transition-colors line-clamp-1">{post.title}</h3>
+                          <span className="text-[10px] text-muted-foreground font-bold uppercase tracking-wider">
+                            {new Date(post.created_at).toLocaleDateString("ar-SA", { day: 'numeric', month: 'long', year: 'numeric' })}
+                          </span>
+                        </div>
+                        <div className="w-8 h-8 rounded-full bg-muted/50 flex items-center justify-center group-hover:bg-primary group-hover:text-white transition-all">
+                          <ChevronLeft className="w-4 h-4" />
+                        </div>
+                      </div>
+                    </Link>
+                  ))}
+                </div>
+                </div>
+              ) : (
+                <div className="text-center py-20 bg-muted/10 rounded-[2rem] border border-dashed border-border/50 text-muted-foreground">
+                  <div className="text-5xl mb-4 opacity-20">📭</div>
+                  <p className="font-bold text-lg">لا توجد منشورات حتى الآن.</p>
+                </div>
+              )}
+            </div>
           </div>
         </div>
 

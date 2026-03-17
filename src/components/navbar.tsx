@@ -72,7 +72,7 @@ export function Navbar() {
 
       {/* Mobile Menu Overlay */}
       {isMenuOpen && (
-        <div className="md:hidden fixed inset-0 z-50 bg-background/95 backdrop-blur-md animate-in fade-in slide-in-from-top-4 duration-300">
+        <div className="md:hidden fixed inset-0 z-50 bg-background/98 backdrop-blur-2xl animate-in fade-in slide-in-from-top-4 duration-300">
           <div className="flex flex-col p-6 h-full">
             <div className="flex items-center justify-between mb-8">
               <Link href="/" onClick={() => setIsMenuOpen(false)} className="flex items-center gap-3">

@@ -45,7 +45,7 @@ export default function LoginPage() {
   return (
     <div className="h-screen overflow-hidden flex dir-rtl bg-background dark text-foreground">
       {/* Right Side: Form */}
-      <div className="flex-1 flex flex-col items-center justify-center p-8 bg-background overflow-y-auto custom-scrollbar h-full">
+      <div className="flex-1 flex flex-col items-center justify-center p-8 bg-background h-full overflow-hidden">
         <div className="w-full max-w-md space-y-8">
           <div className="text-center space-y-2">
             <h1 className="text-4xl font-black tracking-tight text-white">مرحباً بعودتك</h1>
@@ -137,31 +137,31 @@ export default function LoginPage() {
            <div className="absolute bottom-20 left-10 w-[400px] h-[400px] bg-indigo-200 rounded-full blur-[100px]" />
         </div>
 
-        <div className="relative z-10 w-full max-w-lg space-y-16">
+        <div className="relative z-10 w-full max-w-lg space-y-10">
           <div className="space-y-6">
             <div className="flex items-center gap-5">
-              <div className="w-20 h-20 bg-white rounded-3xl flex items-center justify-center shadow-2xl rotate-3 hover:rotate-0 transition-transform duration-500">
-                 <span className="text-primary font-black text-5xl italic font-serif">F</span>
+              <div className="w-16 h-16 bg-white rounded-2xl flex items-center justify-center shadow-2xl rotate-3 hover:rotate-0 transition-transform duration-500">
+                 <span className="text-primary font-black text-4xl italic font-serif">F</span>
               </div>
               <div className="flex flex-col">
-                <span className="text-5xl font-black tracking-tighter">FlopHub</span>
-                <span className="text-xl opacity-80 font-bold tracking-widest uppercase">الفشل بداية التعلم</span>
+                <span className="text-4xl font-black tracking-tighter">FlopHub</span>
+                <span className="text-lg opacity-80 font-bold tracking-widest uppercase">الفشل بداية التعلم</span>
               </div>
             </div>
             
-            <div className="inline-flex items-center gap-3 bg-white/10 px-6 py-2.5 rounded-full border border-white/20 backdrop-blur-xl shadow-xl">
-               <Lightbulb className="w-5 h-5 text-yellow-300 fill-yellow-300/30" />
-               <span className="text-sm font-black tracking-tight uppercase">المكان الوحيد للاحتفاء بالفشل 💡</span>
+            <div className="inline-flex items-center gap-3 bg-white/10 px-5 py-2 rounded-full border border-white/20 backdrop-blur-xl shadow-xl">
+               <Lightbulb className="w-4 h-4 text-yellow-300 fill-yellow-300/30" />
+               <span className="text-xs font-black tracking-tight uppercase">المكان الوحيد للاحتفاء بالفشل 💡</span>
             </div>
           </div>
 
-          <div className="space-y-8">
-            <h2 className="text-7xl font-black leading-[1.1] tracking-tight">
+          <div className="space-y-6">
+            <h2 className="text-5xl font-black leading-[1.1] tracking-tight">
               حول <span className="text-transparent bg-clip-text bg-gradient-to-l from-white to-gray-400 underline underline-offset-[12px] decoration-white/30">تعثرك</span>
               <br />
               إلى درس ذهبي.
             </h2>
-            <p className="text-2xl opacity-80 leading-relaxed font-bold max-w-md italic">
+            <p className="text-lg opacity-80 leading-relaxed font-bold max-w-md italic">
               "الناجحون هم من فشلوا كثيراً ولم يستسلموا أبداً. نحن هنا لنروي تلك الحكايا."
             </p>
           </div>
