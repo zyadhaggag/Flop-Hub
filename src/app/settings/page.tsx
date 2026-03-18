@@ -9,13 +9,15 @@ import { useState, useEffect } from "react";
 import { updateUsername, updateProfile, updatePassword, deleteAccount } from "@/lib/actions";
 import { uploadImage } from "@/lib/supabase";
 import { toast } from "sonner";
-import { Settings, User, Bell, Shield, Camera, Check, Loader2, Image as ImageIcon, Sliders, Globe, Plus, Trash2, X, Sun, Moon, MapPin } from "lucide-react";
+import { Settings, User, Bell, Shield, Camera, Check, Loader2, Image as ImageIcon, Sliders, Globe, Plus, Trash2, X, Sun, Moon, MapPin, Volume2, Eye, EyeOff, Lock, Unlock, Smartphone, Monitor, Wifi, WifiOff, Download, Upload, RefreshCw, Clock, Calendar, MessageSquare, Heart, Share2, Bookmark, TrendingUp, Users, Award, Zap, Target, Coffee, Brain, Music, Video, FileText, Archive, Trash, Mail, AlertTriangle } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { AvatarEditorModal } from "@/components/avatar-editor-modal";
 import { ProfileBannerSelector } from "@/components/profile-banner-selector";
 import { Textarea } from "@/components/ui/textarea";
 import { useTheme } from "next-themes";
 import { detectPlatform, getPlatformIcon, getPlatformLabel, SocialLink } from "@/lib/social-links";
+import { UnsavedChangesWarning } from "@/components/unsaved-changes-warning";
+import { useRouter } from "next/navigation";
 
 const BANNER_STYLES: Record<string, { backgroundImage: string; backgroundColor?: string; backgroundSize?: string }> = {
   'banner-1': { backgroundImage: 'linear-gradient(135deg, #6366f1 0%, #a855f7 50%, #ec4899 100%)' },
@@ -49,6 +51,7 @@ function getBannerStyle(banner: string | null): React.CSSProperties {
 
 export default function SettingsPage() {
   const { data: session, update } = useSession();
+  const router = useRouter();
   const [name, setName] = useState("");
   const [username, setUsername] = useState("");
   const [bio, setBio] = useState("");
@@ -58,6 +61,8 @@ export default function SettingsPage() {
   const [avatarLoading, setAvatarLoading] = useState(false);
   const [activeTab, setActiveTab] = useState("account");
   const [deleteConfirm, setDeleteConfirm] = useState("");
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+  const [showSaveWarning, setShowSaveWarning] = useState(false);
   
   // Social Links
   const [socialLinks, setSocialLinks] = useState<SocialLink[]>([]);
@@ -84,21 +89,99 @@ export default function SettingsPage() {
     }
   }, [session]);
 
+  // Track changes
+  useEffect(() => {
+    const originalName = session?.user?.name || "";
+    const originalUsername = session?.user?.username || "";
+    const originalBio = session?.user?.bio || "";
+    const originalBanner = session?.user?.banner_url || null;
+    
+    const hasChanges = 
+      name !== originalName ||
+      username !== originalUsername ||
+      bio !== originalBio ||
+      banner !== originalBanner ||
+      JSON.stringify(socialLinks) !== JSON.stringify(
+        session?.user?.social_links ? 
+          (typeof session.user.social_links === 'string' ? JSON.parse(session.user.social_links) : session.user.social_links) 
+          : []
+      );
+    
+    setHasUnsavedChanges(hasChanges);
+  }, [name, username, bio, banner, socialLinks, session]);
+
+  // Handle page navigation
+  useEffect(() => {
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      if (hasUnsavedChanges) {
+        e.preventDefault();
+        e.returnValue = '';
+      }
+    };
+
+    const handleRouteChange = () => {
+      if (hasUnsavedChanges) {
+        setShowSaveWarning(true);
+        return false;
+      }
+    };
+
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    
+    // Intercept navigation
+    const originalPush = router.push;
+    router.push = (...args) => {
+      if (hasUnsavedChanges) {
+        setShowSaveWarning(true);
+        return;
+      }
+      return originalPush(...args);
+    };
+
+    return () => {
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+      router.push = originalPush;
+    };
+  }, [hasUnsavedChanges, router]);
+
+  const handleSaveAndContinue = async () => {
+    await handleUpdateProfile(new Event('submit') as any);
+    setShowSaveWarning(false);
+  };
+
+  const handleDiscardAndContinue = () => {
+    setHasUnsavedChanges(false);
+    setShowSaveWarning(false);
+    // Reset to original values
+    if (session?.user) {
+      setName(session.user.name || "");
+      setUsername(session.user.username || "");
+      setBio(session.user.bio || "");
+      setBanner(session.user.banner_url || null);
+      const links = session.user.social_links ? 
+        (typeof session.user.social_links === 'string' ? JSON.parse(session.user.social_links) : session.user.social_links) 
+        : [];
+      setSocialLinks(links);
+    }
+  };
+
   const handleUpdateProfile = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     try {
-      const res = await updateProfile({ name, username, bio, social_links: socialLinks });
+      const res = await updateProfile({ name, username, bio, social_links: socialLinks, banner_url: banner || undefined });
       if (res.success && res.user) {
         await update({ 
           name: res.user.name, 
           username: res.user.username, 
           bio: res.user.bio,
+          banner_url: banner,
           social_links: socialLinks
         });
         setName(res.user.name);
         setUsername(res.user.username);
         setBio(res.user.bio);
+        setHasUnsavedChanges(false);
         toast.success("تم تحديث الملف الشخصي بنجاح");
       } else {
         toast.error(res.error || "حدث خطأ");
@@ -172,6 +255,7 @@ export default function SettingsPage() {
 
       if (res.success) {
         await update({ image: imageUrl });
+        setHasUnsavedChanges(true);
         toast.success("تم تحديث صورة الملف الشخصي بنجاح");
       } else {
         toast.error(res.error || "حدث خطأ");
@@ -186,13 +270,7 @@ export default function SettingsPage() {
 
   const handleBannerSelect = async (presetId: string) => {
     setBanner(presetId);
-    const res = await updateProfile({ banner_url: presetId });
-    if (res.success) {
-      await update({ banner_url: presetId });
-      toast.success("تم تحديث الغلاف بنجاح");
-    } else {
-      toast.error("فشل تحديث الغلاف");
-    }
+    setHasUnsavedChanges(true);
   };
   
   const handleDeleteAccount = async () => {
@@ -503,6 +581,13 @@ export default function SettingsPage() {
         image={tempAvatar}
         onSave={handleCropSave}
       />
+
+      <UnsavedChangesWarning 
+        open={showSaveWarning}
+        onOpenChange={setShowSaveWarning}
+        onSave={handleSaveAndContinue}
+        onDiscard={handleDiscardAndContinue}
+      />
     </div>
   );
 }
@@ -511,6 +596,27 @@ function GeneralSettings() {
   const { resolvedTheme, setTheme } = useTheme();
   const [notificationsOn, setNotificationsOn] = useState(true);
   const [showLocation, setShowLocation] = useState(false);
+  
+  // New general settings
+  const [soundEnabled, setSoundEnabled] = useState(true);
+  const [autoPlayVideos, setAutoPlayVideos] = useState(false);
+  const [showOnlineStatus, setShowOnlineStatus] = useState(true);
+  const [dataSaver, setDataSaver] = useState(false);
+  const [autoBackup, setAutoBackup] = useState(true);
+  const [compactView, setCompactView] = useState(false);
+  const [showReadTime, setShowReadTime] = useState(true);
+  const [emailNotifications, setEmailNotifications] = useState(true);
+  const [pushNotifications, setPushNotifications] = useState(true);
+  const [showActivityStatus, setShowActivityStatus] = useState(false);
+  const [language, setLanguage] = useState("ar");
+  const [timezone, setTimezone] = useState("Asia/Riyadh");
+  const [fontSize, setFontSize] = useState("medium");
+  const [autoSave, setAutoSave] = useState(true);
+  const [showTrending, setShowTrending] = useState(true);
+  const [showSuggestions, setShowSuggestions] = useState(true);
+  const [privateProfile, setPrivateProfile] = useState(false);
+  const [allowMessages, setAllowMessages] = useState(true);
+  const [showEmail, setShowEmail] = useState(false);
 
   return (
     <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-300">
@@ -546,14 +652,89 @@ function GeneralSettings() {
           </button>
         </div>
 
-        {/* Notifications */}
+        {/* Language */}
+        <div className="flex items-center justify-between p-4 rounded-2xl bg-muted/30 border border-border/50">
+          <div className="flex items-center gap-3">
+            <div className="p-2 rounded-xl bg-primary/10">
+              <Globe className="w-4 h-4 text-primary" />
+            </div>
+            <div>
+              <span className="text-sm font-black">لغة التطبيق</span>
+              <p className="text-[10px] text-muted-foreground">{language === 'ar' ? 'العربية' : 'English'}</p>
+            </div>
+          </div>
+          <select 
+            value={language} 
+            onChange={(e) => { setLanguage(e.target.value); toast.success('تم تغيير اللغة'); }}
+            className="px-3 py-1.5 rounded-xl bg-background border border-border text-sm font-black"
+          >
+            <option value="ar">العربية</option>
+            <option value="en">English</option>
+          </select>
+        </div>
+
+        {/* Font Size */}
+        <div className="flex items-center justify-between p-4 rounded-2xl bg-muted/30 border border-border/50">
+          <div className="flex items-center gap-3">
+            <div className="p-2 rounded-xl bg-primary/10">
+              <FileText className="w-4 h-4 text-primary" />
+            </div>
+            <div>
+              <span className="text-sm font-black">حجم الخط</span>
+              <p className="text-[10px] text-muted-foreground">{fontSize === 'small' ? 'صغير' : fontSize === 'large' ? 'كبير' : 'متوسط'}</p>
+            </div>
+          </div>
+          <select 
+            value={fontSize} 
+            onChange={(e) => { setFontSize(e.target.value); toast.success('تم تغيير حجم الخط'); }}
+            className="px-3 py-1.5 rounded-xl bg-background border border-border text-sm font-black"
+          >
+            <option value="small">صغير</option>
+            <option value="medium">متوسط</option>
+            <option value="large">كبير</option>
+          </select>
+        </div>
+
+        {/* Timezone */}
+        <div className="flex items-center justify-between p-4 rounded-2xl bg-muted/30 border border-border/50">
+          <div className="flex items-center gap-3">
+            <div className="p-2 rounded-xl bg-primary/10">
+              <Clock className="w-4 h-4 text-primary" />
+            </div>
+            <div>
+              <span className="text-sm font-black">المنطقة الزمنية</span>
+              <p className="text-[10px] text-muted-foreground">{timezone}</p>
+            </div>
+          </div>
+          <select 
+            value={timezone} 
+            onChange={(e) => { setTimezone(e.target.value); toast.success('تم تغيير المنطقة الزمنية'); }}
+            className="px-3 py-1.5 rounded-xl bg-background border border-border text-sm font-black"
+          >
+            <option value="Asia/Riyadh">الرياض</option>
+            <option value="Asia/Dubai">دبي</option>
+            <option value="Asia/Cairo">القاهرة</option>
+            <option value="Europe/London">لندن</option>
+            <option value="America/New_York">نيويورك</option>
+          </select>
+        </div>
+      </div>
+
+      {/* Notifications */}
+      <div className="bg-card/40 backdrop-blur-sm rounded-[2rem] border border-border p-6 shadow-sm space-y-5">
+        <h2 className="text-xl font-black flex items-center gap-2">
+          <Bell className="w-5 h-5 text-primary" />
+          <span>الإشعارات</span>
+        </h2>
+
+        {/* Main Notifications */}
         <div className="flex items-center justify-between p-4 rounded-2xl bg-muted/30 border border-border/50">
           <div className="flex items-center gap-3">
             <div className="p-2 rounded-xl bg-primary/10">
               <Bell className="w-4 h-4 text-primary" />
             </div>
             <div>
-              <span className="text-sm font-black">الإشعارات</span>
+              <span className="text-sm font-black">الإشعارات العامة</span>
               <p className="text-[10px] text-muted-foreground">{notificationsOn ? 'مفعّلة' : 'مغلقة'}</p>
             </div>
           </div>
@@ -567,6 +748,214 @@ function GeneralSettings() {
             <span className={cn(
               "absolute top-0.5 w-6 h-6 rounded-full bg-white shadow-md transition-all duration-300",
               notificationsOn ? "right-0.5" : "right-[calc(100%-1.625rem)]"
+            )} />
+          </button>
+        </div>
+
+        {/* Email Notifications */}
+        <div className="flex items-center justify-between p-4 rounded-2xl bg-muted/30 border border-border/50">
+          <div className="flex items-center gap-3">
+            <div className="p-2 rounded-xl bg-primary/10">
+              <MessageSquare className="w-4 h-4 text-primary" />
+            </div>
+            <div>
+              <span className="text-sm font-black">إشعارات البريد الإلكتروني</span>
+              <p className="text-[10px] text-muted-foreground">{emailNotifications ? 'مفعّلة' : 'مغلقة'}</p>
+            </div>
+          </div>
+          <button
+            onClick={() => { setEmailNotifications(!emailNotifications); toast.success(emailNotifications ? 'تم إيقاف إشعارات البريد' : 'تم تفعيل إشعارات البريد'); }}
+            className={cn(
+              "relative w-12 h-7 rounded-full transition-colors duration-300",
+              emailNotifications ? "bg-primary" : "bg-muted-foreground/20"
+            )}
+          >
+            <span className={cn(
+              "absolute top-0.5 w-6 h-6 rounded-full bg-white shadow-md transition-all duration-300",
+              emailNotifications ? "right-0.5" : "right-[calc(100%-1.625rem)]"
+            )} />
+          </button>
+        </div>
+
+        {/* Push Notifications */}
+        <div className="flex items-center justify-between p-4 rounded-2xl bg-muted/30 border border-border/50">
+          <div className="flex items-center gap-3">
+            <div className="p-2 rounded-xl bg-primary/10">
+              <Smartphone className="w-4 h-4 text-primary" />
+            </div>
+            <div>
+              <span className="text-sm font-black">الإشعارات الفورية</span>
+              <p className="text-[10px] text-muted-foreground">{pushNotifications ? 'مفعّلة' : 'مغلقة'}</p>
+            </div>
+          </div>
+          <button
+            onClick={() => { setPushNotifications(!pushNotifications); toast.success(pushNotifications ? 'تم إيقاف الإشعارات الفورية' : 'تم تفعيل الإشعارات الفورية'); }}
+            className={cn(
+              "relative w-12 h-7 rounded-full transition-colors duration-300",
+              pushNotifications ? "bg-primary" : "bg-muted-foreground/20"
+            )}
+          >
+            <span className={cn(
+              "absolute top-0.5 w-6 h-6 rounded-full bg-white shadow-md transition-all duration-300",
+              pushNotifications ? "right-0.5" : "right-[calc(100%-1.625rem)]"
+            )} />
+          </button>
+        </div>
+
+        {/* Sound Effects */}
+        <div className="flex items-center justify-between p-4 rounded-2xl bg-muted/30 border border-border/50">
+          <div className="flex items-center gap-3">
+            <div className="p-2 rounded-xl bg-primary/10">
+              <Volume2 className="w-4 h-4 text-primary" />
+            </div>
+            <div>
+              <span className="text-sm font-black">المؤثرات الصوتية</span>
+              <p className="text-[10px] text-muted-foreground">{soundEnabled ? 'مفعّلة' : 'مغلقة'}</p>
+            </div>
+          </div>
+          <button
+            onClick={() => { setSoundEnabled(!soundEnabled); toast.success(soundEnabled ? 'تم إيقاف المؤثرات الصوتية' : 'تم تفعيل المؤثرات الصوتية'); }}
+            className={cn(
+              "relative w-12 h-7 rounded-full transition-colors duration-300",
+              soundEnabled ? "bg-primary" : "bg-muted-foreground/20"
+            )}
+          >
+            <span className={cn(
+              "absolute top-0.5 w-6 h-6 rounded-full bg-white shadow-md transition-all duration-300",
+              soundEnabled ? "right-0.5" : "right-[calc(100%-1.625rem)]"
+            )} />
+          </button>
+        </div>
+      </div>
+
+      {/* Privacy */}
+      <div className="bg-card/40 backdrop-blur-sm rounded-[2rem] border border-border p-6 shadow-sm space-y-5">
+        <h2 className="text-xl font-black flex items-center gap-2">
+          <Shield className="w-5 h-5 text-primary" />
+          <span>الخصوصية</span>
+        </h2>
+
+        {/* Private Profile */}
+        <div className="flex items-center justify-between p-4 rounded-2xl bg-muted/30 border border-border/50">
+          <div className="flex items-center gap-3">
+            <div className="p-2 rounded-xl bg-primary/10">
+              <Lock className="w-4 h-4 text-primary" />
+            </div>
+            <div>
+              <span className="text-sm font-black">ملف شخصي خاص</span>
+              <p className="text-[10px] text-muted-foreground">{privateProfile ? 'المتابعون فقط' : 'عام للجميع'}</p>
+            </div>
+          </div>
+          <button
+            onClick={() => { setPrivateProfile(!privateProfile); toast.success(privateProfile ? 'تم جعل الملف عاماً' : 'تم جعل الملف خاصاً'); }}
+            className={cn(
+              "relative w-12 h-7 rounded-full transition-colors duration-300",
+              privateProfile ? "bg-primary" : "bg-muted-foreground/20"
+            )}
+          >
+            <span className={cn(
+              "absolute top-0.5 w-6 h-6 rounded-full bg-white shadow-md transition-all duration-300",
+              privateProfile ? "right-0.5" : "right-[calc(100%-1.625rem)]"
+            )} />
+          </button>
+        </div>
+
+        {/* Show Online Status */}
+        <div className="flex items-center justify-between p-4 rounded-2xl bg-muted/30 border border-border/50">
+          <div className="flex items-center gap-3">
+            <div className="p-2 rounded-xl bg-primary/10">
+              <Wifi className="w-4 h-4 text-primary" />
+            </div>
+            <div>
+              <span className="text-sm font-black">حالة الاتصال</span>
+              <p className="text-[10px] text-muted-foreground">{showOnlineStatus ? 'ظاهر للجميع' : 'مخفي'}</p>
+            </div>
+          </div>
+          <button
+            onClick={() => { setShowOnlineStatus(!showOnlineStatus); toast.success(showOnlineStatus ? 'تم إخفاء حالة الاتصال' : 'تم إظهار حالة الاتصال'); }}
+            className={cn(
+              "relative w-12 h-7 rounded-full transition-colors duration-300",
+              showOnlineStatus ? "bg-primary" : "bg-muted-foreground/20"
+            )}
+          >
+            <span className={cn(
+              "absolute top-0.5 w-6 h-6 rounded-full bg-white shadow-md transition-all duration-300",
+              showOnlineStatus ? "right-0.5" : "right-[calc(100%-1.625rem)]"
+            )} />
+          </button>
+        </div>
+
+        {/* Show Activity Status */}
+        <div className="flex items-center justify-between p-4 rounded-2xl bg-muted/30 border border-border/50">
+          <div className="flex items-center gap-3">
+            <div className="p-2 rounded-xl bg-primary/10">
+              <Eye className="w-4 h-4 text-primary" />
+            </div>
+            <div>
+              <span className="text-sm font-black">حالة النشاط</span>
+              <p className="text-[10px] text-muted-foreground">{showActivityStatus ? 'آخر نشاط ظاهر' : 'مخفي'}</p>
+            </div>
+          </div>
+          <button
+            onClick={() => { setShowActivityStatus(!showActivityStatus); toast.success(showActivityStatus ? 'تم إخفاء حالة النشاط' : 'تم إظهار حالة النشاط'); }}
+            className={cn(
+              "relative w-12 h-7 rounded-full transition-colors duration-300",
+              showActivityStatus ? "bg-primary" : "bg-muted-foreground/20"
+            )}
+          >
+            <span className={cn(
+              "absolute top-0.5 w-6 h-6 rounded-full bg-white shadow-md transition-all duration-300",
+              showActivityStatus ? "right-0.5" : "right-[calc(100%-1.625rem)]"
+            )} />
+          </button>
+        </div>
+
+        {/* Allow Messages */}
+        <div className="flex items-center justify-between p-4 rounded-2xl bg-muted/30 border border-border/50">
+          <div className="flex items-center gap-3">
+            <div className="p-2 rounded-xl bg-primary/10">
+              <MessageSquare className="w-4 h-4 text-primary" />
+            </div>
+            <div>
+              <span className="text-sm font-black">استقبال الرسائل</span>
+              <p className="text-[10px] text-muted-foreground">{allowMessages ? 'مسموح للجميع' : 'المتابعون فقط'}</p>
+            </div>
+          </div>
+          <button
+            onClick={() => { setAllowMessages(!allowMessages); toast.success(allowMessages ? 'تم تقييد الرسائل' : 'تم السماح بالرسائل'); }}
+            className={cn(
+              "relative w-12 h-7 rounded-full transition-colors duration-300",
+              allowMessages ? "bg-primary" : "bg-muted-foreground/20"
+            )}
+          >
+            <span className={cn(
+              "absolute top-0.5 w-6 h-6 rounded-full bg-white shadow-md transition-all duration-300",
+              allowMessages ? "right-0.5" : "right-[calc(100%-1.625rem)]"
+            )} />
+          </button>
+        </div>
+
+        {/* Show Email */}
+        <div className="flex items-center justify-between p-4 rounded-2xl bg-muted/30 border border-border/50">
+          <div className="flex items-center gap-3">
+            <div className="p-2 rounded-xl bg-primary/10">
+              <Mail className="w-4 h-4 text-primary" />
+            </div>
+            <div>
+              <span className="text-sm font-black">إظهار البريد الإلكتروني</span>
+              <p className="text-[10px] text-muted-foreground">{showEmail ? 'ظاهر في الملف الشخصي' : 'مخفي'}</p>
+            </div>
+          </div>
+          <button
+            onClick={() => { setShowEmail(!showEmail); toast.success(showEmail ? 'تم إخفاء البريد الإلكتروني' : 'تم إظهار البريد الإلكتروني'); }}
+            className={cn(
+              "relative w-12 h-7 rounded-full transition-colors duration-300",
+              showEmail ? "bg-primary" : "bg-muted-foreground/20"
+            )}
+          >
+            <span className={cn(
+              "absolute top-0.5 w-6 h-6 rounded-full bg-white shadow-md transition-all duration-300",
+              showEmail ? "right-0.5" : "right-[calc(100%-1.625rem)]"
             )} />
           </button>
         </div>
@@ -594,6 +983,242 @@ function GeneralSettings() {
               showLocation ? "right-0.5" : "right-[calc(100%-1.625rem)]"
             )} />
           </button>
+        </div>
+      </div>
+
+      {/* Content & Display */}
+      <div className="bg-card/40 backdrop-blur-sm rounded-[2rem] border border-border p-6 shadow-sm space-y-5">
+        <h2 className="text-xl font-black flex items-center gap-2">
+          <Monitor className="w-5 h-5 text-primary" />
+          <span>المحتوى والعرض</span>
+        </h2>
+
+        {/* Auto Play Videos */}
+        <div className="flex items-center justify-between p-4 rounded-2xl bg-muted/30 border border-border/50">
+          <div className="flex items-center gap-3">
+            <div className="p-2 rounded-xl bg-primary/10">
+              <Video className="w-4 h-4 text-primary" />
+            </div>
+            <div>
+              <span className="text-sm font-black">تشغيل الفيديو تلقائياً</span>
+              <p className="text-[10px] text-muted-foreground">{autoPlayVideos ? 'مفعّل' : 'مغلقة'}</p>
+            </div>
+          </div>
+          <button
+            onClick={() => { setAutoPlayVideos(!autoPlayVideos); toast.success(autoPlayVideos ? 'تم إيقاف التشغيل التلقائي' : 'تم تفعيل التشغيل التلقائي'); }}
+            className={cn(
+              "relative w-12 h-7 rounded-full transition-colors duration-300",
+              autoPlayVideos ? "bg-primary" : "bg-muted-foreground/20"
+            )}
+          >
+            <span className={cn(
+              "absolute top-0.5 w-6 h-6 rounded-full bg-white shadow-md transition-all duration-300",
+              autoPlayVideos ? "right-0.5" : "right-[calc(100%-1.625rem)]"
+            )} />
+          </button>
+        </div>
+
+        {/* Data Saver */}
+        <div className="flex items-center justify-between p-4 rounded-2xl bg-muted/30 border border-border/50">
+          <div className="flex items-center gap-3">
+            <div className="p-2 rounded-xl bg-primary/10">
+              <WifiOff className="w-4 h-4 text-primary" />
+            </div>
+            <div>
+              <span className="text-sm font-black">توفير البيانات</span>
+              <p className="text-[10px] text-muted-foreground">{dataSaver ? 'مفعّل' : 'مغلقة'}</p>
+            </div>
+          </div>
+          <button
+            onClick={() => { setDataSaver(!dataSaver); toast.success(dataSaver ? 'تم إيقاف توفير البيانات' : 'تم تفعيل توفير البيانات'); }}
+            className={cn(
+              "relative w-12 h-7 rounded-full transition-colors duration-300",
+              dataSaver ? "bg-primary" : "bg-muted-foreground/20"
+            )}
+          >
+            <span className={cn(
+              "absolute top-0.5 w-6 h-6 rounded-full bg-white shadow-md transition-all duration-300",
+              dataSaver ? "right-0.5" : "right-[calc(100%-1.625rem)]"
+            )} />
+          </button>
+        </div>
+
+        {/* Compact View */}
+        <div className="flex items-center justify-between p-4 rounded-2xl bg-muted/30 border border-border/50">
+          <div className="flex items-center gap-3">
+            <div className="p-2 rounded-xl bg-primary/10">
+              <Archive className="w-4 h-4 text-primary" />
+            </div>
+            <div>
+              <span className="text-sm font-black">عرض مكثف</span>
+              <p className="text-[10px] text-muted-foreground">{compactView ? 'مفعّل' : 'مغلقة'}</p>
+            </div>
+          </div>
+          <button
+            onClick={() => { setCompactView(!compactView); toast.success(compactView ? 'تم إيقاف العرض المكثف' : 'تم تفعيل العرض المكثف'); }}
+            className={cn(
+              "relative w-12 h-7 rounded-full transition-colors duration-300",
+              compactView ? "bg-primary" : "bg-muted-foreground/20"
+            )}
+          >
+            <span className={cn(
+              "absolute top-0.5 w-6 h-6 rounded-full bg-white shadow-md transition-all duration-300",
+              compactView ? "right-0.5" : "right-[calc(100%-1.625rem)]"
+            )} />
+          </button>
+        </div>
+
+        {/* Show Read Time */}
+        <div className="flex items-center justify-between p-4 rounded-2xl bg-muted/30 border border-border/50">
+          <div className="flex items-center gap-3">
+            <div className="p-2 rounded-xl bg-primary/10">
+              <Clock className="w-4 h-4 text-primary" />
+            </div>
+            <div>
+              <span className="text-sm font-black">وقت القراءة</span>
+              <p className="text-[10px] text-muted-foreground">{showReadTime ? 'ظاهر' : 'مخفي'}</p>
+            </div>
+          </div>
+          <button
+            onClick={() => { setShowReadTime(!showReadTime); toast.success(showReadTime ? 'تم إخفاء وقت القراءة' : 'تم إظهار وقت القراءة'); }}
+            className={cn(
+              "relative w-12 h-7 rounded-full transition-colors duration-300",
+              showReadTime ? "bg-primary" : "bg-muted-foreground/20"
+            )}
+          >
+            <span className={cn(
+              "absolute top-0.5 w-6 h-6 rounded-full bg-white shadow-md transition-all duration-300",
+              showReadTime ? "right-0.5" : "right-[calc(100%-1.625rem)]"
+            )} />
+          </button>
+        </div>
+
+        {/* Show Trending */}
+        <div className="flex items-center justify-between p-4 rounded-2xl bg-muted/30 border border-border/50">
+          <div className="flex items-center gap-3">
+            <div className="p-2 rounded-xl bg-primary/10">
+              <TrendingUp className="w-4 h-4 text-primary" />
+            </div>
+            <div>
+              <span className="text-sm font-black">عرض المنشورات الرائجة</span>
+              <p className="text-[10px] text-muted-foreground">{showTrending ? 'ظاهر' : 'مخفي'}</p>
+            </div>
+          </div>
+          <button
+            onClick={() => { setShowTrending(!showTrending); toast.success(showTrending ? 'تم إخفاء المنشورات الرائجة' : 'تم إظهار المنشورات الرائجة'); }}
+            className={cn(
+              "relative w-12 h-7 rounded-full transition-colors duration-300",
+              showTrending ? "bg-primary" : "bg-muted-foreground/20"
+            )}
+          >
+            <span className={cn(
+              "absolute top-0.5 w-6 h-6 rounded-full bg-white shadow-md transition-all duration-300",
+              showTrending ? "right-0.5" : "right-[calc(100%-1.625rem)]"
+            )} />
+          </button>
+        </div>
+
+        {/* Show Suggestions */}
+        <div className="flex items-center justify-between p-4 rounded-2xl bg-muted/30 border border-border/50">
+          <div className="flex items-center gap-3">
+            <div className="p-2 rounded-xl bg-primary/10">
+              <Users className="w-4 h-4 text-primary" />
+            </div>
+            <div>
+              <span className="text-sm font-black">عرض الاقتراحات</span>
+              <p className="text-[10px] text-muted-foreground">{showSuggestions ? 'ظاهر' : 'مخفي'}</p>
+            </div>
+          </div>
+          <button
+            onClick={() => { setShowSuggestions(!showSuggestions); toast.success(showSuggestions ? 'تم إخفاء الاقتراحات' : 'تم إظهار الاقتراحات'); }}
+            className={cn(
+              "relative w-12 h-7 rounded-full transition-colors duration-300",
+              showSuggestions ? "bg-primary" : "bg-muted-foreground/20"
+            )}
+          >
+            <span className={cn(
+              "absolute top-0.5 w-6 h-6 rounded-full bg-white shadow-md transition-all duration-300",
+              showSuggestions ? "right-0.5" : "right-[calc(100%-1.625rem)]"
+            )} />
+          </button>
+        </div>
+      </div>
+
+      {/* Data & Storage */}
+      <div className="bg-card/40 backdrop-blur-sm rounded-[2rem] border border-border p-6 shadow-sm space-y-5">
+        <h2 className="text-xl font-black flex items-center gap-2">
+          <Archive className="w-5 h-5 text-primary" />
+          <span>البيانات والتخزين</span>
+        </h2>
+
+        {/* Auto Backup */}
+        <div className="flex items-center justify-between p-4 rounded-2xl bg-muted/30 border border-border/50">
+          <div className="flex items-center gap-3">
+            <div className="p-2 rounded-xl bg-primary/10">
+              <RefreshCw className="w-4 h-4 text-primary" />
+            </div>
+            <div>
+              <span className="text-sm font-black">نسخ احتياطي تلقائي</span>
+              <p className="text-[10px] text-muted-foreground">{autoBackup ? 'مفعّل' : 'مغلقة'}</p>
+            </div>
+          </div>
+          <button
+            onClick={() => { setAutoBackup(!autoBackup); toast.success(autoBackup ? 'تم إيقاف النسخ الاحتياطي' : 'تم تفعيل النسخ الاحتياطي'); }}
+            className={cn(
+              "relative w-12 h-7 rounded-full transition-colors duration-300",
+              autoBackup ? "bg-primary" : "bg-muted-foreground/20"
+            )}
+          >
+            <span className={cn(
+              "absolute top-0.5 w-6 h-6 rounded-full bg-white shadow-md transition-all duration-300",
+              autoBackup ? "right-0.5" : "right-[calc(100%-1.625rem)]"
+            )} />
+          </button>
+        </div>
+
+        {/* Auto Save */}
+        <div className="flex items-center justify-between p-4 rounded-2xl bg-muted/30 border border-border/50">
+          <div className="flex items-center gap-3">
+            <div className="p-2 rounded-xl bg-primary/10">
+              <Download className="w-4 h-4 text-primary" />
+            </div>
+            <div>
+              <span className="text-sm font-black">حفظ تلقائي</span>
+              <p className="text-[10px] text-muted-foreground">{autoSave ? 'مفعّل' : 'مغلقة'}</p>
+            </div>
+          </div>
+          <button
+            onClick={() => { setAutoSave(!autoSave); toast.success(autoSave ? 'تم إيقاف الحفظ التلقائي' : 'تم تفعيل الحفظ التلقائي'); }}
+            className={cn(
+              "relative w-12 h-7 rounded-full transition-colors duration-300",
+              autoSave ? "bg-primary" : "bg-muted-foreground/20"
+            )}
+          >
+            <span className={cn(
+              "absolute top-0.5 w-6 h-6 rounded-full bg-white shadow-md transition-all duration-300",
+              autoSave ? "right-0.5" : "right-[calc(100%-1.625rem)]"
+            )} />
+          </button>
+        </div>
+
+        {/* Clear Cache Button */}
+        <div className="flex items-center justify-between p-4 rounded-2xl bg-muted/30 border border-border/50">
+          <div className="flex items-center gap-3">
+            <div className="p-2 rounded-xl bg-primary/10">
+              <Trash className="w-4 h-4 text-primary" />
+            </div>
+            <div>
+              <span className="text-sm font-black">مسح البيانات المؤقتة</span>
+              <p className="text-[10px] text-muted-foreground">تحرير مساحة التخزين</p>
+            </div>
+          </div>
+          <Button 
+            variant="outline" 
+            onClick={() => { toast.success('تم مسح البيانات المؤقتة'); }}
+            className="rounded-xl font-black"
+          >
+            مسح
+          </Button>
         </div>
       </div>
     </div>

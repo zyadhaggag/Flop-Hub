@@ -1,7 +1,7 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
-import { UserPlus, UserMinus } from "lucide-react";
+import { UserPlus, UserCheck, Lock } from "lucide-react";
 import { useState, useEffect } from "react";
 import { toggleFollow } from "@/lib/actions";
 import { useSession } from "next-auth/react";
@@ -36,34 +36,48 @@ export function ProfileFollowButton({ userId, initialIsFollowing }: ProfileFollo
     if (!session) return toast.error("يجب تسجيل الدخول للمتابعة");
     if (session.user.id === userId) return;
 
-    // Optimistic Update
-    const prevFollowing = isFollowing;
-    setIsFollowing(!prevFollowing);
+    // If already following, don't allow unfollow
+    if (isFollowing) {
+      toast.error("المتابعة دائمة - لا يمكن إلغاء المتابعة");
+      return;
+    }
 
+    setIsLoading(true);
     const res = await toggleFollow(userId);
     if (res.success) {
+      setIsFollowing(res.followed || false);
       window.dispatchEvent(new CustomEvent('user-follow-updated', { 
         detail: { userId, isFollowing: res.followed } 
       }));
-      toast.success(res.followed ? "تمت المتابعة" : "تم إلغاء المتابعة");
+      toast.success(res.permanent ? "تمت المتابعة بشكل دائم" : "تمت المتابعة");
     } else {
-      setIsFollowing(prevFollowing);
       toast.error(res.error || "حدث خطأ");
     }
+    setIsLoading(false);
   };
 
   return (
     <Button 
       onClick={handleFollow}
+      disabled={isLoading || isFollowing}
       className={cn(
         "rounded-2xl gap-2 font-black h-11 px-8 transition-all shadow-lg active:scale-95",
         isFollowing 
-          ? "bg-muted text-muted-foreground hover:bg-red-500/10 hover:text-red-500 border border-border" 
-          : "bg-primary text-white shadow-primary/20 hover:shadow-primary/40"
+          ? "bg-gradient-to-r from-amber-500 to-amber-600 text-white border border-amber-400/30 cursor-not-allowed opacity-90" 
+          : "bg-primary text-white shadow-primary/20 hover:shadow-primary/40 hover:scale-105"
       )}
     >
-      {isFollowing ? <UserMinus className="w-4 h-4" /> : <UserPlus className="w-4 h-4" />}
-      {isFollowing ? "إلغاء المتابعة" : "متابعة"}
+      {isFollowing ? (
+        <>
+          <Lock className="w-4 h-4" />
+          <span>متابع بشكل دائم</span>
+        </>
+      ) : (
+        <>
+          <UserPlus className="w-4 h-4" />
+          <span>متابعة</span>
+        </>
+      )}
     </Button>
   );
 }

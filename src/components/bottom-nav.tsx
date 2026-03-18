@@ -27,8 +27,8 @@ export function BottomNav() {
 
   return (
     <>
-      <nav className="md:hidden fixed bottom-4 left-1/2 -translate-x-1/2 z-50 bg-background/95 backdrop-blur-2xl border border-border/40 rounded-[2rem] shadow-2xl shadow-black/20 p-1.5 w-[90%] max-w-[400px]">
-        <div className="flex items-center justify-between">
+      <nav className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-background/95 backdrop-blur-2xl border-t border-border/40 shadow-[0_-10px_30px_rgba(0,0,0,0.1)] pb-safe h-16 transition-all duration-300">
+        <div className="max-w-md mx-auto h-full px-4 flex items-center justify-between">
           {navItems.map((item, i) => {
             const isActive = pathname === item.href;
             const Icon = item.icon;
@@ -38,7 +38,7 @@ export function BottomNav() {
                 <button
                   key={i}
                   onClick={() => setIsModalOpen(true)}
-                  className="h-14 w-14 rounded-2xl bg-primary text-white flex items-center justify-center shadow-xl shadow-primary/40 active:scale-90 transition-all -mt-8 border-4 border-background"
+                  className="relative -top-3 h-14 w-14 rounded-2xl bg-primary text-white flex items-center justify-center shadow-xl shadow-primary/30 active:scale-90 transition-all border-4 border-background"
                 >
                   <PlusCircle className="w-8 h-8" />
                 </button>
@@ -50,12 +50,14 @@ export function BottomNav() {
                 key={i}
                 href={item.href || "#"}
                 className={cn(
-                  "flex flex-col items-center justify-center w-14 h-14 rounded-2xl transition-all grow",
-                  isActive ? "text-primary bg-primary/5" : "text-muted-foreground"
+                  "flex flex-col items-center justify-center w-14 h-full transition-all gap-1",
+                  isActive ? "text-primary" : "text-muted-foreground"
                 )}
               >
-                <Icon className={cn("w-5 h-5", isActive && "fill-primary/10")} />
-                <span className="text-[9px] font-black mt-1">{item.label}</span>
+                <div className={cn("relative p-1.5 rounded-xl transition-all", isActive && "bg-primary/10")}>
+                  <Icon className={cn("w-5 h-5", isActive && "scale-110")} />
+                </div>
+                <span className={cn("text-[9px] font-black tracking-tight", isActive ? "opacity-100" : "opacity-60")}>{item.label}</span>
               </Link>
             );
           })}

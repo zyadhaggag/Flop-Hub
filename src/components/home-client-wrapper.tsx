@@ -3,9 +3,10 @@
 import { Sidebar } from "@/components/sidebar";
 import { CreatePost } from "@/components/create-post";
 import { PostCard } from "@/components/post-card";
-import { Sparkles, TrendingUp, Clock, Loader2, Plus } from "lucide-react";
+import { Sparkles, TrendingUp, Clock, Loader2, Plus, ArrowDown, Zap } from "lucide-react";
 import { useState, useEffect } from "react";
 import dynamic from "next/dynamic";
+import { Button } from "@/components/ui/button";
 
 const CreatePostModal = dynamic(() => import("./create-post-modal").then(mod => mod.CreatePostModal), {
   ssr: false,
@@ -33,14 +34,17 @@ export function HomeClientWrapper({
   const [sort, setSort] = useState<'latest' | 'trending' | 'foryou'>('foryou');
   const [loadingMore, setLoadingMore] = useState(false);
   const [hasMore, setHasMore] = useState(initialPosts.length === 5);
+  const [isLoading, setIsLoading] = useState(false);
 
   const PAGE_SIZE = 5;
 
   const handleSortChange = async (value: string) => {
+    setIsLoading(true);
     setSort(value as any);
     const newPosts = await getPosts(value as any, PAGE_SIZE, 0);
     setPosts(newPosts);
     setHasMore(newPosts.length === PAGE_SIZE);
+    setIsLoading(false);
   };
 
   const handleLoadMore = async () => {
@@ -66,80 +70,115 @@ export function HomeClientWrapper({
       <Sidebar onPostClick={() => setIsModalOpen(true)} />
 
       <div className="flex-1 flex flex-col gap-6 max-w-4xl">
-        <div onClick={() => setIsModalOpen(true)} className="cursor-pointer">
+        <div onClick={() => setIsModalOpen(true)} className="cursor-pointer group">
           <CreatePost />
         </div>
 
-        {/* Pill Tabs */}
-        <div className="flex gap-1.5 bg-muted/30 p-1.5 rounded-2xl border border-border/40 w-fit mx-auto" dir="rtl">
+        {/* Animated Pill Tabs */}
+        <div className="flex gap-1.5 bg-muted/30 p-1.5 rounded-2xl border border-border/40 w-fit mx-auto animate-in fade-in slide-in-from-bottom-4 duration-700" dir="rtl">
           {[
             { value: 'foryou', label: 'لك', icon: Sparkles },
             { value: 'trending', label: 'الرائج', icon: TrendingUp },
             { value: 'latest', label: 'الأحدث', icon: Clock },
-          ].map((tab) => {
+          ].map((tab, index) => {
             const Icon = tab.icon;
             const isActive = sort === tab.value;
             return (
               <button
                 key={tab.value}
                 onClick={() => handleSortChange(tab.value)}
-                className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-bold transition-all duration-300 ${
+                className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-bold transition-all duration-300 relative overflow-hidden group ${
                   isActive
-                    ? "bg-primary text-primary-foreground shadow-lg shadow-primary/25 scale-[1.02]"
+                    ? "bg-primary text-primary-foreground shadow-lg shadow-primary/25 scale-[1.02] animate-pulse"
                     : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
                 }`}
+                style={{
+                  animationDelay: `${index * 100}ms`
+                }}
               >
-                <Icon className={`w-4 h-4 transition-transform duration-300 ${isActive ? 'scale-110' : ''}`} />
-                <span>{tab.label}</span>
+                <Icon className={`w-4 h-4 transition-all duration-300 ${isActive ? 'scale-110 rotate-12' : 'group-hover:scale-110'}`} />
+                <span className="relative z-10">{tab.label}</span>
+                {isActive && (
+                  <div className="absolute inset-0 bg-gradient-to-r from-primary/20 to-primary/10 animate-pulse" />
+                )}
               </button>
             );
           })}
         </div>
 
+        {/* Loading State */}
+        {isLoading && (
+          <div className="flex items-center justify-center py-12">
+            <div className="flex items-center gap-3 text-primary">
+              <Loader2 className="w-6 h-6 animate-spin" />
+              <span className="font-black">جاري التحميل...</span>
+            </div>
+          </div>
+        )}
+
+        {/* Posts Grid with Animation */}
         <div className="space-y-6 pb-20">
-          {posts.map((post: any) => (
-             <PostCard 
-               key={post.id} 
-               id={post.id}
-               user={{ id: post.user_id, name: post.name || post.username, handle: post.username, avatar: post.avatar_url }}
-               time={post.created_at}
-               title={post.title}
-               story={post.story}
-               lesson={post.lesson}
-               helpfulCount={parseInt(post.helpful_count)}
-               commentsCount={parseInt(post.comments_count)}
-               hasReacted={post.has_reacted}
-               isSaved={post.is_saved}
-               isFollowed={post.is_followed}
-               category={post.category}
-             />
+          {posts.map((post: any, index) => (
+            <div 
+              key={post.id} 
+              className="animate-in fade-in slide-in-from-bottom-8 duration-700"
+              style={{ animationDelay: `${index * 100}ms` }}
+            >
+              <PostCard 
+                id={post.id} 
+                user={{ 
+                  id: post.user_id, 
+                  name: post.name || post.username, 
+                  handle: post.username, 
+                  avatar: post.avatar_url,
+                  is_admin: post.is_admin
+                }} 
+                time={post.created_at}
+                title={post.title}
+                story={post.story}
+                lesson={post.lesson}
+                imageUrl={post.image_url}
+                helpfulCount={parseInt(post.helpful_count)}
+                commentsCount={parseInt(post.comments_count)}
+                hasReacted={post.has_reacted}
+                isSaved={post.is_saved}
+                isFollowed={post.is_followed}
+                category={post.category}
+              />
+            </div>
           ))}
+          
+          {/* Load More Button */}
           {hasMore && (
-            <div className="flex justify-center pt-4">
-              <button 
+            <div className="flex justify-center pt-8 animate-in fade-in duration-700">
+              <Button
                 onClick={handleLoadMore}
                 disabled={loadingMore}
-                className="group flex items-center gap-3 px-8 py-4 bg-primary/5 hover:bg-primary/10 text-primary rounded-2xl font-black transition-all border border-primary/20 hover:border-primary/40 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="h-12 px-8 rounded-2xl font-black gap-3 bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 shadow-lg shadow-primary/20 transition-all hover:scale-105 active:scale-95 group"
               >
                 {loadingMore ? (
                   <>
-                    <Loader2 className="w-5 h-5 animate-spin" />
-                    <span>جاري التحميل...</span>
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    جاري التحميل...
                   </>
                 ) : (
                   <>
-                    <Plus className="w-5 h-5 group-hover:rotate-90 transition-transform" />
-                    <span>تحميل المزيد من القصص</span>
+                    تحميل المزيد
+                    <ArrowDown className="w-4 h-4 group-hover:translate-y-1 transition-transform" />
                   </>
                 )}
-              </button>
+              </Button>
             </div>
           )}
         </div>
       </div>
 
-      <CreatePostModal open={isModalOpen} onOpenChange={setIsModalOpen} />
-      <RightSidebar suggestedUsers={suggestedUsers} trendingLessons={trendingLessons} />
+      <CreatePostModal open={isModalOpen} onOpenChange={() => setIsModalOpen(false)} />
+      <RightSidebar 
+        suggestedUsers={suggestedUsers} 
+        trendingLessons={trendingLessons}
+        className="hidden xl:flex w-80 shrink-0 flex-col gap-6 sticky top-20 h-fit" 
+      />
     </>
   );
 }

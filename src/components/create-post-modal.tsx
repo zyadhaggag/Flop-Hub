@@ -11,7 +11,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Lightbulb, Loader2, Sparkles, Search, Check } from "lucide-react";
+import { Lightbulb, Loader2, Sparkles, Search, Check, ChevronDown } from "lucide-react";
 import { useState, useMemo } from "react";
 import { createPost } from "@/lib/actions";
 import { toast } from "sonner";
@@ -44,6 +44,7 @@ export function CreatePostModal({ open, onOpenChange }: { open: boolean, onOpenC
     imageUrl: "",
     category: "",
   });
+  const [showCategoryDropdown, setShowCategoryDropdown] = useState(false);
   const [categorySearch, setCategorySearch] = useState("");
 
   const filteredCategories = useMemo(() => {
@@ -54,6 +55,10 @@ export function CreatePostModal({ open, onOpenChange }: { open: boolean, onOpenC
   const handleSubmit = async () => {
     if (!formData.title || !formData.story || !formData.lesson) {
       toast.error("يرجى ملء جميع الحقول المطلوبة");
+      return;
+    }
+    if (!formData.category) {
+      toast.error("يرجى اختيار تصنيف المنشور");
       return;
     }
     if (formData.story.length < 20) {
@@ -72,6 +77,7 @@ export function CreatePostModal({ open, onOpenChange }: { open: boolean, onOpenC
         toast.success("تم نشر قصتك بنجاح!");
         onOpenChange(false);
         setFormData({ title: "", story: "", lesson: "", imageUrl: "", category: "" });
+        setShowCategoryDropdown(false);
       } else {
         toast.error(res.error);
       }
@@ -107,45 +113,55 @@ export function CreatePostModal({ open, onOpenChange }: { open: boolean, onOpenC
             </div>
           </div>
 
-          {/* Category Selector - Redesigned to be Large */}
+          {/* Category Selector - Large Dropdown */}
           <div className="space-y-3 bg-muted/20 p-4 rounded-3xl border border-border/40">
             <label className="text-xs font-black text-muted-foreground uppercase tracking-widest flex items-center justify-between">
               <span>اختر تصنيف المنشور</span>
               {selectedCat && <span className="text-primary animate-pulse">تم الاختيار: {selectedCat.label}</span>}
             </label>
+            
+            {/* Custom Large Dropdown */}
             <div className="relative">
-              <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-              <Input
-                value={categorySearch}
-                onChange={(e) => setCategorySearch(e.target.value)}
-                placeholder="ابحث عن تصنيف (مثال: تقني، طبي...)"
-                className="h-11 rounded-2xl bg-background border-border pr-10 text-sm font-bold shadow-inner"
-              />
-            </div>
-            <div className="grid grid-cols-2 gap-2 max-h-[220px] overflow-y-auto pr-1 mt-2 custom-scrollbar">
-              {filteredCategories.map((cat) => (
-                <button
-                  key={cat.id}
-                  type="button"
-                  onClick={() => setFormData({ ...formData, category: formData.category === cat.id ? '' : cat.id })}
-                  className={cn(
-                    "flex items-center gap-3 px-4 py-3 rounded-2xl text-sm font-black transition-all border-2 text-right justify-start",
-                    formData.category === cat.id
-                      ? "bg-primary/10 border-primary text-primary shadow-[0_0_15px_rgba(124,58,237,0.15)] scale-[1.02]"
-                      : "bg-background border-border/40 text-muted-foreground hover:border-primary/30 hover:bg-primary/[0.02]"
-                  )}
-                >
-                  <span className="text-xl bg-muted/50 w-10 h-10 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform">{cat.emoji}</span>
-                  <div className="flex flex-col items-start">
-                    <span>{cat.label}</span>
-                    <span className="text-[10px] opacity-40 font-bold uppercase">{cat.id}</span>
+              <button
+                type="button"
+                onClick={() => setShowCategoryDropdown(!showCategoryDropdown)}
+                className="w-full h-14 rounded-2xl bg-background border border-border px-4 py-3 text-sm font-black flex items-center justify-between hover:border-primary/50 transition-colors"
+              >
+                <span className={selectedCat ? "text-foreground" : "text-muted-foreground"}>
+                  {selectedCat ? `${selectedCat.emoji} ${selectedCat.label}` : "اختر تصنيف المنشور..."}
+                </span>
+                <ChevronDown className={cn("h-4 w-4 transition-transform", showCategoryDropdown && "rotate-180")} />
+              </button>
+              
+              {showCategoryDropdown && (
+                <div className="absolute top-full left-0 right-0 mt-2 bg-card border border-border rounded-2xl shadow-lg z-50 max-h-[300px] overflow-y-auto">
+                  <div className="p-2">
+                    {CATEGORIES.map((cat) => (
+                      <button
+                        key={cat.id}
+                        type="button"
+                        onClick={() => {
+                          setFormData({ ...formData, category: cat.id });
+                          setShowCategoryDropdown(false);
+                        }}
+                        className={cn(
+                          "w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-black transition-colors text-right",
+                          formData.category === cat.id
+                            ? "bg-primary/10 text-primary"
+                            : "hover:bg-muted/50 text-foreground"
+                        )}
+                      >
+                        <span className="text-xl bg-muted/50 w-10 h-10 rounded-xl flex items-center justify-center">
+                          {cat.emoji}
+                        </span>
+                        <div className="flex flex-col items-start flex-1">
+                          <span>{cat.label}</span>
+                          <span className="text-[10px] opacity-40 font-bold uppercase">{cat.id}</span>
+                        </div>
+                        {formData.category === cat.id && <Check className="w-4 h-4 text-primary" />}
+                      </button>
+                    ))}
                   </div>
-                  {formData.category === cat.id && <Check className="w-4 h-4 mr-auto text-primary" />}
-                </button>
-              ))}
-              {filteredCategories.length === 0 && (
-                <div className="col-span-2 text-center py-8 text-muted-foreground opacity-50 font-bold italic">
-                  لم يتم العثور على تصنيف بهذا الاسم
                 </div>
               )}
             </div>
@@ -208,13 +224,13 @@ export function CreatePostModal({ open, onOpenChange }: { open: boolean, onOpenC
           </div>
         </div>
 
-        <DialogFooter className="p-4 px-6 bg-muted/5 border-t border-border/50" suppressHydrationWarning>
+        <DialogFooter className="p-6 pt-2 bg-card border-t border-border/50">
           <div className="flex items-center justify-between w-full gap-4">
             <Button variant="ghost" onClick={() => onOpenChange(false)} className="rounded-2xl px-5 font-bold hover:bg-muted h-12 text-muted-foreground shrink-0" disabled={loading}>إلغاء</Button>
             <Button 
               className="flex-1 bg-primary text-white rounded-2xl px-6 h-12 font-black text-sm shadow-lg shadow-primary/20 hover:shadow-primary/40 active:scale-[0.98] transition-all flex items-center justify-center gap-2 min-w-0" 
               onClick={handleSubmit} 
-              disabled={loading}
+              disabled={loading || !formData.category}
             >
               <div className="flex items-center gap-2 truncate">
                 {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}

@@ -308,6 +308,23 @@ export async function adminResetAvatar(userId: string) {
   } catch { return { success: false, error: "حدث خطأ" }; }
 }
 
+export async function adminUpdateUser(userId: string, data: { name?: string, username?: string, bio?: string }) {
+  if (!(await isAdmin())) return { success: false, error: "غير مصرح" };
+  try {
+    const { name, username, bio } = data;
+    if (username) {
+        const sanitized = username.trim().toLowerCase().replace(/[^a-z0-9_]/g, "");
+        if (sanitized.length < 3) return { success: false, error: "اسم المستخدم قصير جداً" };
+        const existing = await sql`SELECT id FROM users WHERE username = ${sanitized} AND id != ${userId}`;
+        if (existing.length > 0) return { success: false, error: "اسم المستخدم مأخوذ بالفعل" };
+        await sql`UPDATE users SET name = ${name}, username = ${sanitized}, bio = ${bio} WHERE id = ${userId} `;
+    } else {
+        await sql`UPDATE users SET name = ${name}, bio = ${bio} WHERE id = ${userId} `;
+    }
+    return { success: true };
+  } catch (e) { return { success: false, error: "حدث خطأ أثناء التحديث" }; }
+}
+
 export async function adminGetUserPosts(userId: string) {
   if (!(await isAdmin())) return [];
   try {
@@ -461,8 +478,8 @@ export async function toggleFollow(followingId: string) {
     `;
 
     if (existing.length > 0) {
-      // If already following, we keep it "saved forever"
-      return { success: true, followed: true };
+      // If already following, they stay followed forever - no unfollow option
+      return { success: true, followed: true, permanent: true };
     } else {
       await sql`
         INSERT INTO followers (follower_id, following_id)
@@ -470,7 +487,7 @@ export async function toggleFollow(followingId: string) {
       `;
       // Notify
       await createNotification(followingId, 'follow', { fromUser: session.user.username });
-      return { success: true, followed: true };
+      return { success: true, followed: true, permanent: true };
     }
   } catch (e) { return { success: false, error: "حدث خطأ أثناء تحديث المتابعة" }; }
 }
@@ -534,7 +551,7 @@ export async function getSuggestedUsers(limit = 6) {
   try {
     const users = await sql`
       SELECT 
-        id, username, name, image_url as avatar_url,
+        id, username, name, image_url as avatar_url, is_admin,
         ${currentUserId ? sql`EXISTS(SELECT 1 FROM followers WHERE following_id = id AND follower_id = ${currentUserId})` : sql`FALSE`}::boolean as is_followed
       FROM users
       WHERE id != ${currentUserId || '00000000-0000-0000-0000-000000000000'}

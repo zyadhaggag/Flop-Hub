@@ -12,11 +12,13 @@ import {
   adminGetUserComments,
   adminDeletePost,
   adminDeleteComment,
+  adminUpdateUser,
 } from "@/lib/actions";
 import { Navbar } from "@/components/navbar";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import {
   Users,
   FileText,
@@ -29,10 +31,13 @@ import {
   Eye,
   X,
   Loader2,
+  Edit,
 } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import Link from "next/link";
+
+export const revalidate = 30; // ISR for admin stats
 
 export default function AdminPage() {
   const router = useRouter();
@@ -47,16 +52,22 @@ export default function AdminPage() {
   const [loadingDetail, setLoadingDetail] = useState(false);
 
   useEffect(() => {
+    // Fast admin check with caching
     checkIsAdmin().then((ok) => {
       setAuthorized(ok);
       if (ok) {
+        // Load data in parallel for faster loading
         loadData();
       }
     });
   }, []);
 
   const loadData = async () => {
-    const [s, u] = await Promise.all([adminGetStats(), adminGetUsers()]);
+    // Parallel data fetching for better performance
+    const [s, u] = await Promise.all([
+      adminGetStats(),
+      adminGetUsers()
+    ]);
     setStats(s);
     setUsers(u);
   };
@@ -87,8 +98,24 @@ export default function AdminPage() {
     } else toast.error(res.error);
   };
 
+  const [editingUser, setEditingUser] = useState(false);
+  const [editForm, setEditForm] = useState({ name: "", username: "", bio: "" });
+
+  const handleUpdateUser = async () => {
+    if (!selectedUser) return;
+    const res = await adminUpdateUser(selectedUser.id, editForm);
+    if (res.success) {
+      toast.success("تم تحديث بيانات المستخدم");
+      setUsers((prev) => prev.map((u) => (u.id === selectedUser.id ? { ...u, ...editForm } : u)));
+      setSelectedUser({ ...selectedUser, ...editForm });
+      setEditingUser(false);
+    } else toast.error(res.error);
+  };
+
   const viewUserDetail = async (user: any) => {
     setSelectedUser(user);
+    setEditForm({ name: user.name || "", username: user.username || "", bio: user.bio || "" });
+    setEditingUser(false);
     setLoadingDetail(true);
     const [posts, comments] = await Promise.all([
       adminGetUserPosts(user.id),
@@ -257,8 +284,78 @@ export default function AdminPage() {
                   </div>
                 ) : (
                   <>
+                    {/* User Profile Info & Edit Toggle */}
+                    <div className="flex items-start justify-between bg-muted/30 p-4 rounded-2xl border border-border/50">
+                      <div className="flex items-center gap-3">
+                        <Avatar className="w-12 h-12 border-2 border-background shadow-sm">
+                          <AvatarImage src={selectedUser.image_url} />
+                          <AvatarFallback className="bg-primary/10 text-primary font-black">
+                            {selectedUser.name?.[0] || "?"}
+                          </AvatarFallback>
+                        </Avatar>
+                        <div>
+                          <p className="font-black text-sm">{selectedUser.name}</p>
+                          <p className="text-xs text-muted-foreground">@{selectedUser.username}</p>
+                        </div>
+                      </div>
+                      <Button 
+                        size="sm" 
+                        variant={editingUser ? "secondary" : "outline"} 
+                        className="h-8 rounded-xl gap-2 font-bold px-3"
+                        onClick={() => setEditingUser(!editingUser)}
+                      >
+                        <Edit className="w-3.5 h-3.5" />
+                        {editingUser ? "إلغاء التعديل" : "تعديل البيانات"}
+                      </Button>
+                    </div>
+
+                    {editingUser ? (
+                      <div className="space-y-4 bg-primary/5 p-4 rounded-2xl border border-primary/10 animate-in fade-in duration-300">
+                        <div className="space-y-1.5">
+                          <label className="text-[10px] font-black text-muted-foreground uppercase mr-1">الاسم</label>
+                          <Input 
+                            value={editForm.name} 
+                            onChange={e => setEditForm({...editForm, name: e.target.value})}
+                            className="h-10 rounded-xl bg-card border-border font-bold text-sm"
+                          />
+                        </div>
+                        <div className="space-y-1.5">
+                          <label className="text-[10px] font-black text-muted-foreground uppercase mr-1">اسم المستخدم (@)</label>
+                          <Input 
+                            value={editForm.username} 
+                            onChange={e => setEditForm({...editForm, username: e.target.value})}
+                            className="h-10 rounded-xl bg-card border-border font-bold text-sm"
+                          />
+                        </div>
+                        <div className="space-y-1.5">
+                          <label className="text-[10px] font-black text-muted-foreground uppercase mr-1">البايو / الوصف</label>
+                          <Textarea 
+                            value={editForm.bio} 
+                            onChange={e => setEditForm({...editForm, bio: e.target.value})}
+                            className="rounded-xl bg-card border-border font-medium text-sm min-h-[80px]"
+                          />
+                        </div>
+                        <Button 
+                          onClick={handleUpdateUser} 
+                          className="w-full h-10 rounded-xl font-black gap-2" 
+                          disabled={isPending}
+                        >
+                          {isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Shield className="w-4 h-4" />}
+                          حفظ التعديلات
+                        </Button>
+                      </div>
+                    ) : (
+                      <div className="px-1">
+                        <p className="text-xs text-muted-foreground font-medium leading-relaxed italic border-r-2 border-primary/20 pr-3">
+                          {selectedUser.bio || "لا يوجد وصف."}
+                        </p>
+                      </div>
+                    )}
+
+                    <div className="h-px bg-border/30 my-2" />
+
                     {/* User Posts */}
-                    <div>
+                    <div className="pt-2">
                       <h3 className="text-xs font-black text-muted-foreground uppercase tracking-widest mb-3">
                         المنشورات ({userPosts.length})
                       </h3>

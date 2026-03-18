@@ -1,7 +1,7 @@
 "use client";
 
 import { useSession, signOut } from "next-auth/react";
-import { useRouter } from "nextjs-toploader/app";
+import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import NextImage from "next/image";
 import { Button } from "@/components/ui/button";
@@ -19,6 +19,7 @@ import { getNotifications, markAllNotificationsRead, markNotificationRead, check
 import { cn } from "@/lib/utils";
 import { useTheme } from "next-themes";
 import Link from "next/link";
+import { LogoutModal } from "@/components/logout-modal";
 
 export default function NavbarActions() {
   const { data: session } = useSession();
@@ -27,6 +28,7 @@ export default function NavbarActions() {
   const [mounted, setMounted] = useState(false);
   const [notifications, setNotifications] = useState<any[]>([]);
   const [isAdminUser, setIsAdminUser] = useState(false);
+  const [showLogoutModal, setShowLogoutModal] = useState(false);
 
   const fetchNotifications = async () => {
     if (session) {
@@ -48,9 +50,23 @@ export default function NavbarActions() {
         setNotifications([]);
       }
     } catch (err) {
-      console.error(err);
+      console.error("Error marking notifications as read:", err);
     }
   };
+
+  const handleSignOut = () => {
+    setShowLogoutModal(true);
+  };
+
+  // Client-side route protection
+  useEffect(() => {
+    const protectedRoutes = ['/admin', '/settings', '/account-settings'];
+    const currentPath = window.location.pathname;
+    
+    if (!session && protectedRoutes.some(route => currentPath.includes(route))) {
+      router.push('/login');
+    }
+  }, [session, router]);
 
   if (!mounted) return <div className="flex items-center gap-2 pr-4"><div className="w-10 h-10 rounded-full bg-slate-100 dark:bg-slate-800 animate-pulse" /></div>;
 
@@ -174,7 +190,7 @@ export default function NavbarActions() {
               </DropdownMenuItem>
             )}
             <DropdownMenuItem 
-              onClick={() => signOut({ callbackUrl: "/login" })}
+              onClick={handleSignOut}
               className="flex items-center gap-3 p-3 rounded-xl cursor-pointer hover:bg-red-500/10 text-red-500 transition-colors focus:bg-red-500/10"
             >
               <LogOut className="w-4 h-4" />
@@ -183,6 +199,9 @@ export default function NavbarActions() {
           </DropdownMenuGroup>
         </DropdownMenuContent>
       </DropdownMenu>
+      
+      {/* Logout Modal */}
+      <LogoutModal isOpen={showLogoutModal} onClose={() => setShowLogoutModal(false)} />
     </div>
   );
 }

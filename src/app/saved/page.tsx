@@ -9,10 +9,15 @@ export const metadata = {
   title: "المحفوظات",
 };
 
+export const revalidate = 120; // ISR – revalidate every 2 minutes for saved posts
+
 export default async function SavedPage() {
-  const savedPosts = await getSavedPosts();
-  const suggestedUsers = await getSuggestedUsers();
-  const trendingLessons = await getTrendingLessons();
+  // Parallel data fetching for better performance
+  const [savedPosts, suggestedUsers, trendingLessons] = await Promise.all([
+    getSavedPosts(),
+    getSuggestedUsers(),
+    getTrendingLessons()
+  ]);
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -37,7 +42,13 @@ export default async function SavedPage() {
                 <PostCard 
                   key={post.id} 
                   id={post.id}
-                  user={{ id: post.user_id, name: post.name || post.username, handle: post.username, avatar: post.avatar_url }}
+                  user={{ 
+                    id: post.user_id, 
+                    name: post.name || post.username, 
+                    handle: post.username, 
+                    avatar: post.avatar_url,
+                    is_admin: post.is_admin
+                  }}
                   time={post.created_at}
                   title={post.title}
                   story={post.story}

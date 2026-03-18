@@ -11,6 +11,7 @@ import { cn } from "@/lib/utils";
 import { searchPosts } from "@/lib/actions";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { User, FileText, Loader2 } from "lucide-react";
+import { usePreloadRoute } from "@/hooks/use-preload-route";
 
 const NavbarActions = dynamic(() => import("./navbar-actions"), { 
   ssr: false,
@@ -24,6 +25,9 @@ export function Navbar() {
   const [searchResults, setSearchResults] = useState<{ posts: any[], users: any[] }>({ posts: [], users: [] });
   const [isSearching, setIsSearching] = useState(false);
   const [showResults, setShowResults] = useState(false);
+
+  // Preload common routes for faster navigation
+  usePreloadRoute(['/saved', '/settings', '/post']);
 
   useEffect(() => setMounted(true), []);
 

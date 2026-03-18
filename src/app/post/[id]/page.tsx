@@ -8,7 +8,7 @@ import { Metadata } from "next";
 import { ChevronLeft } from "lucide-react";
 import Link from "next/link";
 
-export const revalidate = 30; // ISR – revalidate every 30 seconds
+export const revalidate = 60; // ISR – revalidate every 60 seconds for better performance
 
 interface Props {
   params: { id: string };
@@ -25,16 +25,17 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
 export default async function PostPage({ params }: Props) {
   const { id } = await params;
-  const post = await getPostById(id);
+  
+  // Parallel data fetching for better performance
+  const [post, suggestedUsers, trendingLessons] = await Promise.all([
+    getPostById(id),
+    getSuggestedUsers(),
+    getTrendingLessons()
+  ]);
   
   if (!post) {
     notFound();
   }
-
-  const [suggestedUsers, trendingLessons] = await Promise.all([
-    getSuggestedUsers(),
-    getTrendingLessons()
-  ]);
 
   return (
     <div className="min-h-screen flex flex-col bg-background text-foreground transition-colors duration-300">

@@ -10,7 +10,24 @@ import {
   DropdownMenuItem, 
   DropdownMenuTrigger 
 } from "@/components/ui/dropdown-menu";
-import { Loader2, MessageCircle, Share2, MoreHorizontal, Lightbulb, Trash2, Edit2, Send, Bookmark, UserPlus, UserMinus, Plus, Check } from "lucide-react";
+import { 
+  Heart, 
+  MessageCircle, 
+  Share2, 
+  Bookmark, 
+  MoreHorizontal, 
+  Check, 
+  UserPlus, 
+  UserMinus,
+  Trash2, 
+  Edit2, 
+  Loader2, 
+  ExternalLink,
+  Crown,
+  Plus,
+  Lightbulb,
+  Send
+} from "lucide-react";
 import { toggleHelpful, deletePost, editPost, addComment, getComments, toggleFollow, toggleSave, editComment, deleteComment } from "@/lib/actions";
 import { useEffect, useState } from "react";
 import Link from "next/link";
@@ -26,6 +43,7 @@ interface PostCardProps {
      name: string;
      handle: string;
      avatar: string;
+     is_admin?: boolean;
   };
   time: string;
   title: string;
@@ -62,7 +80,7 @@ export function PostCard({ id, user, time, title, story, lesson, imageUrl, helpf
   useEffect(() => {
     const handleFollowUpdate = (e: any) => {
       if (e.detail.userId === user.id) {
-        setIsFollowing(e.detail.isFollowing);
+        setIsFollowing(e.detail.followed);
       }
     };
     window.addEventListener('user-follow-updated', handleFollowUpdate);
@@ -241,55 +259,77 @@ export function PostCard({ id, user, time, title, story, lesson, imageUrl, helpf
               </AvatarFallback>
             </Avatar>
           </Link>
-          <div className="flex flex-col">
-            <Link href={`/u/${user.handle}`} className="text-[15px] font-black hover:text-primary transition-colors leading-none mb-1">
-              {user.name}
-            </Link>
-            <div className="flex items-center gap-2 text-[11px] text-muted-foreground font-bold">
-              <span className="w-1 h-1 rounded-full bg-muted-foreground/20" />
-              <span>{formattedTime}</span>
-              {category && (
-                <>
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-2">
+              <div className="flex flex-col min-w-0">
+                <div className="flex items-center gap-1.5">
+                  <Link href={`/u/${user.handle}`} className="text-sm font-black hover:underline truncate">
+                    {user.name}
+                  </Link>
+                  {user.is_admin && (
+                    <div className="flex items-center gap-0.5 scale-90 -ml-0.5">
+                      <Crown className="w-3 h-3 text-amber-500 fill-amber-500/20" />
+                      <span className="text-[8px] font-black bg-amber-500 text-white px-1 py-0.5 rounded-[4px] uppercase tracking-tighter">ADMIN</span>
+                    </div>
+                  )}
+                </div>
+                <div className="flex items-center gap-2 text-[11px] text-muted-foreground font-bold">
                   <span className="w-1 h-1 rounded-full bg-muted-foreground/20" />
-                  <span className="text-primary bg-primary/5 px-2 py-0.5 rounded-full border border-primary/10">
-                    {category === 'tech' ? '💻 تقني' : 
-                     category === 'medical' ? '🏥 طبي' :
-                     category === 'sports' ? '⚽ رياضي' :
-                     category === 'religious' ? '🕌 ديني' :
-                     category === 'business' ? '💼 تجاري' :
-                     category === 'education' ? '📚 تعليمي' :
-                     category === 'social' ? '👥 اجتماعي' :
-                     category === 'personal' ? '🙋 شخصي' :
-                     category === 'financial' ? '💰 مالي' :
-                     category === 'creative' ? '🎨 إبداعي' :
-                     category === 'career' ? '👔 مهني' :
-                     category === 'relationship' ? '❤️ عاطفي' :
-                     '📌 أخرى'}
-                  </span>
-                </>
+                  <span>{formattedTime}</span>
+                  {category && (
+                    <>
+                      <span className="w-1 h-1 rounded-full bg-muted-foreground/20" />
+                      <span className="text-primary bg-primary/5 px-2 py-0.5 rounded-full border border-primary/10">
+                        {category === 'tech' ? '💻 تقني' : 
+                         category === 'medical' ? '🏥 طبي' :
+                         category === 'sports' ? '⚽ رياضي' :
+                         category === 'religious' ? '🕌 ديني' :
+                         category === 'business' ? '💼 تجاري' :
+                         category === 'education' ? '📚 تعليمي' :
+                         category === 'social' ? '👥 اجتماعي' :
+                         category === 'personal' ? '🙋 شخصي' :
+                         category === 'financial' ? '💰 مالي' :
+                         category === 'creative' ? '🎨 إبداعي' :
+                         category === 'career' ? '👔 مهني' :
+                         category === 'relationship' ? '❤️ عاطفي' :
+                         '📌 أخرى'}
+                      </span>
+                    </>
+                  )}
+                </div>
+              </div>
+
+              {session?.user?.id !== user.id && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={handleFollow}
+                  disabled={isFollowing}
+                  className={cn(
+                    "h-8 rounded-xl gap-2 font-black transition-all active:scale-95 px-3",
+                    isFollowing 
+                      ? "bg-primary/5 text-primary/70 border border-primary/10 cursor-default opacity-100" 
+                      : "text-primary hover:bg-primary/5 border border-transparent hover:border-primary/10"
+                  )}
+                >
+                  {isFollowing ? (
+                    <>
+                      <Check className="w-3.5 h-3.5" />
+                      <span className="text-[11px]">متابع</span>
+                    </>
+                  ) : (
+                    <>
+                      <UserPlus className="w-3.5 h-3.5" />
+                      <span className="text-[11px]">تابع</span>
+                    </>
+                  )}
+                </Button>
               )}
             </div>
           </div>
         </div>
 
         <div className="flex items-center gap-2">
-          {!isOwner && (
-             <Button 
-                variant="ghost" 
-                size="sm" 
-                onClick={handleFollow} 
-                suppressHydrationWarning
-                className={cn(
-                  "h-9 px-5 rounded-2xl text-[11px] font-black transition-all gap-2 border border-transparent shadow-sm",
-                  isFollowing 
-                    ? "bg-muted text-muted-foreground hover:bg-red-500/5 hover:text-red-500 hover:border-red-500/20" 
-                    : "bg-primary text-white hover:bg-primary/90 shadow-primary/20 hover:shadow-primary/40 active:scale-95"
-                )}
-              >
-               {isFollowing ? <UserMinus className="w-3.5 h-3.5" /> : <UserPlus className="w-3.5 h-3.5" />}
-               <span>{isFollowing ? "إلغاء المتابعة" : "متابعة"}</span>
-             </Button>
-          )}
           <DropdownMenu>
             <DropdownMenuTrigger suppressHydrationWarning className="p-2 rounded-2xl text-muted-foreground outline-none hover:bg-primary/10 hover:text-primary transition-all duration-300 border-none flex items-center justify-center cursor-pointer">
               <MoreHorizontal className="w-5 h-5" />
