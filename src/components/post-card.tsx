@@ -11,7 +11,7 @@ import {
   DropdownMenuTrigger 
 } from "@/components/ui/dropdown-menu";
 import { Loader2, MessageCircle, Share2, MoreHorizontal, Lightbulb, Trash2, Edit2, Send, Bookmark, UserPlus, UserMinus, Plus, Check } from "lucide-react";
-import { toggleHelpful, deletePost, editPost, addComment, getComments, toggleFollow, toggleSave } from "@/lib/actions";
+import { toggleHelpful, deletePost, editPost, addComment, getComments, toggleFollow, toggleSave, editComment, deleteComment } from "@/lib/actions";
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { toast } from "sonner";
@@ -37,9 +37,10 @@ interface PostCardProps {
   hasReacted?: boolean;
   isSaved?: boolean;
   isFollowed?: boolean;
+  category?: string | null;
 }
 
-export function PostCard({ id, user, time, title, story, lesson, imageUrl, helpfulCount, commentsCount, hasReacted: initialHasReacted, isSaved: initialIsSaved, isFollowed: initialIsFollowed }: PostCardProps) {
+export function PostCard({ id, user, time, title, story, lesson, imageUrl, helpfulCount, commentsCount, hasReacted: initialHasReacted, isSaved: initialIsSaved, isFollowed: initialIsFollowed, category }: PostCardProps) {
   const { data: session } = useSession();
   const [reacted, setReacted] = useState(initialHasReacted);
   const [saved, setSaved] = useState(initialIsSaved);
@@ -196,6 +197,32 @@ export function PostCard({ id, user, time, title, story, lesson, imageUrl, helpf
   }, [showComments]);
 
   const [replyingTo, setReplyingTo] = useState<string | null>(null);
+  const [editingCommentId, setEditingCommentId] = useState<string | null>(null);
+  const [editingCommentText, setEditingCommentText] = useState("");
+
+  const handleEditComment = async (commentId: string) => {
+    if (!editingCommentText.trim()) return;
+    const res = await editComment(commentId, editingCommentText);
+    if (res.success) {
+      toast.success("تم تعديل التعليق");
+      setEditingCommentId(null);
+      setEditingCommentText("");
+      await fetchComments();
+    } else {
+      toast.error(res.error || "فشل التعديل");
+    }
+  };
+
+  const handleDeleteComment = async (commentId: string) => {
+    if (!confirm("حذف هذا التعليق؟")) return;
+    const res = await deleteComment(commentId);
+    if (res.success) {
+      toast.success("تم حذف التعليق");
+      await fetchComments();
+    } else {
+      toast.error(res.error || "فشل الحذف");
+    }
+  };
 
   const topLevelComments = comments.filter(c => !c.parent_id);
   const getReplies = (parentId: string) => comments.filter(c => c.parent_id === parentId);
@@ -221,6 +248,26 @@ export function PostCard({ id, user, time, title, story, lesson, imageUrl, helpf
             <div className="flex items-center gap-2 text-[11px] text-muted-foreground font-bold">
               <span className="w-1 h-1 rounded-full bg-muted-foreground/20" />
               <span>{formattedTime}</span>
+              {category && (
+                <>
+                  <span className="w-1 h-1 rounded-full bg-muted-foreground/20" />
+                  <span className="text-primary bg-primary/5 px-2 py-0.5 rounded-full border border-primary/10">
+                    {category === 'tech' ? '💻 تقني' : 
+                     category === 'medical' ? '🏥 طبي' :
+                     category === 'sports' ? '⚽ رياضي' :
+                     category === 'religious' ? '🕌 ديني' :
+                     category === 'business' ? '💼 تجاري' :
+                     category === 'education' ? '📚 تعليمي' :
+                     category === 'social' ? '👥 اجتماعي' :
+                     category === 'personal' ? '🙋 شخصي' :
+                     category === 'financial' ? '💰 مالي' :
+                     category === 'creative' ? '🎨 إبداعي' :
+                     category === 'career' ? '👔 مهني' :
+                     category === 'relationship' ? '❤️ عاطفي' :
+                     '📌 أخرى'}
+                  </span>
+                </>
+              )}
             </div>
           </div>
         </div>
@@ -321,12 +368,12 @@ export function PostCard({ id, user, time, title, story, lesson, imageUrl, helpf
         ) : (
           <div className="space-y-5">
             <Link href={`/post/${id}`}>
-              <h3 className="font-black text-2xl leading-tight text-foreground hover:text-primary transition-colors cursor-pointer break-words overflow-hidden decoration-primary/30 underline-offset-8 group-hover:underline">
+              <h3 className="font-black text-xl sm:text-2xl leading-tight text-foreground hover:text-primary transition-colors cursor-pointer line-clamp-3 decoration-primary/30 underline-offset-8 group-hover:underline" style={{ overflowWrap: 'anywhere', wordBreak: 'break-word' }}>
                 {title}
               </h3>
             </Link>
             <div>
-              <p className="text-[16px] text-foreground/80 leading-relaxed whitespace-pre-wrap font-medium break-words">
+              <p className="text-[15px] sm:text-[16px] text-foreground/80 leading-relaxed whitespace-pre-wrap font-medium" style={{ overflowWrap: 'anywhere', wordBreak: 'break-word' }}>
                 {displayStory}
               </p>
               {isLongStory && (
@@ -361,7 +408,7 @@ export function PostCard({ id, user, time, title, story, lesson, imageUrl, helpf
                  <Lightbulb className="w-4 h-4 fill-primary/20" />
                  <span>الحكمة المستخلصة</span>
                </div>
-               <p className="text-[17px] leading-[1.8] text-foreground font-black italic relative z-10 border-r-4 border-primary/40 pr-5">
+               <p className="text-base sm:text-[17px] leading-[1.8] text-foreground font-black italic relative z-10 border-r-4 border-primary/40 pr-5" style={{ overflowWrap: 'anywhere', wordBreak: 'break-word' }}>
                  "{lesson}"
                </p>
             </div>
@@ -471,16 +518,35 @@ export function PostCard({ id, user, time, title, story, lesson, imageUrl, helpf
                       <div className="flex flex-col flex-1">
                         <div className="bg-card border border-border/50 p-4 rounded-[1.5rem] rounded-tr-none shadow-sm relative group/c">
                           <span className="text-[11px] font-black text-primary mb-1.5 block">@{c.username}</span>
-                          <p className="text-[14px] leading-relaxed text-foreground font-medium break-words">{c.text}</p>
+                          {editingCommentId === c.id ? (
+                            <div className="flex gap-2 mt-1">
+                              <Input
+                                autoFocus
+                                value={editingCommentText}
+                                onChange={(e) => setEditingCommentText(e.target.value)}
+                                className="rounded-xl h-8 text-xs bg-muted/40"
+                              />
+                              <Button size="sm" className="h-8 rounded-xl text-xs px-3" onClick={() => handleEditComment(c.id)}>حفظ</Button>
+                              <Button size="sm" variant="ghost" className="h-8 rounded-xl text-xs px-2" onClick={() => setEditingCommentId(null)}>✕</Button>
+                            </div>
+                          ) : (
+                            <p className="text-[14px] leading-relaxed text-foreground font-medium break-words">{c.text}</p>
+                          )}
                           
-                          <div className="mt-3 flex items-center gap-4 transition-opacity">
+                          <div className="mt-3 flex items-center gap-3 text-[10px]">
                              <button 
                                onClick={() => setReplyingTo(replyingTo === c.id ? null : c.id)}
-                               className="text-[10px] font-black text-muted-foreground hover:text-primary transition-colors uppercase tracking-widest flex items-center gap-1"
+                               className="font-black text-muted-foreground hover:text-primary transition-colors uppercase tracking-widest"
                              >
-                               رد على التعليق
+                               رد
                              </button>
-                             <span className="text-[10px] text-muted-foreground/40 font-bold">{new Date(c.created_at).toLocaleDateString('ar-EG')}</span>
+                             {c.is_owner && (
+                               <>
+                                 <button onClick={() => { setEditingCommentId(c.id); setEditingCommentText(c.text); }} className="font-black text-muted-foreground hover:text-blue-500 transition-colors">تعديل</button>
+                                 <button onClick={() => handleDeleteComment(c.id)} className="font-black text-muted-foreground hover:text-red-500 transition-colors">حذف</button>
+                               </>
+                             )}
+                             <span className="text-muted-foreground/40 font-bold mr-auto">{new Date(c.created_at).toLocaleDateString('ar-EG')}</span>
                           </div>
                         </div>
 

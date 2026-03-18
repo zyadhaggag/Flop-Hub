@@ -14,7 +14,7 @@ const tajawal = Tajawal({
 export const metadata: Metadata = {
   title: {
     default: "FlopHub | منصة الفشل والتعلم",
-    template: "%s | FlopHub"
+    template: "فلوب هب | %s"
   },
   description: "شارك قصص فشلك، وتعلم من الآخرين. الفشل هو بداية النجاح.",
   icons: {

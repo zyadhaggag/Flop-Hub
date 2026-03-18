@@ -17,8 +17,8 @@ export default async function SavedPage() {
   return (
     <div className="min-h-screen flex flex-col">
       <Navbar />
-      <main className="flex-1 max-w-7xl mx-auto w-full flex gap-4 p-4 md:p-6 lg:p-8">
-        <Sidebar className="hidden md:flex" />
+      <main className="flex-1 max-w-7xl mx-auto w-full flex gap-4 p-4 md:p-6 lg:p-8" dir="rtl">
+        <Sidebar className="hidden lg:flex shrink-0 w-64 sticky top-20 h-fit" />
         
         <div className="flex-1 max-w-2xl mx-auto w-full space-y-6">
           <div className="flex items-center gap-3 mb-2 px-2">
@@ -45,6 +45,7 @@ export default async function SavedPage() {
                   helpfulCount={parseInt(post.helpful_count)}
                   commentsCount={parseInt(post.comments_count)}
                   isSaved={true}
+                  category={post.category}
                 />
               ))
             ) : (
@@ -57,7 +58,7 @@ export default async function SavedPage() {
           </div>
         </div>
 
-        <RightSidebar suggestedUsers={suggestedUsers} trendingLessons={trendingLessons} className="hidden lg:flex" />
+        <RightSidebar suggestedUsers={suggestedUsers} trendingLessons={trendingLessons} className="hidden xl:flex w-80 shrink-0 flex-col gap-6 sticky top-20 h-fit" />
       </main>
     </div>
   );

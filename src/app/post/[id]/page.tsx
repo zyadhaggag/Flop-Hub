@@ -8,6 +8,8 @@ import { Metadata } from "next";
 import { ChevronLeft } from "lucide-react";
 import Link from "next/link";
 
+export const revalidate = 30; // ISR – revalidate every 30 seconds
+
 interface Props {
   params: { id: string };
 }
@@ -15,10 +17,8 @@ interface Props {
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { id } = await params;
   const post = await getPostById(id);
-  if (!post) return { title: "Post Not Found | FlopHub" };
-  
   return {
-    title: `${post.title} | FlopHub`,
+    title: `${post.title}`,
     description: post.story.substring(0, 160),
   };
 }
@@ -41,7 +41,7 @@ export default async function PostPage({ params }: Props) {
       <Navbar />
       
       <main className="flex-1 max-w-7xl mx-auto w-full flex gap-4 p-4 md:p-6 lg:p-8" dir="rtl">
-        <Sidebar className="hidden lg:flex shrink-0 w-64" />
+        <Sidebar className="hidden lg:flex shrink-0 w-64 sticky top-20 h-fit" />
 
         <div className="flex-1 max-w-2xl mx-auto w-full space-y-6">
             <div className="flex items-center gap-4 mb-2 px-2 animate-in fade-in slide-in-from-right-8 duration-700">
@@ -77,6 +77,7 @@ export default async function PostPage({ params }: Props) {
                   hasReacted={post.has_reacted}
                   isSaved={post.is_saved}
                   isFollowed={post.is_followed}
+                  category={post.category}
                />
             </div>
         </div>
@@ -84,7 +85,7 @@ export default async function PostPage({ params }: Props) {
         <RightSidebar 
           suggestedUsers={suggestedUsers} 
           trendingLessons={trendingLessons}
-          className="hidden xl:flex w-80 shrink-0" 
+          className="hidden xl:flex w-80 shrink-0 flex-col gap-6 sticky top-20 h-fit" 
         />
       </main>
     </div>

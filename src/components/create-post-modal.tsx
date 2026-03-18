@@ -11,13 +11,28 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Lightbulb, Info, Loader2, Sparkles } from "lucide-react";
-import { useState } from "react";
+import { Lightbulb, Loader2, Sparkles, Search, Check } from "lucide-react";
+import { useState, useMemo } from "react";
 import { createPost } from "@/lib/actions";
 import { toast } from "sonner";
-
 import { cn } from "@/lib/utils";
 import { useSession } from "next-auth/react";
+
+const CATEGORIES = [
+  { id: "tech", label: "تقني", emoji: "💻" },
+  { id: "medical", label: "طبي", emoji: "🏥" },
+  { id: "sports", label: "رياضي", emoji: "⚽" },
+  { id: "religious", label: "ديني", emoji: "🕌" },
+  { id: "business", label: "تجاري", emoji: "💼" },
+  { id: "education", label: "تعليمي", emoji: "📚" },
+  { id: "social", label: "اجتماعي", emoji: "👥" },
+  { id: "personal", label: "شخصي", emoji: "🙋" },
+  { id: "financial", label: "مالي", emoji: "💰" },
+  { id: "creative", label: "إبداعي", emoji: "🎨" },
+  { id: "career", label: "مهني", emoji: "👔" },
+  { id: "relationship", label: "عاطفي", emoji: "❤️" },
+  { id: "other", label: "أخرى", emoji: "📌" },
+];
 
 export function CreatePostModal({ open, onOpenChange }: { open: boolean, onOpenChange: (open: boolean) => void }) {
   const { data: session } = useSession();
@@ -27,19 +42,24 @@ export function CreatePostModal({ open, onOpenChange }: { open: boolean, onOpenC
     story: "",
     lesson: "",
     imageUrl: "",
+    category: "",
   });
+  const [categorySearch, setCategorySearch] = useState("");
+
+  const filteredCategories = useMemo(() => {
+    if (!categorySearch) return CATEGORIES;
+    return CATEGORIES.filter(c => c.label.includes(categorySearch) || c.id.includes(categorySearch.toLowerCase()));
+  }, [categorySearch]);
 
   const handleSubmit = async () => {
     if (!formData.title || !formData.story || !formData.lesson) {
       toast.error("يرجى ملء جميع الحقول المطلوبة");
       return;
     }
-
     if (formData.story.length < 20) {
       toast.error("قصة الفشل يجب أن تكون 20 حرفاً على الأقل");
       return;
     }
-
     if (formData.lesson.length < 10) {
       toast.error("الدرس المستفاد يجب أن يكون 10 أحرف على الأقل");
       return;
@@ -51,7 +71,7 @@ export function CreatePostModal({ open, onOpenChange }: { open: boolean, onOpenC
       if (res.success) {
         toast.success("تم نشر قصتك بنجاح!");
         onOpenChange(false);
-        setFormData({ title: "", story: "", lesson: "", imageUrl: "" });
+        setFormData({ title: "", story: "", lesson: "", imageUrl: "", category: "" });
       } else {
         toast.error(res.error);
       }
@@ -65,17 +85,16 @@ export function CreatePostModal({ open, onOpenChange }: { open: boolean, onOpenC
   const userName = session?.user?.name || "مستخدم";
   const userHandle = session?.user?.username || userName;
   const userAvatar = session?.user?.image;
+  const selectedCat = CATEGORIES.find(c => c.id === formData.category);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[600px] p-0 overflow-hidden rounded-[2.5rem] border-none shadow-2xl bg-card" dir="rtl">
         <DialogHeader className="p-6 pb-2">
-          <DialogTitle className="text-xl font-black tracking-tight flex items-center justify-between">
-            <span>شارك بمنشور فشل</span>
-          </DialogTitle>
+          <DialogTitle className="text-xl font-black tracking-tight">شارك بمنشور فشل</DialogTitle>
         </DialogHeader>
 
-        <div className="p-6 space-y-6 max-h-[70vh] overflow-y-auto custom-scrollbar">
+        <div className="p-6 space-y-5 max-h-[65vh] overflow-y-auto custom-scrollbar">
           {/* User Info */}
           <div className="flex items-center gap-3 bg-muted/30 p-3 rounded-2xl border border-border/50">
             <Avatar className="w-10 h-10 border-2 border-primary/20">
@@ -84,15 +103,57 @@ export function CreatePostModal({ open, onOpenChange }: { open: boolean, onOpenC
             </Avatar>
             <div className="flex flex-col">
               <span className="text-sm font-bold text-foreground">{userName}</span>
-              <span className="text-[11px] text-muted-foreground uppercase tracking-wider">@{userHandle}</span>
+              <span className="text-[11px] text-muted-foreground">@{userHandle}</span>
+            </div>
+          </div>
+
+          {/* Category Selector - Redesigned to be Large */}
+          <div className="space-y-3 bg-muted/20 p-4 rounded-3xl border border-border/40">
+            <label className="text-xs font-black text-muted-foreground uppercase tracking-widest flex items-center justify-between">
+              <span>اختر تصنيف المنشور</span>
+              {selectedCat && <span className="text-primary animate-pulse">تم الاختيار: {selectedCat.label}</span>}
+            </label>
+            <div className="relative">
+              <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+              <Input
+                value={categorySearch}
+                onChange={(e) => setCategorySearch(e.target.value)}
+                placeholder="ابحث عن تصنيف (مثال: تقني، طبي...)"
+                className="h-11 rounded-2xl bg-background border-border pr-10 text-sm font-bold shadow-inner"
+              />
+            </div>
+            <div className="grid grid-cols-2 gap-2 max-h-[220px] overflow-y-auto pr-1 mt-2 custom-scrollbar">
+              {filteredCategories.map((cat) => (
+                <button
+                  key={cat.id}
+                  type="button"
+                  onClick={() => setFormData({ ...formData, category: formData.category === cat.id ? '' : cat.id })}
+                  className={cn(
+                    "flex items-center gap-3 px-4 py-3 rounded-2xl text-sm font-black transition-all border-2 text-right justify-start",
+                    formData.category === cat.id
+                      ? "bg-primary/10 border-primary text-primary shadow-[0_0_15px_rgba(124,58,237,0.15)] scale-[1.02]"
+                      : "bg-background border-border/40 text-muted-foreground hover:border-primary/30 hover:bg-primary/[0.02]"
+                  )}
+                >
+                  <span className="text-xl bg-muted/50 w-10 h-10 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform">{cat.emoji}</span>
+                  <div className="flex flex-col items-start">
+                    <span>{cat.label}</span>
+                    <span className="text-[10px] opacity-40 font-bold uppercase">{cat.id}</span>
+                  </div>
+                  {formData.category === cat.id && <Check className="w-4 h-4 mr-auto text-primary" />}
+                </button>
+              ))}
+              {filteredCategories.length === 0 && (
+                <div className="col-span-2 text-center py-8 text-muted-foreground opacity-50 font-bold italic">
+                  لم يتم العثور على تصنيف بهذا الاسم
+                </div>
+              )}
             </div>
           </div>
 
           {/* Title */}
-          <div className="space-y-3">
-            <label className="text-xs font-black text-muted-foreground uppercase tracking-widest flex items-center gap-1">
-              <span>العنوان المحفز</span>
-            </label>
+          <div className="space-y-2">
+            <label className="text-xs font-black text-muted-foreground uppercase tracking-widest">العنوان المحفز</label>
             <Input 
               placeholder="عن ماذا فشلت هذه المرة؟" 
               className="h-14 rounded-2xl bg-muted/40 border-border focus-visible:ring-primary text-base font-bold placeholder:font-normal transition-all focus:bg-card"
@@ -102,18 +163,14 @@ export function CreatePostModal({ open, onOpenChange }: { open: boolean, onOpenC
           </div>
 
           {/* Story */}
-          <div className="space-y-3 relative group">
-             <label className="text-xs font-black text-muted-foreground uppercase tracking-widest flex items-center gap-1">
-              <span>منشور الفشل (بصدق تام)</span>
-            </label>
+          <div className="space-y-2 relative group">
+            <label className="text-xs font-black text-muted-foreground uppercase tracking-widest">منشور الفشل (بصدق تام)</label>
             <Textarea 
-              placeholder="احكِ لنا ما الذي حدث فعلاً؟ أين كان الخطأ؟ كن صريحاً، فنحن هنا لنتعلم..." 
-              className="min-h-[140px] rounded-2xl bg-muted/40 border-border focus-visible:ring-primary resize-none p-4 text-base leading-relaxed transition-all focus:bg-card"
+              placeholder="احكِ لنا ما الذي حدث فعلاً؟ أين كان الخطأ؟ كن صريحاً..." 
+              className="min-h-[120px] rounded-2xl bg-muted/40 border-border focus-visible:ring-primary resize-none p-4 text-base leading-relaxed transition-all focus:bg-card"
               value={formData.story}
               onChange={(e) => {
-                if (e.target.value.length <= 1000) {
-                  setFormData({ ...formData, story: e.target.value });
-                }
+                if (e.target.value.length <= 1000) setFormData({ ...formData, story: e.target.value });
               }}
             />
             <div className={cn(
@@ -125,27 +182,23 @@ export function CreatePostModal({ open, onOpenChange }: { open: boolean, onOpenC
           </div>
 
           {/* Lesson */}
-          <div className="space-y-3 p-6 rounded-[2rem] bg-primary/[0.03] border-2 border-dashed border-primary/20 relative group/lesson overflow-hidden">
-            <div className="absolute top-0 right-0 w-32 h-32 bg-primary/5 rounded-full blur-3xl -mr-16 -mt-16 group-focus-within/lesson:bg-primary/10 transition-colors" />
-            <label className="text-xs font-black text-primary uppercase tracking-widest flex items-center gap-2 mb-1 relative z-10">
-              <div className="p-1 rounded-md bg-primary/10 shadow-[0_0_10px_rgba(147,51,234,0.3)]">
-                <Lightbulb className="w-3 h-3 fill-primary" />
-              </div>
-              <span>الدرس الذهبي لم يتكرر</span>
+          <div className="space-y-2 p-5 rounded-[2rem] bg-primary/[0.03] border-2 border-dashed border-primary/20 relative overflow-hidden">
+            <div className="absolute top-0 right-0 w-32 h-32 bg-primary/5 rounded-full blur-3xl -mr-16 -mt-16" />
+            <label className="text-xs font-black text-primary uppercase tracking-widest flex items-center gap-2 relative z-10">
+              <div className="p-1 rounded-md bg-primary/10"><Lightbulb className="w-3 h-3 fill-primary" /></div>
+              <span>الدرس الذهبي</span>
             </label>
             <Textarea 
               placeholder="ما هي الحكمة التي خرجت بها؟" 
-              className="min-h-[100px] bg-transparent border-none focus-visible:ring-0 resize-none p-0 text-xl font-black text-foreground placeholder:text-muted-foreground/30 placeholder:font-normal leading-relaxed relative z-10 italic"
+              className="min-h-[80px] bg-transparent border-none focus-visible:ring-0 resize-none p-0 text-lg font-black text-foreground placeholder:text-muted-foreground/30 leading-relaxed relative z-10 italic"
               value={formData.lesson}
               onChange={(e) => setFormData({ ...formData, lesson: e.target.value })}
             />
-            <div className="text-[10px] font-bold text-primary/40 relative z-10 text-left">أهم جزء في قصتك</div>
           </div>
 
-          <div className="space-y-3">
-            <label className="text-xs font-black text-muted-foreground uppercase tracking-widest flex items-center gap-1">
-              <span>رابط صورة تعبيرية (اختياري)</span>
-            </label>
+          {/* Image URL */}
+          <div className="space-y-2">
+            <label className="text-xs font-black text-muted-foreground uppercase tracking-widest">رابط صورة تعبيرية (اختياري)</label>
             <Input 
               placeholder="ضع رابط صورة هنا..." 
               className="h-12 rounded-2xl bg-muted/40 border-border focus-visible:ring-primary text-xs font-medium"
@@ -155,16 +208,21 @@ export function CreatePostModal({ open, onOpenChange }: { open: boolean, onOpenC
           </div>
         </div>
 
-        <DialogFooter className="p-6 bg-muted/5 border-t border-border/50 flex items-center justify-between sm:justify-between">
-          <Button variant="ghost" onClick={() => onOpenChange(false)} className="rounded-2xl px-6 font-bold hover:bg-muted" disabled={loading}>إلغاء</Button>
-          <Button 
-            className="bg-primary text-white rounded-2xl px-10 h-12 font-black text-base shadow-lg shadow-primary/20 hover:shadow-primary/40 active:scale-95 transition-all" 
-            onClick={handleSubmit} 
-            disabled={loading}
-          >
-            {loading ? <Loader2 className="ml-2 h-5 w-5 animate-spin" /> : <Sparkles className="ml-2 h-5 w-5" />}
-            انشر المنشور
-          </Button>
+        <DialogFooter className="p-4 px-6 bg-muted/5 border-t border-border/50" suppressHydrationWarning>
+          <div className="flex items-center justify-between w-full gap-4">
+            <Button variant="ghost" onClick={() => onOpenChange(false)} className="rounded-2xl px-5 font-bold hover:bg-muted h-12 text-muted-foreground shrink-0" disabled={loading}>إلغاء</Button>
+            <Button 
+              className="flex-1 bg-primary text-white rounded-2xl px-6 h-12 font-black text-sm shadow-lg shadow-primary/20 hover:shadow-primary/40 active:scale-[0.98] transition-all flex items-center justify-center gap-2 min-w-0" 
+              onClick={handleSubmit} 
+              disabled={loading}
+            >
+              <div className="flex items-center gap-2 truncate">
+                {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
+                <span className="truncate">انشر المنشور</span>
+                {selectedCat && <span className="text-[10px] opacity-80 whitespace-nowrap bg-white/10 px-1.5 py-0.5 rounded-md">({selectedCat.label})</span>}
+              </div>
+            </Button>
+          </div>
         </DialogFooter>
       </DialogContent>
     </Dialog>

@@ -4,6 +4,7 @@ import { Home, User, Lightbulb, Bookmark, TrendingUp, Settings, Quote } from "lu
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
+import { useSession } from "next-auth/react";
 
 export const menuItems = [
   { id: "home", label: "الرئيسية", icon: Home, href: "/" },
@@ -13,8 +14,16 @@ export const menuItems = [
 
 export function Sidebar({ onPostClick, className }: { onPostClick?: () => void, className?: string }) {
   const pathname = usePathname();
+  const { data: session } = useSession();
+  const profileHref = session?.user?.username ? `/u/${session.user.username}` : null;
   
-  const activeItem = menuItems.find(item => item.href === pathname) || menuItems[0];
+  // Combine static items with dynamic profile item
+  const allItems = [
+    ...menuItems,
+    ...(profileHref ? [{ id: "profile", label: "ملفي الشخصي", icon: User, href: profileHref }] : []),
+  ];
+
+  const activeItem = allItems.find(item => item.href === pathname) || allItems[0];
 
   return (
     <div className="w-64 flex flex-col gap-2 p-4 hidden md:flex sticky top-20 h-fit">
@@ -23,7 +32,7 @@ export function Sidebar({ onPostClick, className }: { onPostClick?: () => void, 
         <span className="text-sm font-bold text-primary">{activeItem.label}</span>
       </div>
 
-      {menuItems.map((item) => {
+      {allItems.map((item) => {
         const isActive = pathname === item.href;
         return (
           <Link

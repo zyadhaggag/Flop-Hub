@@ -9,25 +9,43 @@ import { useState, useEffect } from "react";
 import { updateUsername, updateProfile, updatePassword, deleteAccount } from "@/lib/actions";
 import { uploadImage } from "@/lib/supabase";
 import { toast } from "sonner";
-import { Settings, User, Bell, Shield, Camera, Check, Loader2, Image as ImageIcon, Sliders, Globe, Plus, Trash2, X } from "lucide-react";
+import { Settings, User, Bell, Shield, Camera, Check, Loader2, Image as ImageIcon, Sliders, Globe, Plus, Trash2, X, Sun, Moon, MapPin } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { AvatarEditorModal } from "@/components/avatar-editor-modal";
 import { ProfileBannerSelector } from "@/components/profile-banner-selector";
 import { Textarea } from "@/components/ui/textarea";
+import { useTheme } from "next-themes";
 import { detectPlatform, getPlatformIcon, getPlatformLabel, SocialLink } from "@/lib/social-links";
 
-const BANNER_STYLES: Record<string, string> = {
-  'banner-1': 'linear-gradient(135deg, #6366f1 0%, #a855f7 50%, #ec4899 100%)',
-  'banner-2': 'linear-gradient(135deg, #3b82f6 0%, #2dd4bf 100%)',
-  'banner-3': 'linear-gradient(135deg, #f59e0b 0%, #ef4444 100%)',
-  'banner-4': 'linear-gradient(135deg, #10b981 0%, #3b82f6 100%)',
-  'banner-5': 'linear-gradient(135deg, #000000 0%, #1e293b 100%)',
-  'banner-6': 'radial-gradient(#ffffff 0.5px, transparent 0.5px) #000',
-  'banner-7': 'linear-gradient(#1f2937 1px, transparent 1px), linear-gradient(90deg, #1f2937 1px, transparent 1px) #111827',
-  'banner-8': 'radial-gradient(circle at center, #7c3aed 0%, #000 100%)',
-  'banner-9': 'linear-gradient(45deg, #ff00cc, #3333ff)',
-  'banner-10': 'repeating-linear-gradient(45deg, #222 0, #222 1px, transparent 0, transparent 50%) #1a1a1a',
+const BANNER_STYLES: Record<string, { backgroundImage: string; backgroundColor?: string; backgroundSize?: string }> = {
+  'banner-1': { backgroundImage: 'linear-gradient(135deg, #6366f1 0%, #a855f7 50%, #ec4899 100%)' },
+  'banner-2': { backgroundImage: 'linear-gradient(135deg, #3b82f6 0%, #2dd4bf 100%)' },
+  'banner-3': { backgroundImage: 'linear-gradient(135deg, #f59e0b 0%, #ef4444 100%)' },
+  'banner-4': { backgroundImage: 'linear-gradient(135deg, #10b981 0%, #3b82f6 100%)' },
+  'banner-5': { backgroundImage: 'linear-gradient(135deg, #000000 0%, #1e293b 100%)' },
+  'banner-6': { backgroundImage: 'radial-gradient(#ffffff 0.5px, transparent 0.5px)', backgroundColor: '#000', backgroundSize: '20px 20px' },
+  'banner-7': { backgroundImage: 'linear-gradient(#1f2937 1px, transparent 1px), linear-gradient(90deg, #1f2937 1px, transparent 1px)', backgroundColor: '#111827', backgroundSize: '30px 30px' },
+  'banner-8': { backgroundImage: 'radial-gradient(circle at center, #7c3aed 0%, #000 100%)' },
+  'banner-9': { backgroundImage: 'linear-gradient(45deg, #ff00cc, #3333ff)' },
+  'banner-10': { backgroundImage: 'repeating-linear-gradient(45deg, #222 0, #222 1px, transparent 0, transparent 50%)', backgroundColor: '#1a1a1a', backgroundSize: '10px 10px' },
+  'banner-11': { backgroundImage: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)' },
+  'banner-12': { backgroundImage: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)' },
+  'banner-13': { backgroundImage: 'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)' },
+  'banner-14': { backgroundImage: 'linear-gradient(135deg, #43e97b 0%, #38f9d7 100%)' },
+  'banner-15': { backgroundImage: 'linear-gradient(135deg, #fa709a 0%, #fee140 100%)' },
 };
+
+function getBannerStyle(banner: string | null): React.CSSProperties {
+  if (!banner) return {};
+  const key = banner.startsWith('preset-') ? banner.replace('preset-', 'banner-') : null;
+  if (key && BANNER_STYLES[key]) {
+    return BANNER_STYLES[key];
+  }
+  if (banner.startsWith('http') || banner.startsWith('/')) {
+    return { backgroundImage: `url(${banner})`, backgroundSize: 'cover', backgroundPosition: 'center' };
+  }
+  return {};
+}
 
 export default function SettingsPage() {
   const { data: session, update } = useSession();
@@ -202,7 +220,7 @@ export default function SettingsPage() {
   const tabs = [
     { id: "account", label: "الحساب", icon: User },
     { id: "security", label: "الأمان", icon: Shield },
-    { id: "notifications", label: "الإشعارات", icon: Bell },
+    { id: "general", label: "عام", icon: Sliders },
   ];
 
   return (
@@ -265,14 +283,7 @@ export default function SettingsPage() {
                         "absolute inset-0 transition-all duration-700",
                         !banner && "bg-gradient-to-br from-primary/20 via-violet-500/10 to-transparent"
                       )}
-                      style={
-                        banner?.startsWith('preset-') 
-                        ? { 
-                            background: BANNER_STYLES[banner.replace('preset-', 'banner-') as keyof typeof BANNER_STYLES],
-                            backgroundSize: banner === 'preset-6' ? '20px 20px' : banner === 'preset-7' ? '30px 30px' : banner === 'preset-10' ? '10px 10px' : 'cover'
-                          }
-                        : banner ? { backgroundImage: `url(${banner})`, backgroundSize: 'cover', backgroundPosition: 'center' } : {}
-                      }
+                      style={getBannerStyle(banner)}
                     />
                     <div className="absolute inset-0 bg-black/5 opacity-0 group-hover:opacity-100 transition-opacity" />
                   </div>
@@ -479,12 +490,8 @@ export default function SettingsPage() {
               </div>
             )}
 
-            {(activeTab !== "account" && activeTab !== "security") && (
-              <div className="text-center py-20 bg-muted/10 rounded-[2rem] border border-dashed border-border/50 text-muted-foreground animate-in zoom-in-95 duration-300">
-                <div className="text-5xl mb-4 opacity-20">⚙️</div>
-                <p className="font-bold text-lg">هذه الإعدادات ستكون متاحة قريباً.</p>
-                <p className="text-xs mt-2 px-10 leading-relaxed opacity-60">نحن نعمل باستمرار على إضافة ميزات جديدة لتحسين تجربتك في FlopHub.</p>
-              </div>
+            {activeTab === "general" && (
+              <GeneralSettings />
             )}
           </div>
         </div>
@@ -496,6 +503,99 @@ export default function SettingsPage() {
         image={tempAvatar}
         onSave={handleCropSave}
       />
+    </div>
+  );
+}
+
+function GeneralSettings() {
+  const { resolvedTheme, setTheme } = useTheme();
+  const [notificationsOn, setNotificationsOn] = useState(true);
+  const [showLocation, setShowLocation] = useState(false);
+
+  return (
+    <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-300">
+      {/* Theme */}
+      <div className="bg-card/40 backdrop-blur-sm rounded-[2rem] border border-border p-6 shadow-sm space-y-5">
+        <h2 className="text-xl font-black flex items-center gap-2">
+          <Sliders className="w-5 h-5 text-primary" />
+          <span>إعدادات عامة</span>
+        </h2>
+
+        {/* Dark/Light Mode */}
+        <div className="flex items-center justify-between p-4 rounded-2xl bg-muted/30 border border-border/50">
+          <div className="flex items-center gap-3">
+            <div className="p-2 rounded-xl bg-primary/10">
+              {resolvedTheme === 'dark' ? <Moon className="w-4 h-4 text-primary" /> : <Sun className="w-4 h-4 text-primary" />}
+            </div>
+            <div>
+              <span className="text-sm font-black">الوضع الافتراضي</span>
+              <p className="text-[10px] text-muted-foreground">{resolvedTheme === 'dark' ? 'الوضع الداكن مفعّل' : 'الوضع الفاتح مفعّل'}</p>
+            </div>
+          </div>
+          <button
+            onClick={() => setTheme(resolvedTheme === 'dark' ? 'light' : 'dark')}
+            className={cn(
+              "relative w-12 h-7 rounded-full transition-colors duration-300",
+              resolvedTheme === 'dark' ? "bg-primary" : "bg-muted-foreground/20"
+            )}
+          >
+            <span className={cn(
+              "absolute top-0.5 w-6 h-6 rounded-full bg-white shadow-md transition-all duration-300",
+              resolvedTheme === 'dark' ? "right-0.5" : "right-[calc(100%-1.625rem)]"
+            )} />
+          </button>
+        </div>
+
+        {/* Notifications */}
+        <div className="flex items-center justify-between p-4 rounded-2xl bg-muted/30 border border-border/50">
+          <div className="flex items-center gap-3">
+            <div className="p-2 rounded-xl bg-primary/10">
+              <Bell className="w-4 h-4 text-primary" />
+            </div>
+            <div>
+              <span className="text-sm font-black">الإشعارات</span>
+              <p className="text-[10px] text-muted-foreground">{notificationsOn ? 'مفعّلة' : 'مغلقة'}</p>
+            </div>
+          </div>
+          <button
+            onClick={() => { setNotificationsOn(!notificationsOn); toast.success(notificationsOn ? 'تم إيقاف الإشعارات' : 'تم تفعيل الإشعارات'); }}
+            className={cn(
+              "relative w-12 h-7 rounded-full transition-colors duration-300",
+              notificationsOn ? "bg-primary" : "bg-muted-foreground/20"
+            )}
+          >
+            <span className={cn(
+              "absolute top-0.5 w-6 h-6 rounded-full bg-white shadow-md transition-all duration-300",
+              notificationsOn ? "right-0.5" : "right-[calc(100%-1.625rem)]"
+            )} />
+          </button>
+        </div>
+
+        {/* Location Visibility */}
+        <div className="flex items-center justify-between p-4 rounded-2xl bg-muted/30 border border-border/50">
+          <div className="flex items-center gap-3">
+            <div className="p-2 rounded-xl bg-primary/10">
+              <MapPin className="w-4 h-4 text-primary" />
+            </div>
+            <div>
+              <span className="text-sm font-black">إظهار الموقع</span>
+              <p className="text-[10px] text-muted-foreground">{showLocation ? 'ظاهر (الرياض، سعودية ...)' : 'مخفي عن الجميع'}</p>
+            </div>
+          </div>
+          <button
+            onClick={() => { setShowLocation(!showLocation); toast.success(showLocation ? 'تم إخفاء الموقع' : 'تم إظهار الموقع'); }}
+            className={cn(
+              "relative w-12 h-7 rounded-full transition-colors duration-300",
+              showLocation ? "bg-primary" : "bg-muted-foreground/20"
+            )}
+          >
+            <span className={cn(
+              "absolute top-0.5 w-6 h-6 rounded-full bg-white shadow-md transition-all duration-300",
+              showLocation ? "right-0.5" : "right-[calc(100%-1.625rem)]"
+            )} />
+          </button>
+        </div>
+      </div>
     </div>
   );
 }

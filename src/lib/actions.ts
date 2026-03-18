@@ -61,9 +61,10 @@ export async function createPost(input: PostInput) {
         }
     }
 
+    const category = (input as any).category || null;
     const result = await sql`
-      INSERT INTO posts (user_id, title, story, lesson, image_url, tags)
-      VALUES (${session.user.id}, ${validated.title}, ${validated.story}, ${validated.lesson}, ${imageUrl}, ${validated.tags})
+      INSERT INTO posts (user_id, title, story, lesson, image_url, category)
+      VALUES (${session.user.id}, ${validated.title}, ${validated.story}, ${validated.lesson}, ${imageUrl}, ${category})
       RETURNING id
     `;
     
@@ -93,7 +94,7 @@ export async function editPost(id: string, input: PostInput) {
 
     const result = await sql`
       UPDATE posts 
-      SET title = ${validated.title}, story = ${validated.story}, lesson = ${validated.lesson}, image_url = ${imageUrl}, tags = ${validated.tags}, updated_at = NOW()
+      SET title = ${validated.title}, story = ${validated.story}, lesson = ${validated.lesson}, image_url = ${imageUrl}, updated_at = NOW()
       WHERE id = ${id} AND user_id = ${session.user.id}
       RETURNING id
     `;
@@ -185,6 +186,7 @@ export async function addComment(postId: string, content: string, parentId?: str
 }
 
 export async function getComments(postId: string) {
+  const session = await getServerSession(authOptions);
   try {
     const comments = await sql`
       SELECT c.*, u.username, u.name, u.image_url as avatar_url
@@ -193,8 +195,162 @@ export async function getComments(postId: string) {
       WHERE c.post_id = ${postId}
       ORDER BY c.created_at DESC
     `;
-    return comments;
+    return comments.map((c: any) => ({
+      ...c,
+      is_owner: session?.user?.id === c.user_id,
+    }));
   } catch (e) { return []; }
+}
+
+export async function editComment(commentId: string, newText: string) {
+  const session = await getServerSession(authOptions);
+  if (!session?.user?.id) return { success: false, error: "يجب تسجيل الدخول" };
+  if (!newText.trim()) return { success: false, error: "التعليق لا يمكن أن يكون فارغاً" };
+
+  try {
+    const result = await sql`
+      UPDATE comments SET text = ${newText.trim()}
+      WHERE id = ${commentId} AND user_id = ${session.user.id}
+      RETURNING id
+    `;
+    if (result.length === 0) return { success: false, error: "لا تملك صلاحية تعديل هذا التعليق" };
+    return { success: true };
+  } catch (e) { return { success: false, error: "حدث خطأ" }; }
+}
+
+export async function deleteComment(commentId: string) {
+  const session = await getServerSession(authOptions);
+  if (!session?.user?.id) return { success: false, error: "يجب تسجيل الدخول" };
+
+  try {
+    // Delete replies first, then delete the comment
+    await sql`DELETE FROM comments WHERE parent_id = ${commentId}`;
+    const result = await sql`
+      DELETE FROM comments
+      WHERE id = ${commentId} AND user_id = ${session.user.id}
+      RETURNING id
+    `;
+    if (result.length === 0) return { success: false, error: "لا تملك صلاحية حذف هذا التعليق" };
+    return { success: true };
+  } catch (e) { return { success: false, error: "حدث خطأ" }; }
+}
+
+// ─── Admin helpers ────────────────────────────
+async function isAdmin(): Promise<boolean> {
+  const session = await getServerSession(authOptions);
+  if (!session?.user?.id) return false;
+  try {
+    const res = await sql`SELECT is_admin FROM users WHERE id = ${session.user.id}`;
+    return res.length > 0 && res[0].is_admin === true;
+  } catch { return false; }
+}
+
+export async function checkIsAdmin() {
+  return isAdmin();
+}
+
+export async function adminGetStats() {
+  if (!(await isAdmin())) return null;
+  try {
+    const [users, posts, comments] = await Promise.all([
+      sql`SELECT COUNT(*) as count FROM users`,
+      sql`SELECT COUNT(*) as count FROM posts`,
+      sql`SELECT COUNT(*) as count FROM comments`,
+    ]);
+    return {
+      totalUsers: Number(users[0].count),
+      totalPosts: Number(posts[0].count),
+      totalComments: Number(comments[0].count),
+    };
+  } catch { return null; }
+}
+
+export async function adminGetUsers(search = '', limit = 50) {
+  if (!(await isAdmin())) return [];
+  try {
+    if (search) {
+      return await sql`
+        SELECT id, username, name, email, image_url, is_admin, created_at,
+          (SELECT COUNT(*) FROM posts WHERE user_id = users.id) as post_count,
+          (SELECT COUNT(*) FROM comments WHERE user_id = users.id) as comment_count
+        FROM users
+        WHERE username ILIKE ${'%' + search + '%'} OR name ILIKE ${'%' + search + '%'} OR email ILIKE ${'%' + search + '%'}
+        ORDER BY created_at DESC
+        LIMIT ${limit}
+      `;
+    }
+    return await sql`
+      SELECT id, username, name, email, image_url, is_admin, created_at,
+        (SELECT COUNT(*) FROM posts WHERE user_id = users.id) as post_count,
+        (SELECT COUNT(*) FROM comments WHERE user_id = users.id) as comment_count
+      FROM users
+      ORDER BY created_at DESC
+      LIMIT ${limit}
+    `;
+  } catch { return []; }
+}
+
+export async function adminDeleteUser(userId: string) {
+  if (!(await isAdmin())) return { success: false, error: "غير مصرح" };
+  const session = await getServerSession(authOptions);
+  if (session?.user?.id === userId) return { success: false, error: "لا يمكنك حذف نفسك" };
+  try {
+    await sql`DELETE FROM users WHERE id = ${userId}`;
+    return { success: true };
+  } catch { return { success: false, error: "حدث خطأ" }; }
+}
+
+export async function adminResetAvatar(userId: string) {
+  if (!(await isAdmin())) return { success: false, error: "غير مصرح" };
+  try {
+    await sql`UPDATE users SET image_url = NULL WHERE id = ${userId}`;
+    return { success: true };
+  } catch { return { success: false, error: "حدث خطأ" }; }
+}
+
+export async function adminGetUserPosts(userId: string) {
+  if (!(await isAdmin())) return [];
+  try {
+    return await sql`
+      SELECT p.id, p.title, p.created_at,
+        (SELECT COUNT(*) FROM reactions WHERE post_id = p.id) as helpful_count,
+        (SELECT COUNT(*) FROM comments WHERE post_id = p.id) as comments_count
+      FROM posts p WHERE p.user_id = ${userId} ORDER BY p.created_at DESC
+    `;
+  } catch { return []; }
+}
+
+export async function adminGetUserComments(userId: string) {
+  if (!(await isAdmin())) return [];
+  try {
+    return await sql`
+      SELECT c.id, c.text, c.created_at, p.title as post_title, p.id as post_id
+      FROM comments c
+      JOIN posts p ON c.post_id = p.id
+      WHERE c.user_id = ${userId}
+      ORDER BY c.created_at DESC
+    `;
+  } catch { return []; }
+}
+
+export async function adminDeletePost(postId: string) {
+  if (!(await isAdmin())) return { success: false, error: "غير مصرح" };
+  try {
+    await sql`DELETE FROM comments WHERE post_id = ${postId}`;
+    await sql`DELETE FROM reactions WHERE post_id = ${postId}`;
+    await sql`DELETE FROM saves WHERE post_id = ${postId}`;
+    await sql`DELETE FROM posts WHERE id = ${postId}`;
+    return { success: true };
+  } catch { return { success: false, error: "حدث خطأ" }; }
+}
+
+export async function adminDeleteComment(commentId: string) {
+  if (!(await isAdmin())) return { success: false, error: "غير مصرح" };
+  try {
+    await sql`DELETE FROM comments WHERE parent_id = ${commentId}`;
+    await sql`DELETE FROM comments WHERE id = ${commentId}`;
+    return { success: true };
+  } catch { return { success: false, error: "حدث خطأ" }; }
 }
 
 export async function getPosts(sort: 'latest' | 'trending' | 'foryou' = 'latest', limit = 10, offset = 0) {
@@ -371,15 +527,38 @@ export async function toggleSave(postId: string) {
   } catch (e) { return { success: false }; }
 }
 
-export async function getSuggestedUsers(limit = 10) {
+export async function getSuggestedUsers(limit = 6) {
   const session = await getServerSession(authOptions);
   const currentUserId = session?.user?.id;
 
   try {
     const users = await sql`
-      SELECT id, username, name, image_url as avatar_url
+      SELECT 
+        id, username, name, image_url as avatar_url,
+        ${currentUserId ? sql`EXISTS(SELECT 1 FROM followers WHERE following_id = id AND follower_id = ${currentUserId})` : sql`FALSE`}::boolean as is_followed
       FROM users
       WHERE id != ${currentUserId || '00000000-0000-0000-0000-000000000000'}
+      ORDER BY created_at ASC
+      LIMIT ${limit}
+    `;
+    return users;
+  } catch (e) { return []; }
+}
+
+export async function getUnfollowedUsers(excludeIds: string[] = [], limit = 5) {
+  const session = await getServerSession(authOptions);
+  const currentUserId = session?.user?.id;
+  if (!currentUserId) return [];
+
+  try {
+    const users = await sql`
+      SELECT 
+        id, username, name, image_url as avatar_url,
+        FALSE::boolean as is_followed
+      FROM users
+      WHERE id != ${currentUserId}
+        AND NOT EXISTS(SELECT 1 FROM followers WHERE following_id = id AND follower_id = ${currentUserId})
+        ${excludeIds.length > 0 ? sql`AND id != ALL(${excludeIds})` : sql``}
       ORDER BY RANDOM()
       LIMIT ${limit}
     `;

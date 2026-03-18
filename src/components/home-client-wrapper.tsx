@@ -3,7 +3,6 @@
 import { Sidebar } from "@/components/sidebar";
 import { CreatePost } from "@/components/create-post";
 import { PostCard } from "@/components/post-card";
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Sparkles, TrendingUp, Clock, Loader2, Plus } from "lucide-react";
 import { useState, useEffect } from "react";
 import dynamic from "next/dynamic";
@@ -71,31 +70,31 @@ export function HomeClientWrapper({
           <CreatePost />
         </div>
 
-        <Tabs defaultValue="foryou" className="w-full" dir="rtl" onValueChange={handleSortChange}>
-          <TabsList className="bg-transparent border-none w-full justify-start rounded-none h-auto p-0 gap-2 sm:gap-8">
-            <TabsTrigger 
-              value="foryou" 
-              className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none px-6 py-4 gap-2 text-sm font-bold transition-all hover:bg-primary/5 h-14"
-            >
-              <Sparkles className="w-4 h-4" />
-              <span>لك</span>
-            </TabsTrigger>
-            <TabsTrigger 
-              value="trending" 
-              className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none px-6 py-4 gap-2 text-sm font-bold opacity-50 data-[state=active]:opacity-100 transition-all hover:bg-primary/5 h-14"
-            >
-              <TrendingUp className="w-4 h-4" />
-              <span>الرائج</span>
-            </TabsTrigger>
-            <TabsTrigger 
-              value="latest" 
-              className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none px-6 py-4 gap-2 text-sm font-bold opacity-50 data-[state=active]:opacity-100 transition-all hover:bg-primary/5 h-14"
-            >
-              <Clock className="w-4 h-4" />
-              <span>الأحدث</span>
-            </TabsTrigger>
-          </TabsList>
-        </Tabs>
+        {/* Pill Tabs */}
+        <div className="flex gap-1.5 bg-muted/30 p-1.5 rounded-2xl border border-border/40 w-fit mx-auto" dir="rtl">
+          {[
+            { value: 'foryou', label: 'لك', icon: Sparkles },
+            { value: 'trending', label: 'الرائج', icon: TrendingUp },
+            { value: 'latest', label: 'الأحدث', icon: Clock },
+          ].map((tab) => {
+            const Icon = tab.icon;
+            const isActive = sort === tab.value;
+            return (
+              <button
+                key={tab.value}
+                onClick={() => handleSortChange(tab.value)}
+                className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-bold transition-all duration-300 ${
+                  isActive
+                    ? "bg-primary text-primary-foreground shadow-lg shadow-primary/25 scale-[1.02]"
+                    : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
+                }`}
+              >
+                <Icon className={`w-4 h-4 transition-transform duration-300 ${isActive ? 'scale-110' : ''}`} />
+                <span>{tab.label}</span>
+              </button>
+            );
+          })}
+        </div>
 
         <div className="space-y-6 pb-20">
           {posts.map((post: any) => (
@@ -112,6 +111,7 @@ export function HomeClientWrapper({
                hasReacted={post.has_reacted}
                isSaved={post.is_saved}
                isFollowed={post.is_followed}
+               category={post.category}
              />
           ))}
           {hasMore && (

@@ -1,7 +1,7 @@
 "use client";
 
 import { useSession, signOut } from "next-auth/react";
-import { useRouter } from "next/navigation";
+import { useRouter } from "nextjs-toploader/app";
 import { useEffect, useState } from "react";
 import NextImage from "next/image";
 import { Button } from "@/components/ui/button";
@@ -14,8 +14,8 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger
 } from "@/components/ui/dropdown-menu";
-import { Bell, Heart, LogOut, User as UserIcon, Settings, UserPlus, Lightbulb as BulbIcon, Sun, Moon } from "lucide-react";
-import { getNotifications, markAllNotificationsRead, markNotificationRead } from "@/lib/actions";
+import { Bell, Heart, LogOut, User as UserIcon, Settings, UserPlus, Lightbulb as BulbIcon, Sun, Moon, Shield } from "lucide-react";
+import { getNotifications, markAllNotificationsRead, markNotificationRead, checkIsAdmin } from "@/lib/actions";
 import { cn } from "@/lib/utils";
 import { useTheme } from "next-themes";
 import Link from "next/link";
@@ -26,6 +26,7 @@ export default function NavbarActions() {
   const { theme, setTheme, resolvedTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
   const [notifications, setNotifications] = useState<any[]>([]);
+  const [isAdminUser, setIsAdminUser] = useState(false);
 
   const fetchNotifications = async () => {
     if (session) {
@@ -37,6 +38,7 @@ export default function NavbarActions() {
   useEffect(() => {
     setMounted(true);
     fetchNotifications();
+    if (session) checkIsAdmin().then(setIsAdminUser);
   }, [session]);
 
   const handleMarkAllRead = async () => {
@@ -162,6 +164,15 @@ export default function NavbarActions() {
               <Settings className="w-4 h-4 text-muted-foreground" />
               <span className="text-sm font-bold">الإعدادات</span>
             </DropdownMenuItem>
+            {isAdminUser && (
+              <DropdownMenuItem 
+                onClick={() => router.push('/admin')}
+                className="flex items-center gap-3 p-3 rounded-xl cursor-pointer hover:bg-primary/10 transition-colors focus:bg-primary/10"
+              >
+                <Shield className="w-4 h-4 text-primary" />
+                <span className="text-sm font-bold text-primary">لوحة التحكم</span>
+              </DropdownMenuItem>
+            )}
             <DropdownMenuItem 
               onClick={() => signOut({ callbackUrl: "/login" })}
               className="flex items-center gap-3 p-3 rounded-xl cursor-pointer hover:bg-red-500/10 text-red-500 transition-colors focus:bg-red-500/10"

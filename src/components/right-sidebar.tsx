@@ -2,90 +2,112 @@
 
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { TrendingUp, Users, UserPlus } from "lucide-react";
+import { TrendingUp, Users, UserPlus, CheckCircle2 } from "lucide-react";
 import { toggleFollow } from "@/lib/actions";
 import { useState, useEffect } from "react";
 import { toast } from "sonner";
 import Link from "next/link";
-import { cn } from "@/lib/utils";
 
-export function RightSidebar({ suggestedUsers = [], trendingLessons = [], className }: { suggestedUsers?: any[], trendingLessons?: any[], className?: string }) {
-  const [users, setUsers] = useState(suggestedUsers);
+export function RightSidebar({
+  suggestedUsers = [],
+  trendingLessons = [],
+  className,
+}: {
+  suggestedUsers?: any[];
+  trendingLessons?: any[];
+  className?: string;
+}) {
+  // Show max 6, static – no refresh
+  const staticUsers = suggestedUsers.slice(0, 6);
+
+  const [followedIds, setFollowedIds] = useState<Set<string>>(new Set());
+  const [loadingId, setLoadingId] = useState<string | null>(null);
 
   useEffect(() => {
-    const handleFollowUpdate = (e: any) => {
-      setUsers((prev: any) => prev.map((u: any) => 
-        u.id === e.detail.userId ? { ...u, is_followed: e.detail.isFollowing } : u
-      ));
-    };
-    window.addEventListener('user-follow-updated', handleFollowUpdate);
-    return () => window.removeEventListener('user-follow-updated', handleFollowUpdate);
-  }, []);
+    const followed = suggestedUsers
+      .filter(u => u.is_followed)
+      .map(u => u.id);
+    setFollowedIds(new Set(followed));
+  }, [suggestedUsers]);
 
   const handleFollow = async (userId: string) => {
-    // Optimistic update
-    const prevIsFollowed = users.find(u => u.id === userId)?.is_followed;
-    setUsers(prev => prev.map(u => u.id === userId ? { ...u, is_followed: !u.is_followed } : u));
-    
+    if (followedIds.has(userId)) return;
+    setLoadingId(userId);
+    // Optimistic
+    setFollowedIds((prev) => new Set([...prev, userId]));
+
     const res = await toggleFollow(userId);
+    setLoadingId(null);
+
     if (res.success) {
-      window.dispatchEvent(new CustomEvent('user-follow-updated', { 
-        detail: { userId, isFollowing: !prevIsFollowed } 
-      }));
-      toast.success(res.followed ? "تمت المتابعة" : "تم إلغاء المتابعة");
+      toast.success("تمت المتابعة ✓");
     } else {
-      toast.error(res.error || "خطأ");
-      // Revert on failure
-      setUsers(prev => prev.map(u => u.id === userId ? { ...u, is_followed: !u.is_followed } : u));
+      setFollowedIds((prev) => {
+        const s = new Set(prev);
+        s.delete(userId);
+        return s;
+      });
+      toast.error(res.error || "خطأ في المتابعة");
     }
   };
 
   return (
-    <div className="w-80 flex flex-col gap-6 p-4 hidden lg:flex sticky top-20 h-fit">
+    <div
+      className={
+        className ??
+        "w-80 flex flex-col gap-6 p-4 hidden lg:flex sticky top-20 h-fit"
+      }
+    >
       {/* Suggested Users */}
-      {users.length > 0 && (
-        <div className="bg-card rounded-[2rem] border border-border/50 p-6 shadow-sm">
-          <div className="flex items-center gap-2 mb-6 text-muted-foreground font-black text-xs uppercase tracking-widest">
+      {staticUsers.length > 0 && (
+        <div className="bg-card rounded-[2rem] border border-border/50 p-5 shadow-sm">
+          <div className="flex items-center gap-2 mb-5 text-muted-foreground font-black text-xs uppercase tracking-widest">
             <Users className="w-4 h-4 text-primary" />
             <span>رواد النجاح</span>
           </div>
-          <div className="space-y-6">
-            {users.map((user: any) => (
-              <div key={user.id} className="flex flex-col gap-3 group">
-                <div className="flex items-center justify-between gap-3 min-w-0">
-                  <Link href={`/u/${user.username}`} className="flex items-center gap-3 hover:opacity-80 transition-opacity group/user min-w-0 flex-1">
-                    <Avatar className="w-11 h-11 border-2 border-border group-hover:border-primary transition-colors ring-2 ring-background shrink-0">
-                      <AvatarImage src={user.avatar_url} />
-                      <AvatarFallback className="bg-primary/10 text-primary font-black uppercase">{user.name[0]}</AvatarFallback>
-                    </Avatar>
-                    <div className="flex flex-col min-w-0 flex-1">
-                      <span className="text-sm font-black truncate group-hover/user:text-primary transition-colors">{user.name}</span>
-                      <span className="text-[10px] text-muted-foreground font-bold italic truncate">@{user.username}</span>
-                    </div>
-                  </Link>
-                  <Button 
+
+          <div className="space-y-4">
+            {staticUsers.map((user: any) => (
+              <div
+                key={user.id}
+                className="flex items-center justify-between gap-3 min-w-0"
+              >
+                <Link
+                  href={`/u/${user.username}`}
+                  className="flex items-center gap-2.5 hover:opacity-80 transition-opacity group min-w-0 flex-1"
+                >
+                  <Avatar className="w-9 h-9 border-2 border-border group-hover:border-primary transition-colors shrink-0">
+                    <AvatarImage src={user.avatar_url} />
+                    <AvatarFallback className="bg-primary/10 text-primary font-black uppercase text-xs">
+                      {user.name?.[0] || "؟"}
+                    </AvatarFallback>
+                  </Avatar>
+                  <div className="flex flex-col min-w-0">
+                    <span className="text-sm font-black truncate group-hover:text-primary transition-colors">
+                      {user.name}
+                    </span>
+                    <span className="text-[10px] text-muted-foreground font-bold truncate">
+                      @{user.username}
+                    </span>
+                  </div>
+                </Link>
+
+                {followedIds.has(user.id) ? (
+                  <div className="flex items-center gap-1 text-[10px] font-black text-primary/60 bg-primary/5 border border-primary/15 rounded-xl px-2.5 h-8 shrink-0 whitespace-nowrap">
+                    <CheckCircle2 className="w-3 h-3" />
+                    <span>متابَع</span>
+                  </div>
+                ) : (
+                  <Button
                     size="sm"
                     onClick={() => handleFollow(user.id)}
-                    className={cn(
-                      "rounded-xl gap-2 font-black h-9 px-4 transition-all text-xs shrink-0",
-                      user.is_followed 
-                        ? "bg-muted text-muted-foreground hover:bg-red-500/10 hover:text-red-500 border border-border" 
-                        : "bg-primary text-white shadow-lg shadow-primary/20 hover:shadow-primary/40 active:scale-95"
-                    )}
+                    disabled={loadingId === user.id}
+                    className="rounded-xl gap-1 font-black h-8 px-3 text-xs shrink-0 bg-primary text-white shadow-md shadow-primary/20 hover:shadow-primary/40 active:scale-95 disabled:opacity-60"
                   >
-                    {user.is_followed ? (
-                      <>
-                        <Users className="w-3.5 h-3.5" />
-                        <span>إلغاء المتابعة</span>
-                      </>
-                    ) : (
-                      <>
-                        <UserPlus className="w-3.5 h-3.5" />
-                        <span>متابعة</span>
-                      </>
-                    )}
+                    <UserPlus className="w-3.5 h-3.5" />
+                    <span>تابع</span>
                   </Button>
-                </div>
+                )}
               </div>
             ))}
           </div>
@@ -94,26 +116,34 @@ export function RightSidebar({ suggestedUsers = [], trendingLessons = [], classN
 
       {/* Trending Lessons */}
       <div className="bg-card rounded-3xl border border-border/50 p-5 shadow-sm">
-        <div className="flex items-center gap-2 mb-6 text-muted-foreground font-bold text-sm">
+        <div className="flex items-center gap-2 mb-4 text-muted-foreground font-bold text-sm">
           <TrendingUp className="w-4 h-4 text-primary" />
-          <span className="tracking-tight">الدروس الرائجة</span>
+          <span>الدروس الرائجة</span>
         </div>
-        <div className="space-y-5">
+        <div className="space-y-3">
           {trendingLessons.map((lesson: any, i: number) => (
-            <Link 
-              key={lesson.id} 
+            <Link
+              key={lesson.id}
               href={`/post/${lesson.id}`}
-              className="flex items-center gap-4 group cursor-pointer hover:bg-primary/5 p-2 -m-2 rounded-xl transition-all"
+              className="flex items-center gap-3 group hover:bg-primary/5 p-2 -m-2 rounded-xl transition-all"
             >
-              <span className="text-2xl font-black text-primary/10 group-hover:text-primary/30 transition-colors w-6 italic">{i + 1}</span>
-              <div className="flex flex-col">
-                <span className="text-sm font-bold group-hover:text-primary transition-colors line-clamp-1">{lesson.title}</span>
-                <span className="text-[11px] text-muted-foreground font-medium">{lesson.helpful_count || 0} استفادوا</span>
+              <span className="text-xl font-black text-primary/15 group-hover:text-primary/30 transition-colors w-5 italic shrink-0">
+                {i + 1}
+              </span>
+              <div className="flex flex-col min-w-0">
+                <span className="text-sm font-bold group-hover:text-primary transition-colors line-clamp-1">
+                  {lesson.title}
+                </span>
+                <span className="text-[11px] text-muted-foreground font-medium">
+                  {lesson.helpful_count || 0} استفادوا
+                </span>
               </div>
             </Link>
           ))}
           {trendingLessons.length === 0 && (
-            <p className="text-xs text-muted-foreground text-center py-4">قريباً...</p>
+            <p className="text-xs text-muted-foreground text-center py-2">
+              قريباً...
+            </p>
           )}
         </div>
       </div>

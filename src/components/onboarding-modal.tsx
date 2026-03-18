@@ -5,15 +5,11 @@ import { useSession } from "next-auth/react";
 import { 
   Dialog, 
   DialogContent, 
-  DialogHeader, 
-  DialogTitle, 
-  DialogDescription,
-  DialogFooter
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Camera, Image as ImageIcon, Sparkles, Loader2, ArrowRight, ArrowLeft, Check, Plus, X, Globe } from "lucide-react";
+import { Camera, Image as ImageIcon, Sparkles, Loader2, ArrowLeft, Check, Plus, X } from "lucide-react";
 import { updateProfile } from "@/lib/actions";
 import { ProfileBannerSelector } from "./profile-banner-selector";
 import { uploadImage } from "@/lib/supabase";
@@ -21,18 +17,28 @@ import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { detectPlatform, getPlatformIcon, getPlatformLabel, SocialLink } from "@/lib/social-links";
 
-const BANNER_STYLES: Record<string, { image: string, color?: string }> = {
-  'banner-1': { image: 'linear-gradient(135deg, #6366f1 0%, #a855f7 50%, #ec4899 100%)' },
-  'banner-2': { image: 'linear-gradient(135deg, #3b82f6 0%, #2dd4bf 100%)' },
-  'banner-3': { image: 'linear-gradient(135deg, #f59e0b 0%, #ef4444 100%)' },
-  'banner-4': { image: 'linear-gradient(135deg, #10b981 0%, #3b82f6 100%)' },
-  'banner-5': { image: 'linear-gradient(135deg, #000000 0%, #1e293b 100%)' },
-  'banner-6': { image: 'radial-gradient(#ffffff 0.5px, transparent 0.5px)', color: '#000' },
-  'banner-7': { image: 'linear-gradient(#1f2937 1px, transparent 1px), linear-gradient(90deg, #1f2937 1px, transparent 1px)', color: '#111827' },
-  'banner-8': { image: 'radial-gradient(circle at center, #7c3aed 0%, #000 100%)' },
-  'banner-9': { image: 'linear-gradient(45deg, #ff00cc, #3333ff)' },
-  'banner-10': { image: 'repeating-linear-gradient(45deg, #222 0, #222 1px, transparent 0, transparent 50%)', color: '#1a1a1a' },
+const TOTAL_STEPS = 4;
+
+// Matches all 15 presets in ProfileBannerSelector
+const BANNER_STYLES: Record<string, React.CSSProperties> = {
+  'preset-1':  { backgroundImage: 'linear-gradient(135deg, #6366f1 0%, #a855f7 50%, #ec4899 100%)' },
+  'preset-2':  { backgroundImage: 'linear-gradient(135deg, #3b82f6 0%, #2dd4bf 100%)' },
+  'preset-3':  { backgroundImage: 'linear-gradient(135deg, #f59e0b 0%, #ef4444 100%)' },
+  'preset-4':  { backgroundImage: 'linear-gradient(135deg, #10b981 0%, #3b82f6 100%)' },
+  'preset-5':  { backgroundImage: 'linear-gradient(135deg, #000000 0%, #1e293b 100%)' },
+  'preset-6':  { backgroundImage: 'radial-gradient(#ffffff 0.5px, transparent 0.5px)', backgroundColor: '#000', backgroundSize: '20px 20px' },
+  'preset-7':  { backgroundImage: 'linear-gradient(#1f2937 1px, transparent 1px), linear-gradient(90deg, #1f2937 1px, transparent 1px)', backgroundColor: '#111827', backgroundSize: '30px 30px' },
+  'preset-8':  { backgroundImage: 'radial-gradient(circle at center, #7c3aed 0%, #000 100%)' },
+  'preset-9':  { backgroundImage: 'linear-gradient(45deg, #ff00cc, #3333ff)' },
+  'preset-10': { backgroundImage: 'repeating-linear-gradient(45deg, #222 0, #222 1px, transparent 0, transparent 50%)', backgroundColor: '#1a1a1a', backgroundSize: '10px 10px' },
+  'preset-11': { backgroundImage: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)' },
+  'preset-12': { backgroundImage: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)' },
+  'preset-13': { backgroundImage: 'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)' },
+  'preset-14': { backgroundImage: 'linear-gradient(135deg, #43e97b 0%, #38f9d7 100%)' },
+  'preset-15': { backgroundImage: 'linear-gradient(135deg, #fa709a 0%, #fee140 100%)' },
 };
+
+const STEP_LABELS = ["الغلاف", "الصورة", "معلوماتي", "روابطي"];
 
 export function OnboardingModal() {
   const { data: session, update } = useSession();
@@ -55,11 +61,11 @@ export function OnboardingModal() {
     }
   }, [session]);
 
-  const handleNext = () => setStep(s => s + 1);
-  const handleBack = () => setStep(s => s - 1);
+  const handleNext = () => setStep(s => Math.min(s + 1, TOTAL_STEPS));
+  const handleBack = () => setStep(s => Math.max(s - 1, 1));
 
   const handleAddSocialLink = () => {
-    if (!newLinkUrl) return;
+    if (!newLinkUrl.trim()) return;
     const platform = detectPlatform(newLinkUrl);
     const newLink: SocialLink = {
       platform,
@@ -109,7 +115,7 @@ export function OnboardingModal() {
           image: finalAvatar,
           social_links: socialLinks
         });
-        toast.success("تم تخصيص حسابك بنجاح!");
+        toast.success("تم تخصيص حسابك بنجاح! 🎉");
         setIsOpen(false);
       } else {
         toast.error(res.error || "حدث خطأ");
@@ -123,158 +129,198 @@ export function OnboardingModal() {
 
   if (!isOpen) return null;
 
+  const bannerStyle = banner ? BANNER_STYLES[banner] : null;
+
   return (
     <Dialog open={isOpen} onOpenChange={() => {}}>
-      <DialogContent className="sm:max-w-[500px] p-0 overflow-hidden rounded-[2.5rem] border-none shadow-2xl animate-in zoom-in-95 duration-300 font-tajawal z-[200]" dir="rtl">
-        <div className="bg-primary/5 h-1.5 w-full flex">
-          <div 
-            className="h-full bg-primary transition-all duration-500" 
-            style={{ width: `${(step / 4) * 100}%` }}
-          />
+      <DialogContent 
+        showCloseButton={false}
+        className="sm:max-w-[480px] p-0 overflow-hidden rounded-[2rem] border border-border/50 shadow-2xl font-tajawal z-[200] max-h-[90svh] flex flex-col" 
+        dir="rtl"
+      >
+        {/* Progress bar + step counter */}
+        <div className="shrink-0 px-6 pt-5 pb-3 space-y-2">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <div className="w-8 h-8 rounded-xl bg-primary/10 flex items-center justify-center">
+                <Sparkles className="w-4 h-4 text-primary" />
+              </div>
+              <span className="text-sm font-black text-foreground">لنقم بتخصيص حسابك!</span>
+            </div>
+            <span className="text-xs font-black text-muted-foreground bg-muted px-2.5 py-1 rounded-full">
+              الخطوة {step} من {TOTAL_STEPS}
+            </span>
+          </div>
+          <div className="h-1.5 bg-muted rounded-full overflow-hidden">
+            <div 
+              className="h-full bg-primary transition-all duration-500 rounded-full" 
+              style={{ width: `${(step / TOTAL_STEPS) * 100}%` }}
+            />
+          </div>
+          {/* Step labels */}
+          <div className="flex justify-between px-0.5">
+            {STEP_LABELS.map((label, i) => (
+              <span 
+                key={i}
+                className={cn(
+                  "text-[10px] font-black transition-colors",
+                  step === i + 1 ? "text-primary" : step > i + 1 ? "text-primary/50" : "text-muted-foreground/40"
+                )}
+              >
+                {label}
+              </span>
+            ))}
+          </div>
         </div>
 
-        <div className="p-8">
-          <DialogHeader className="text-right space-y-3 mb-8">
-            <div className="w-12 h-12 rounded-2xl bg-primary/10 flex items-center justify-center mb-2">
-              <Sparkles className="w-6 h-6 text-primary" />
-            </div>
-            <DialogTitle className="text-3xl font-black tracking-tight">لنقم بتخصيص حسابك!</DialogTitle>
-            <DialogDescription className="text-base font-medium opacity-70">
-              تحدث التغييرات في كل الموقع لتبرز هويتك الفريدة.
-            </DialogDescription>
-          </DialogHeader>
-
-          <div className="min-h-[300px] py-4">
-            {step === 1 && (
-              <div className="space-y-6 animate-in slide-in-from-left-4 duration-300">
-                <div className="space-y-3">
-                  <label className="text-sm font-black text-foreground mr-1">تنسيق الغلاف (اختياري)</label>
-                  <div className="relative h-28 rounded-2xl border-2 border-dashed border-primary/20 bg-muted/30 overflow-hidden flex items-center justify-center">
-                    {banner ? (
-                       <div 
-                         className="absolute inset-0 bg-cover bg-center" 
-                         suppressHydrationWarning
-                         style={{ 
-                            backgroundImage: banner.startsWith('preset-') 
-                              ? BANNER_STYLES[banner.replace('preset-', 'banner-')]?.image || `linear-gradient(135deg, #6366f1 0%, #a855f7 100%)`
-                              : `url(${banner})`,
-                            backgroundColor: banner.startsWith('preset-') 
-                              ? BANNER_STYLES[banner.replace('preset-', 'banner-')]?.color 
-                              : undefined,
-                            backgroundSize: banner === 'preset-6' ? '20px 20px' : banner === 'preset-7' ? '30px 30px' : banner === 'preset-10' ? '10px 10px' : 'cover'
-                         }} 
-                       />
-                    ) : (
-                      <ImageIcon className="w-8 h-8 text-primary/30" />
-                    )}
-                  </div>
-                  <ProfileBannerSelector currentBanner={banner} onSelect={(id) => setBanner(id)} />
-                </div>
-              </div>
-            )}
-
-            {step === 2 && (
-              <div className="space-y-8 animate-in slide-in-from-left-4 duration-300 flex flex-col items-center">
-                <div className="relative group">
-                  <div className="w-32 h-32 rounded-full border-4 border-primary/10 overflow-hidden bg-muted flex items-center justify-center">
-                    {avatar ? (
-                      <img src={avatar} className="w-full h-full object-cover" />
-                    ) : (
-                      <Camera className="w-10 h-10 text-primary/30" />
-                    )}
-                  </div>
-                  <label className="absolute bottom-0 left-0 w-10 h-10 rounded-full bg-primary text-white flex items-center justify-center cursor-pointer shadow-xl hover:scale-110 transition-transform">
-                    <Camera className="w-5 h-5" />
-                    <input type="file" accept="image/*" onChange={handleAvatarSelect} className="hidden" />
-                  </label>
-                </div>
-                <div className="text-center space-y-2">
-                  <h3 className="font-black text-lg">الصورة الشخصية</h3>
-                  <p className="text-sm text-muted-foreground font-medium">اختر صورة تعبر عنك</p>
-                </div>
-              </div>
-            )}
-
-            {step === 3 && (
-              <div className="space-y-6 animate-in slide-in-from-left-4 duration-300">
-                <div className="space-y-2">
-                  <label className="text-sm font-black text-foreground mr-1">الاسم الشخصي</label>
-                  <Input 
-                    value={name}
-                    onChange={(e) => setName(e.target.value)}
-                    placeholder="اسمك الحقيقي"
-                    className="h-12 rounded-xl bg-muted/40 font-bold"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <label className="text-sm font-black text-foreground mr-1">نبذة عنك (Bio)</label>
-                  <Textarea 
-                    value={bio}
-                    onChange={(e) => setBio(e.target.value)}
-                    placeholder="أخبرنا المزيد عن رحلتك..."
-                    className="min-h-[120px] rounded-xl bg-muted/40 font-medium leading-relaxed"
-                  />
-                </div>
-              </div>
-            )}
-
-            {step === 4 && (
-              <div className="space-y-6 animate-in slide-in-from-left-4 duration-300">
-                <div className="space-y-3">
-                  <label className="text-sm font-black text-foreground mr-1">روابط التواصل والأعمال</label>
-                  <div className="flex gap-2">
-                    <Input 
-                      value={newLinkUrl}
-                      onChange={(e) => setNewLinkUrl(e.target.value)}
-                      placeholder="رابط (Twitter, Insta, etc.)"
-                      className="h-12 rounded-xl bg-muted/40 font-bold"
+        {/* Scrollable content area */}
+        <div className="flex-1 overflow-y-auto px-6 py-2 min-h-0">
+          {step === 1 && (
+            <div className="space-y-4 animate-in slide-in-from-left-4 duration-300">
+              <div className="space-y-3">
+                <label className="text-sm font-black text-foreground block">تنسيق الغلاف <span className="text-muted-foreground font-medium">(اختياري)</span></label>
+                <div className="relative h-24 rounded-2xl border-2 border-dashed border-primary/20 bg-muted/30 overflow-hidden flex items-center justify-center">
+                  {bannerStyle ? (
+                    <div 
+                      className="absolute inset-0" 
+                      suppressHydrationWarning
+                      style={bannerStyle} 
                     />
-                    <Button onClick={handleAddSocialLink} type="button" className="h-12 w-12 rounded-xl p-0">
-                      <Plus className="w-5 h-5" />
-                    </Button>
-                  </div>
+                  ) : (
+                    <div className="flex flex-col items-center gap-2 text-primary/30">
+                      <ImageIcon className="w-7 h-7" />
+                      <span className="text-xs font-bold">اختر غلافاً من الأسفل</span>
+                    </div>
+                  )}
                 </div>
+                <ProfileBannerSelector currentBanner={banner} onSelect={(id) => setBanner(id)} />
+              </div>
+            </div>
+          )}
 
-                <div className="space-y-3 max-h-[180px] overflow-y-auto no-scrollbar">
-                  {socialLinks.map((link, i) => {
-                    const Icon = getPlatformIcon(link.platform);
-                    return (
-                      <div key={i} className="flex items-center justify-between p-3 rounded-xl bg-muted/40 border border-border/50">
-                        <div className="flex items-center gap-3">
-                           <div className="p-2 rounded-lg bg-card text-primary shadow-sm">
-                             <Icon className="w-4 h-4" />
-                           </div>
-                           <span className="text-sm font-black">{link.name}</span>
-                        </div>
-                        <button onClick={() => handleRemoveSocialLink(i)} className="text-muted-foreground hover:text-red-500">
-                          <X className="w-4 h-4" />
-                        </button>
-                      </div>
-                    );
-                  })}
+          {step === 2 && (
+            <div className="space-y-6 animate-in slide-in-from-left-4 duration-300 flex flex-col items-center py-4">
+              <div className="relative group">
+                <div className="w-28 h-28 rounded-full border-4 border-primary/10 overflow-hidden bg-muted flex items-center justify-center shadow-xl">
+                  {avatar ? (
+                    <img src={avatar} className="w-full h-full object-cover" alt="avatar" />
+                  ) : (
+                    <Camera className="w-10 h-10 text-primary/30" />
+                  )}
+                </div>
+                <label className="absolute bottom-0 left-0 w-9 h-9 rounded-full bg-primary text-white flex items-center justify-center cursor-pointer shadow-xl hover:scale-110 transition-transform">
+                  <Camera className="w-4 h-4" />
+                  <input type="file" accept="image/*" onChange={handleAvatarSelect} className="hidden" />
+                </label>
+              </div>
+              <div className="text-center space-y-1">
+                <h3 className="font-black text-lg">صورتك الشخصية</h3>
+                <p className="text-sm text-muted-foreground font-medium">اختر صورة تعبر عنك وتميزك</p>
+                {avatar && (
+                  <button 
+                    onClick={() => { setAvatar(null); setAvatarFile(null); }}
+                    className="text-xs text-red-400 hover:text-red-500 font-bold mt-1"
+                  >
+                    إزالة الصورة
+                  </button>
+                )}
+              </div>
+            </div>
+          )}
+
+          {step === 3 && (
+            <div className="space-y-5 animate-in slide-in-from-left-4 duration-300">
+              <div className="space-y-2">
+                <label className="text-sm font-black text-foreground block">الاسم الشخصي</label>
+                <Input 
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  placeholder="اسمك الذي يراه الجميع"
+                  className="h-12 rounded-xl bg-muted/40 font-bold"
+                />
+              </div>
+              <div className="space-y-2">
+                <label className="text-sm font-black text-foreground block">نبذة عنك <span className="text-muted-foreground font-normal">(Bio)</span></label>
+                <Textarea 
+                  value={bio}
+                  onChange={(e) => setBio(e.target.value)}
+                  placeholder="أخبرنا عن رحلتك، تجاربك، وما تعلمته من الفشل..."
+                  className="min-h-[110px] rounded-xl bg-muted/40 font-medium leading-relaxed resize-none"
+                />
+                <p className="text-[11px] text-muted-foreground text-left">{bio.length}/160</p>
+              </div>
+            </div>
+          )}
+
+          {step === 4 && (
+            <div className="space-y-5 animate-in slide-in-from-left-4 duration-300">
+              <div className="space-y-3">
+                <label className="text-sm font-black text-foreground block">روابط التواصل والأعمال</label>
+                <div className="flex gap-2">
+                  <Input 
+                    value={newLinkUrl}
+                    onChange={(e) => setNewLinkUrl(e.target.value)}
+                    onKeyDown={(e) => e.key === 'Enter' && handleAddSocialLink()}
+                    placeholder="رابط (Twitter, Instagram, LinkedIn...)"
+                    className="h-11 rounded-xl bg-muted/40 font-bold"
+                  />
+                  <Button onClick={handleAddSocialLink} type="button" className="h-11 w-11 rounded-xl p-0 shrink-0">
+                    <Plus className="w-4 h-4" />
+                  </Button>
                 </div>
               </div>
-            )}
-          </div>
+              <div className="space-y-2 max-h-[160px] overflow-y-auto no-scrollbar">
+                {socialLinks.length === 0 && (
+                  <p className="text-center text-xs text-muted-foreground py-4">لا توجد روابط بعد · اختياري</p>
+                )}
+                {socialLinks.map((link, i) => {
+                  const Icon = getPlatformIcon(link.platform);
+                  return (
+                    <div key={i} className="flex items-center justify-between p-3 rounded-xl bg-muted/40 border border-border/50">
+                      <div className="flex items-center gap-3">
+                        <div className="p-2 rounded-lg bg-card text-primary shadow-sm">
+                          <Icon className="w-4 h-4" />
+                        </div>
+                        <span className="text-sm font-black">{link.name}</span>
+                      </div>
+                      <button onClick={() => handleRemoveSocialLink(i)} className="text-muted-foreground hover:text-red-500 transition-colors">
+                        <X className="w-4 h-4" />
+                      </button>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+        </div>
 
-          <DialogFooter className="flex-row-reverse gap-3 pt-6 border-t border-border mt-4">
-            {step < 4 ? (
-              <Button onClick={handleNext} className="h-12 flex-1 rounded-2xl font-black gap-2 text-base">
-                متابعة
-                <ArrowLeft className="w-5 h-5" />
-              </Button>
-            ) : (
-              <Button onClick={handleFinish} disabled={loading} className="h-12 flex-1 rounded-2xl font-black gap-2 text-base bg-emerald-600 hover:bg-emerald-700">
-                {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : <>جاهز للانطلاق! <Check className="w-5 h-5" /></>}
-              </Button>
-            )}
-            
-            {step > 1 && (
-              <Button variant="ghost" onClick={handleBack} disabled={loading} className="h-12 px-6 rounded-2xl font-black text-muted-foreground">
-                رجوع
-              </Button>
-            )}
-          </DialogFooter>
+        {/* Fixed footer */}
+        <div className="shrink-0 px-6 py-4 border-t border-border/50 bg-background flex items-center gap-3">
+          {step > 1 && (
+            <Button 
+              variant="ghost" 
+              onClick={handleBack} 
+              disabled={loading} 
+              className="h-11 px-5 rounded-xl font-black text-muted-foreground hover:text-foreground"
+            >
+              رجوع
+            </Button>
+          )}
+          <div className="flex-1" />
+          {step < TOTAL_STEPS ? (
+            <Button onClick={handleNext} className="h-11 px-8 rounded-xl font-black gap-2">
+              التالي
+              <ArrowLeft className="w-4 h-4" />
+            </Button>
+          ) : (
+            <Button 
+              onClick={handleFinish} 
+              disabled={loading} 
+              className="h-11 px-8 rounded-xl font-black gap-2 bg-emerald-600 hover:bg-emerald-700"
+            >
+              {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <><span>جاهز!</span> <Check className="w-4 h-4" /></>}
+            </Button>
+          )}
         </div>
       </DialogContent>
     </Dialog>
