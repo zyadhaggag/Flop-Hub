@@ -65,7 +65,7 @@ export const authOptions: NextAuthOptions = {
             id: user.id.toString(),
             name: user.name,
             email: user.email,
-            image: user.image_url,
+            image: user.image_url || "/api/placeholder/user",
             username: user.username,
             banner_url: user.banner_url,
             bio: user.bio,
@@ -104,7 +104,7 @@ export const authOptions: NextAuthOptions = {
 
             const result = await sql`
               INSERT INTO users (email, name, username, image_url)
-              VALUES (${user.email}, ${user.name}, ${finalUsername}, ${user.image})
+              VALUES (${user.email}, ${user.name}, ${finalUsername}, ${user.image || "/api/placeholder/user"})
               RETURNING id, username
             `;
             user.id = result[0].id.toString();
@@ -115,6 +115,7 @@ export const authOptions: NextAuthOptions = {
             user.banner_url = existingUsers[0].banner_url;
             user.bio = existingUsers[0].bio;
             user.social_links = existingUsers[0].social_links;
+            user.image = existingUsers[0].image_url || "/api/placeholder/user";
           }
           return true;
         } catch (error) {

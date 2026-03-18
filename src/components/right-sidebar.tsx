@@ -91,7 +91,7 @@ export function RightSidebar({
                           "w-10 h-10 border-2 transition-transform group-hover:scale-105",
                           user.is_admin ? "border-amber-500/50 shadow-md shadow-amber-500/20" : "border-background"
                         )}>
-                          <AvatarImage src={user.avatar_url} />
+                          <AvatarImage src={user.avatar_url || "/api/placeholder/user"} />
                           <AvatarFallback className={cn("font-black text-xs", user.is_admin ? "bg-amber-500/10 text-amber-600" : "bg-primary/5 text-primary")}>
                             {user.name?.[0] || "?"}
                           </AvatarFallback>

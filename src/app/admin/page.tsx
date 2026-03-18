@@ -37,7 +37,7 @@ import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import Link from "next/link";
 
-export const revalidate = 30; // ISR for admin stats
+export const dynamic = "force-dynamic";
 
 export default function AdminPage() {
   const router = useRouter();
@@ -221,7 +221,7 @@ export default function AdminPage() {
                   onClick={() => viewUserDetail(u)}
                 >
                   <Avatar className="w-10 h-10 border border-border shrink-0">
-                    <AvatarImage src={u.image_url} />
+                    <AvatarImage src={u.image_url || "/api/placeholder/user"} />
                     <AvatarFallback className="bg-primary/10 text-primary font-black text-xs">
                       {u.name?.[0] || "؟"}
                     </AvatarFallback>
@@ -288,7 +288,7 @@ export default function AdminPage() {
                     <div className="flex items-start justify-between bg-muted/30 p-4 rounded-2xl border border-border/50">
                       <div className="flex items-center gap-3">
                         <Avatar className="w-12 h-12 border-2 border-background shadow-sm">
-                          <AvatarImage src={selectedUser.image_url} />
+                          <AvatarImage src={selectedUser.image_url || "/api/placeholder/user"} />
                           <AvatarFallback className="bg-primary/10 text-primary font-black">
                             {selectedUser.name?.[0] || "?"}
                           </AvatarFallback>

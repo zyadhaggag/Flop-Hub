@@ -99,7 +99,7 @@ export function Navbar() {
                           className="flex items-center gap-3 p-2 rounded-xl hover:bg-primary/5 transition-colors group"
                         >
                           <Avatar className="w-8 h-8 border border-border/50">
-                            <AvatarImage src={user.avatar_url} />
+                            <AvatarImage src={user.avatar_url || "/api/placeholder/user"} />
                             <AvatarFallback className="text-[10px] bg-primary/10 text-primary font-bold">{user.name?.[0] || '?'}</AvatarFallback>
                           </Avatar>
                           <div className="flex flex-col">

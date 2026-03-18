@@ -220,7 +220,7 @@ export default function AccountSettingsPage() {
                 <div className="flex items-center gap-6">
                   <div className="relative">
                     <Avatar className="w-16 h-16 border-4 border-background shadow-lg">
-                      <AvatarImage src={profile.avatar} />
+                      <AvatarImage src={profile.avatar || "/api/placeholder/user"} />
                       <AvatarFallback className="text-xl font-black bg-primary text-white">
                         {profile.name?.charAt(0) || "أ"}
                       </AvatarFallback>

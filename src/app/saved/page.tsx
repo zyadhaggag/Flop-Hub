@@ -46,8 +46,7 @@ export default async function SavedPage() {
                     id: post.user_id, 
                     name: post.name || post.username, 
                     handle: post.username, 
-                    avatar: post.avatar_url,
-                    is_admin: post.is_admin
+                    avatar: post.avatar_url || "/api/placeholder/user"
                   }}
                   time={post.created_at}
                   title={post.title}
@@ -55,8 +54,8 @@ export default async function SavedPage() {
                   lesson={post.lesson}
                   helpfulCount={parseInt(post.helpful_count)}
                   commentsCount={parseInt(post.comments_count)}
-                  isSaved={true}
-                  category={post.category}
+                  hasReacted={post.has_reacted}
+                  isSaved={post.is_saved}
                 />
               ))
             ) : (

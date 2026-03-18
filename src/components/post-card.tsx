@@ -253,7 +253,7 @@ export function PostCard({ id, user, time, title, story, lesson, imageUrl, helpf
         <div className="flex items-center gap-3">
           <Link href={`/u/${user.handle}`}>
             <Avatar className="w-11 h-11 border-2 border-background ring-2 ring-primary/5 hover:ring-primary/20 transition-all cursor-pointer shadow-sm">
-              <AvatarImage src={user.avatar} />
+              <AvatarImage src={user.avatar || "/api/placeholder/user"} />
               <AvatarFallback className="bg-primary/10 text-primary font-black text-sm">
                 {userInitial}
               </AvatarFallback>
@@ -513,7 +513,7 @@ export function PostCard({ id, user, time, title, story, lesson, imageUrl, helpf
       <div className="px-6 py-4 border-t border-border/10 bg-muted/30 dark:bg-muted/5">
         <form onSubmit={handleAddComment} className="flex gap-3 items-center">
           <Avatar className="w-8 h-8 shrink-0 border border-border/50">
-            <AvatarImage src={session?.user?.image || ""} />
+            <AvatarImage src={session?.user?.image || "/api/placeholder/user"} />
             <AvatarFallback className="text-[10px]">{session?.user?.name?.[0] || '?'}</AvatarFallback>
           </Avatar>
           <div className="flex-1 relative group">
@@ -552,7 +552,7 @@ export function PostCard({ id, user, time, title, story, lesson, imageUrl, helpf
                     {/* Parent Comment */}
                     <div className="flex gap-4 items-start relative z-10">
                       <Avatar className="w-10 h-10 shrink-0 border-2 border-background shadow-sm">
-                        <AvatarImage src={c.avatar_url} />
+                        <AvatarImage src={c.avatar_url || "/api/placeholder/user"} />
                         <AvatarFallback className="text-xs font-black">{c.name?.[0] || '?'}</AvatarFallback>
                       </Avatar>
                       <div className="flex flex-col flex-1">
@@ -615,7 +615,7 @@ export function PostCard({ id, user, time, title, story, lesson, imageUrl, helpf
                                  <div className="absolute right-[-24px] top-5 w-6 h-2 border-t-2 border-r-2 rounded-tr-xl border-primary/10" />
                                  
                                  <Avatar className="w-8 h-8 shrink-0 border border-background shadow-xs">
-                                   <AvatarImage src={reply.avatar_url} />
+                                   <AvatarImage src={reply.avatar_url || "/api/placeholder/user"} />
                                    <AvatarFallback className="text-[10px] uppercase font-black">{reply.name?.[0]}</AvatarFallback>
                                  </Avatar>
                                  <div className="bg-card border border-border/40 p-3.5 rounded-2xl rounded-tr-none flex-1 shadow-xs group-hover/r:border-primary/20 transition-all">
@@ -644,7 +644,7 @@ export function PostCard({ id, user, time, title, story, lesson, imageUrl, helpf
            {!replyingTo && (
              <form onSubmit={(e) => handleAddComment(e)} className="flex gap-4 items-center bg-background p-2 rounded-3xl border border-border/50 shadow-lg group focus-within:border-primary/30 transition-all">
                 <Avatar className="w-9 h-9 border-2 border-muted hidden sm:flex">
-                   <AvatarImage src={session?.user?.image || undefined} />
+                   <AvatarImage src={session?.user?.image || "/api/placeholder/user"} />
                    <AvatarFallback className="bg-primary/5 text-primary text-xs font-black">{session?.user?.name?.[0]}</AvatarFallback>
                 </Avatar>
                 <Input 

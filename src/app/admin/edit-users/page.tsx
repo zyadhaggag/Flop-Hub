@@ -177,7 +177,7 @@ export default function AdminEditUsersPage() {
               <CardHeader className="pb-3">
                 <div className="flex items-center gap-3">
                   <Avatar className="w-12 h-12">
-                    <AvatarImage src={user.avatar} />
+                    <AvatarImage src={user.avatar || "/api/placeholder/user"} />
                     <AvatarFallback className="font-black bg-primary text-white">
                       {user.name.charAt(0)}
                     </AvatarFallback>

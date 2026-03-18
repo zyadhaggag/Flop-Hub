@@ -14,7 +14,7 @@ export function CreatePost() {
     <div className="bg-card rounded-[2.5rem] p-6 border border-border/50 shadow-sm space-y-4 hover:shadow-xl transition-all duration-500 bg-card/40 backdrop-blur-xl group">
       <div className="flex items-center gap-4">
         <Avatar className="w-12 h-12 border-2 border-background ring-2 ring-primary/10 group-hover:ring-primary/30 transition-all">
-          <AvatarImage src={avatarUrl ?? undefined} />
+          <AvatarImage src={avatarUrl || "/api/placeholder/user"} />
           <AvatarFallback className="bg-primary/5 text-primary font-black text-lg">
             {userInitial}
           </AvatarFallback>

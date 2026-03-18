@@ -52,7 +52,7 @@ export default async function SearchPage({ searchParams }: { searchParams: Promi
                     className="flex items-center gap-3 p-4 rounded-[2rem] bg-card/40 border border-border/50 hover:border-primary/30 transition-all group"
                   >
                     <Avatar className="w-12 h-12 border-2 border-background group-hover:border-primary transition-colors">
-                      <AvatarImage src={user.avatar_url} />
+                      <AvatarImage src={user.avatar_url || "/api/placeholder/user"} />
                       <AvatarFallback className="bg-primary/5 text-primary font-bold">{user.name[0]}</AvatarFallback>
                     </Avatar>
                     <div className="flex flex-col min-w-0">
@@ -75,13 +75,19 @@ export default async function SearchPage({ searchParams }: { searchParams: Promi
                   <PostCard 
                     key={post.id} 
                     id={post.id}
-                    user={{ id: post.user_id, name: post.username, handle: post.username, avatar: post.avatar_url }}
-                    time={new Date(post.created_at).toLocaleTimeString("ar-SA", { hour: '2-digit', minute: '2-digit' })}
+                    user={{ 
+                      id: post.user_id, 
+                      name: post.name || post.username, 
+                      handle: post.username, 
+                      avatar: post.avatar_url || "/api/placeholder/user"
+                    }}
+                    time={post.created_at}
                     title={post.title}
                     story={post.story}
                     lesson={post.lesson}
                     helpfulCount={parseInt(post.helpful_count)}
                     commentsCount={parseInt(post.comments_count)}
+                    hasReacted={post.has_reacted}
                     isSaved={post.is_saved}
                   />
                 ))}

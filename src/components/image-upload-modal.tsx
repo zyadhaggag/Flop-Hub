@@ -166,27 +166,14 @@ export function ImageUploadModal({ isOpen, onClose, onSave }: ImageUploadModalPr
       tempCanvas.width = 400;
       tempCanvas.height = 300;
       
-      // Draw the current canvas content to temp canvas
+      // Draw current canvas content to temp canvas
       tempCtx.drawImage(canvasRef.current, 0, 0);
       
-      // Convert to blob with better error handling
-      tempCanvas.toBlob((blob) => {
-        if (blob) {
-          try {
-            const url = URL.createObjectURL(blob);
-            onSave(url);
-            onClose();
-          } catch (error) {
-            console.error('Error creating object URL:', error);
-            // Fallback: try direct data URL
-            const dataUrl = tempCanvas.toDataURL('image/png', 0.9);
-            onSave(dataUrl);
-            onClose();
-          }
-        } else {
-          console.error('Failed to create blob from canvas');
-        }
-      }, 'image/png', 0.9);
+      // Convert to data URL directly (more reliable than blob for CSP)
+      const dataUrl = tempCanvas.toDataURL('image/png', 0.9);
+      onSave(dataUrl);
+      onClose();
+      
     } catch (error) {
       console.error('Error in handleSave:', error);
     } finally {

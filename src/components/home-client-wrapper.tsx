@@ -35,12 +35,19 @@ export function HomeClientWrapper({
   const [loadingMore, setLoadingMore] = useState(false);
   const [hasMore, setHasMore] = useState(initialPosts.length === 5);
   const [isLoading, setIsLoading] = useState(false);
+  const [page, setPage] = useState(1);
+  const [isClient, setIsClient] = useState(false);
 
   const PAGE_SIZE = 5;
+
+  useEffect(() => {
+    setIsClient(true);
+  }, []);
 
   const handleSortChange = async (value: string) => {
     setIsLoading(true);
     setSort(value as any);
+    setPage(1);
     const newPosts = await getPosts(value as any, PAGE_SIZE, 0);
     setPosts(newPosts);
     setHasMore(newPosts.length === PAGE_SIZE);
@@ -93,7 +100,7 @@ export function HomeClientWrapper({
                     : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
                 }`}
                 style={{
-                  animationDelay: `${index * 100}ms`
+                  animationDelay: isClient ? `${index * 100}ms` : '0ms'
                 }}
               >
                 <Icon className={`w-4 h-4 transition-all duration-300 ${isActive ? 'scale-110 rotate-12' : 'group-hover:scale-110'}`} />
@@ -122,7 +129,7 @@ export function HomeClientWrapper({
             <div 
               key={post.id} 
               className="animate-in fade-in slide-in-from-bottom-8 duration-700"
-              style={{ animationDelay: `${index * 100}ms` }}
+              style={{ animationDelay: isClient ? `${index * 100}ms` : '0ms' }}
             >
               <PostCard 
                 id={post.id} 
@@ -130,7 +137,7 @@ export function HomeClientWrapper({
                   id: post.user_id, 
                   name: post.name || post.username, 
                   handle: post.username, 
-                  avatar: post.avatar_url,
+                  avatar: post.avatar_url || "/api/placeholder/user",
                   is_admin: post.is_admin
                 }} 
                 time={post.created_at}

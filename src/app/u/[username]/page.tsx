@@ -155,7 +155,7 @@ export default async function ProfilePage({ params }: { params: Promise<{ userna
                   "w-24 h-24 sm:w-32 sm:h-32 border-4 shadow-2xl group-hover:scale-105 transition-transform duration-500",
                   user.is_admin ? "border-amber-400/50 ring-4 ring-amber-500/20" : "border-card"
                 )}>
-                  <AvatarImage src={user.image_url} />
+                  <AvatarImage src={user.image_url || "/api/placeholder/user"} />
                   <AvatarFallback className={cn("text-2xl sm:text-3xl font-black", user.is_admin ? "bg-gradient-to-br from-amber-400 to-amber-600 text-white" : "bg-primary/10 text-primary")}>
                     {userInitial}
                   </AvatarFallback>

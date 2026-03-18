@@ -51,10 +51,8 @@ export default function RootLayout({
         <link rel="dns-prefetch" href="//api.dicebear.com" />
         <link rel="dns-prefetch" href="//**.supabase.co" />
         {/* Security headers */}
-        <meta httpEquiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' data:; style-src 'self' 'unsafe-inline' data:; img-src 'self' data: blob:; font-src 'self' data:; connect-src 'self' https: data:; media-src 'self' https: data:; object-src 'none'; base-uri 'self'; form-action 'self';" />
+        <meta httpEquiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' data:; style-src 'self' 'unsafe-inline' data:; img-src 'self' data: blob: https:; font-src 'self' data:; connect-src 'self' https: data:; media-src 'self' https: data:; object-src 'none'; base-uri 'self'; form-action 'self';" />
         <meta httpEquiv="X-Content-Type-Options" content="nosniff" />
-        <meta httpEquiv="X-Frame-Options" content="DENY" />
-        <meta httpEquiv="X-XSS-Protection" content="1; mode=block" />
         <meta httpEquiv="Referrer-Policy" content="strict-origin-when-cross-origin" />
       </head>
       <body className="font-tajawal antialiased bg-background text-foreground overflow-x-hidden min-h-screen selection:bg-primary/20 transition-colors duration-300 pb-20 md:pb-0">

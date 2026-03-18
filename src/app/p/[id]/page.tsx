@@ -27,7 +27,12 @@ export default async function PostPage({ params }: { params: { id: string } }) {
         <div className="flex-1 max-w-2xl mx-auto w-full">
           <PostCard 
             id={post.id}
-            user={{ id: post.user_id, name: post.name || post.username, handle: post.username, avatar: post.avatar_url }}
+            user={{ 
+              id: post.user_id, 
+              name: post.name || post.username, 
+              handle: post.username, 
+              avatar: post.avatar_url || "/api/placeholder/user"
+            }}
             time={post.created_at}
             title={post.title}
             story={post.story}

@@ -9,7 +9,7 @@ import dns from "dns/promises";
 import { uploadImage } from "./supabase";
 
 // Helper to avoid top-level revalidatePath bundle leak
-const revalidateHome = async () => {
+const revalidateHomePage = async () => {
   revalidatePath("/");
 };
 
@@ -68,7 +68,7 @@ export async function createPost(input: PostInput) {
       RETURNING id
     `;
     
-    await revalidateHome();
+    await revalidateHomePage();
     return { success: true, id: result[0].id };
   } catch (error: any) {
     console.error("CreatePost Error:", error);
@@ -101,7 +101,7 @@ export async function editPost(id: string, input: PostInput) {
     
     if (result.length === 0) return { success: false, error: "المنشور غير موجود أو لا تملك صلاحية تعديله" };
     
-    await revalidateHome();
+    await revalidateHomePage();
     revalidatePath(`/post/${id}`);
     return { success: true };
   } catch (error: any) {
@@ -123,7 +123,7 @@ export async function deletePost(id: string) {
     
     if (result.length === 0) return { success: false, error: "المنشور غير موجود أو لا تملك صلاحية حذفه" };
     
-    await revalidateHome();
+    await revalidateHomePage();
     return { success: true };
   } catch (error) {
     console.error("DeletePost Error:", error);

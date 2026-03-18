@@ -104,7 +104,7 @@ export function CreatePostModal({ open, onOpenChange }: { open: boolean, onOpenC
           {/* User Info */}
           <div className="flex items-center gap-3 bg-muted/30 p-3 rounded-2xl border border-border/50">
             <Avatar className="w-10 h-10 border-2 border-primary/20">
-              <AvatarImage src={userAvatar || undefined} />
+              <AvatarImage src={userAvatar || "/api/placeholder/user"} />
               <AvatarFallback className="bg-primary/10 text-primary font-black">{userName[0]}</AvatarFallback>
             </Avatar>
             <div className="flex flex-col">

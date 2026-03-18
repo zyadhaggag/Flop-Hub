@@ -17,7 +17,14 @@ export default withAuth(
       return NextResponse.redirect(new URL("/login", req.url));
     }
 
-    return NextResponse.next();
+    // Add security headers to the response
+    const response = NextResponse.next();
+    response.headers.set('X-Frame-Options', 'SAMEORIGIN');
+    response.headers.set('X-Content-Type-Options', 'nosniff');
+    response.headers.set('X-XSS-Protection', '1; mode=block');
+    response.headers.set('Referrer-Policy', 'strict-origin-when-cross-origin');
+    
+    return response;
   },
   {
     callbacks: {
