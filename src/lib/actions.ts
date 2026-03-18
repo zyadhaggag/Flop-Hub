@@ -305,8 +305,8 @@ export async function toggleFollow(followingId: string) {
     `;
 
     if (existing.length > 0) {
-      await sql`DELETE FROM followers WHERE id = ${existing[0].id}`;
-      return { success: true, followed: false };
+      // If already following, we keep it "saved forever"
+      return { success: true, followed: true };
     } else {
       await sql`
         INSERT INTO followers (follower_id, following_id)
@@ -458,7 +458,7 @@ export async function updateProfile(data: { name?: string, username?: string, bi
   }
 }
 
-export async function updatePassword(data: { currentPassword?: string, newPassword?: string }) {
+export async function updatePassword(data: { currentPassword?: string, newPassword?: string }): Promise<{ success: boolean; error?: string }> {
   // Mocking password update because we use NextAuth with likely hashed passwords
   // In a real app we would check bcrypt.compare
   return { success: true };

@@ -10,6 +10,7 @@ declare module "next-auth" {
       username?: string | null;
       bio?: string | null;
       banner_url?: string | null;
+      social_links?: any[] | null;
     } & DefaultSession["user"]
   }
 
@@ -18,6 +19,7 @@ declare module "next-auth" {
     username?: string | null;
     bio?: string | null;
     banner_url?: string | null;
+    social_links?: any[] | null;
   }
 }
 
@@ -27,6 +29,7 @@ declare module "next-auth/jwt" {
     username?: string | null;
     bio?: string | null;
     banner_url?: string | null;
+    social_links?: any[] | null;
   }
 }
 
@@ -49,7 +52,7 @@ export const authOptions: NextAuthOptions = {
         
         try {
           const users = await sql`
-            SELECT id, email, name, password, image_url, username, banner_url, bio
+            SELECT id, email, name, password, image_url, username, banner_url, bio, social_links
             FROM users 
             WHERE email = ${credentials.email}
           `;
@@ -66,6 +69,7 @@ export const authOptions: NextAuthOptions = {
             username: user.username,
             banner_url: user.banner_url,
             bio: user.bio,
+            social_links: user.social_links,
           };
         } catch (error) {
           console.error("Auth error:", error);
@@ -84,7 +88,7 @@ export const authOptions: NextAuthOptions = {
         
         try {
           // Check if user exists
-          const existingUsers = await sql`SELECT id, username, banner_url, bio FROM users WHERE email = ${user.email}`;
+          const existingUsers = await sql`SELECT id, username, banner_url, bio, social_links FROM users WHERE email = ${user.email}`;
           
           if (existingUsers.length === 0) {
             // Create user for first time
@@ -110,6 +114,7 @@ export const authOptions: NextAuthOptions = {
             user.username = existingUsers[0].username;
             user.banner_url = existingUsers[0].banner_url;
             user.bio = existingUsers[0].bio;
+            user.social_links = existingUsers[0].social_links;
           }
           return true;
         } catch (error) {
@@ -127,6 +132,7 @@ export const authOptions: NextAuthOptions = {
         token.picture = user.image;
         token.banner_url = user.banner_url;
         token.bio = user.bio;
+        token.social_links = user.social_links;
       }
       
       // Handle session update
@@ -136,6 +142,7 @@ export const authOptions: NextAuthOptions = {
         if (session.image) token.picture = session.image;
         if (session.banner_url) token.banner_url = session.banner_url;
         if (session.bio) token.bio = session.bio;
+        if (session.social_links) token.social_links = session.social_links;
       }
       
       return token;
@@ -148,6 +155,7 @@ export const authOptions: NextAuthOptions = {
         session.user.image = token.picture as string;
         session.user.banner_url = token.banner_url;
         session.user.bio = token.bio;
+        session.user.social_links = token.social_links;
       }
       return session;
     },

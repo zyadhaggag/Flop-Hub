@@ -44,6 +44,7 @@ export default function SettingsPage() {
   // Social Links
   const [socialLinks, setSocialLinks] = useState<SocialLink[]>([]);
   const [newLinkUrl, setNewLinkUrl] = useState("");
+  const [newLinkName, setNewLinkName] = useState("");
 
   // New features state
   const [banner, setBanner] = useState(session?.user?.banner_url || null);
@@ -57,7 +58,8 @@ export default function SettingsPage() {
     if (session?.user?.banner_url) setBanner(session.user.banner_url);
     if (session?.user?.social_links) {
         try {
-            setSocialLinks(typeof session.user.social_links === 'string' ? JSON.parse(session.user.social_links) : session.user.social_links);
+            const links = session.user.social_links;
+            setSocialLinks(typeof links === 'string' ? JSON.parse(links) : links);
         } catch (e) {
             setSocialLinks([]);
         }
@@ -97,10 +99,11 @@ export default function SettingsPage() {
     const newLink: SocialLink = {
         platform,
         url: newLinkUrl,
-        name: getPlatformLabel(platform)
+        name: newLinkName || getPlatformLabel(platform)
     };
     setSocialLinks([...socialLinks, newLink]);
     setNewLinkUrl("");
+    setNewLinkName("");
   };
 
   const handleRemoveSocialLink = (index: number) => {
@@ -175,6 +178,7 @@ export default function SettingsPage() {
   };
   
   const handleDeleteAccount = async () => {
+    if (!session?.user?.username) return;
     if (deleteConfirm !== session.user.username) {
         toast.error("برجاء كتابة اسم المستخدم بشكل صحيح للتأكيد");
         return;
@@ -315,15 +319,24 @@ export default function SettingsPage() {
                     <span>روابط التواصل والأعمال</span>
                   </h2>
                   
-                  <div className="flex gap-2">
-                    <Input 
-                      value={newLinkUrl}
-                      onChange={(e) => setNewLinkUrl(e.target.value)}
-                      placeholder="ضع رابط (X, YouTube, Resume, etc.)"
-                      className="h-12 rounded-xl bg-muted/40 font-medium"
-                    />
-                    <Button onClick={handleAddSocialLink} className="h-12 w-12 rounded-xl p-0">
+                  <div className="flex flex-col gap-3">
+                    <div className="flex gap-2">
+                      <Input 
+                        value={newLinkName}
+                        onChange={(e) => setNewLinkName(e.target.value)}
+                        placeholder="اسم الرابط (مثلاً: ملفي الشخصي)"
+                        className="h-12 rounded-xl bg-muted/40 font-medium flex-1"
+                      />
+                      <Input 
+                        value={newLinkUrl}
+                        onChange={(e) => setNewLinkUrl(e.target.value)}
+                        placeholder="ضع الرابط هنا..."
+                        className="h-12 rounded-xl bg-muted/40 font-medium flex-[2]"
+                      />
+                    </div>
+                    <Button onClick={handleAddSocialLink} className="h-12 w-full rounded-xl flex items-center gap-2">
                       <Plus className="w-5 h-5" />
+                      <span>إضافة الرابط</span>
                     </Button>
                   </div>
 
@@ -449,7 +462,7 @@ export default function SettingsPage() {
                         <Input 
                             value={deleteConfirm}
                             onChange={(e) => setDeleteConfirm(e.target.value)}
-                            placeholder={session.user.username}
+                            placeholder={session.user.username || ""}
                             className="h-12 rounded-xl border-red-500/20 bg-card focus-visible:ring-red-500 text-red-500 font-bold"
                         />
                     </div>
