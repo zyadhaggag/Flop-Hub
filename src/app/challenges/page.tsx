@@ -2,7 +2,7 @@ import { Navbar } from "@/components/navbar";
 import { Sidebar } from "@/components/sidebar";
 import { RightSidebar } from "@/components/right-sidebar";
 import { getSuggestedUsers, getTrendingLessons } from "@/lib/actions";
-import { ChallengesClient } from "@/components/challenges-client";
+import { ChallengesClient } from "@/components/ChallengesClient";
 
 export const dynamic = "force-dynamic";
 
