@@ -111,7 +111,14 @@ export function RightSidebar({
                             <span className="text-[7px] font-black bg-amber-500 text-white px-1 py-0.5 rounded-[3px] uppercase tracking-tighter shadow-sm">ADMIN</span>
                           )}
                         </div>
-                        <p className="text-[10px] text-muted-foreground truncate font-medium">@{user.username}</p>
+                        <div className="flex flex-col">
+                           <p className="text-[10px] text-muted-foreground truncate font-medium">@{user.username}</p>
+                           {user.followers_count > 0 && (
+                             <p className="text-[9px] text-primary font-black uppercase tracking-tighter mt-0.5">
+                               {Number(user.followers_count).toLocaleString("ar-SA")} متابع
+                             </p>
+                           )}
+                        </div>
                       </div>
                     </Link>
                     

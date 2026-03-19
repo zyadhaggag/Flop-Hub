@@ -6,7 +6,7 @@ import { HomeClientWrapper } from "@/components/home-client-wrapper";
 export const dynamic = "force-dynamic";
 
 export default async function Home() {
-  const posts = await getPosts();
+  const posts = await getPosts('latest', 4, 0);
   const suggestedUsers = await getSuggestedUsers();
   const trendingLessons = await getTrendingLessons();
 

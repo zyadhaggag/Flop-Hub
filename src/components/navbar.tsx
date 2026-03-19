@@ -1,7 +1,21 @@
 "use client";
 
 import { Input } from "@/components/ui/input";
-import { Search, Menu, X, Sun, Moon } from "lucide-react";
+import { 
+  Search, 
+  Menu, 
+  X, 
+  Sun, 
+  Moon, 
+  User, 
+  FileText, 
+  Loader2, 
+  Plus, 
+  Globe, 
+  Zap, 
+  Gem, 
+  Trophy 
+} from "lucide-react";
 import dynamic from "next/dynamic";
 import Link from "next/link";
 import { useState, useEffect } from "react";
@@ -10,8 +24,8 @@ import { Sidebar, menuItems } from "./sidebar";
 import { cn } from "@/lib/utils";
 import { searchPosts } from "@/lib/actions";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
-import { User, FileText, Loader2 } from "lucide-react";
 import { usePreloadRoute } from "@/hooks/use-preload-route";
+import { ProfileFrame } from "./profile-frame";
 
 const NavbarActions = dynamic(() => import("./navbar-actions"), { 
   ssr: false,
@@ -98,12 +112,17 @@ export function Navbar() {
                           onClick={() => setShowResults(false)}
                           className="flex items-center gap-3 p-2 rounded-xl hover:bg-primary/5 transition-colors group"
                         >
-                          <Avatar className="w-8 h-8 border border-border/50">
-                            <AvatarImage src={user.avatar_url || "/api/placeholder/user"} />
-                            <AvatarFallback className="text-[10px] bg-primary/10 text-primary font-bold">{user.name?.[0] || '?'}</AvatarFallback>
-                          </Avatar>
+                          <ProfileFrame tier={user.is_admin ? 'admin' : (user.challenge_ids?.includes('thirty-posts') ? 'diamond' : 'none')} size="sm" showBadge={false}>
+                            <Avatar className="w-8 h-8 border border-border/50">
+                              <AvatarImage src={user.avatar_url || "/api/placeholder/user"} />
+                              <AvatarFallback className="text-[10px] bg-primary/10 text-primary font-bold">{user.name?.[0] || '?'}</AvatarFallback>
+                            </Avatar>
+                          </ProfileFrame>
                           <div className="flex flex-col">
-                            <span className="text-sm font-bold group-hover:text-primary transition-colors">{user.name}</span>
+                            <div className="flex items-center gap-1.5">
+                               <span className="text-sm font-bold group-hover:text-primary transition-colors">{user.name}</span>
+                               {user.is_admin && <Trophy className="w-3 h-3 text-amber-500" />}
+                            </div>
                             <span className="text-[10px] text-muted-foreground">@{user.username}</span>
                           </div>
                         </Link>

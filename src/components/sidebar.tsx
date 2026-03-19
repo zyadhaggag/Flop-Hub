@@ -1,6 +1,6 @@
 "use client";
 
-import { Home, User, Lightbulb, Bookmark, TrendingUp, Settings, Quote } from "lucide-react";
+import { Home, User, Bookmark, Settings, Quote, Trophy } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
@@ -8,6 +8,7 @@ import { useSession } from "next-auth/react";
 
 export const menuItems = [
   { id: "home", label: "الرئيسية", icon: Home, href: "/" },
+  { id: "challenges", label: "التحديات", icon: Trophy, href: "/challenges" },
   { id: "saved", label: "المحفوظات", icon: Bookmark, href: "/saved" },
   { id: "settings", label: "الإعدادات", icon: Settings, href: "/settings" },
 ];
@@ -17,7 +18,6 @@ export function Sidebar({ onPostClick, className }: { onPostClick?: () => void, 
   const { data: session } = useSession();
   const profileHref = session?.user?.username ? `/u/${session.user.username}` : null;
   
-  // Combine static items with dynamic profile item
   const allItems = [
     ...menuItems,
     ...(profileHref ? [{ id: "profile", label: "ملفي الشخصي", icon: User, href: profileHref }] : []),

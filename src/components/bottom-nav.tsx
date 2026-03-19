@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Home, Search, PlusCircle, Settings, User } from "lucide-react";
+import { Home, Trophy, PlusCircle, Settings, User } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useSession } from "next-auth/react";
 import { useState } from "react";
@@ -19,7 +19,7 @@ export function BottomNav() {
 
   const navItems = [
     { icon: Home, label: "الرئيسية", href: "/" },
-    { icon: Search, label: "البحث", href: "/search" },
+    { icon: Trophy, label: "التحديات", href: "/challenges" },
     { icon: PlusCircle, label: "نشر", isAction: true },
     { icon: Settings, label: "الإعدادات", href: "/settings" },
     { icon: User, label: "ملفي", href: `/u/${userHandle}` },

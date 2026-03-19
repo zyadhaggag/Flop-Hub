@@ -8,7 +8,7 @@ import { BottomNav } from "@/components/bottom-nav";
 import { Toaster } from "sonner";
 import { OnboardingModal } from "@/components/onboarding-modal";
 import NextTopLoader from "nextjs-toploader";
-import { useRouteProtection } from "@/components/route-protector";
+import { TimeoutOverlay } from "@/components/timeout-overlay";
 
 const inter = Inter({ 
   subsets: ["latin"],
@@ -70,8 +70,21 @@ export default function RootLayout({
         <Providers>
           {children}
           <OnboardingModal />
+          <TimeoutOverlay />
           <BottomNav />
-          <Toaster position="top-center" richColors theme="system" />
+          <Toaster 
+            position="top-center" 
+            richColors 
+            theme="light" 
+            closeButton
+            toastOptions={{
+              style: {
+                borderRadius: '1.25rem',
+                border: '1px solid rgba(0,0,0,0.05)',
+                fontFamily: 'var(--font-tajawal)',
+              },
+            }}
+          />
         </Providers>
       </body>
     </html>

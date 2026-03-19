@@ -115,9 +115,10 @@ export async function deletePost(id: string) {
   if (!session?.user?.id) return { success: false, error: "يجب تسجيل الدخول" };
 
   try {
+    const userIsAdmin = await isAdmin();
     const result = await sql`
       DELETE FROM posts 
-      WHERE id = ${id} AND user_id = ${session.user.id}
+      WHERE id = ${id} AND (user_id = ${session.user.id} OR ${userIsAdmin} = TRUE)
       RETURNING id
     `;
     
@@ -208,9 +209,10 @@ export async function editComment(commentId: string, newText: string) {
   if (!newText.trim()) return { success: false, error: "التعليق لا يمكن أن يكون فارغاً" };
 
   try {
+    const userIsAdmin = await isAdmin();
     const result = await sql`
       UPDATE comments SET text = ${newText.trim()}
-      WHERE id = ${commentId} AND user_id = ${session.user.id}
+      WHERE id = ${commentId} AND (user_id = ${session.user.id} OR ${userIsAdmin} = TRUE)
       RETURNING id
     `;
     if (result.length === 0) return { success: false, error: "لا تملك صلاحية تعديل هذا التعليق" };
@@ -223,11 +225,12 @@ export async function deleteComment(commentId: string) {
   if (!session?.user?.id) return { success: false, error: "يجب تسجيل الدخول" };
 
   try {
-    // Delete replies first, then delete the comment
+    const userIsAdmin = await isAdmin();
+    // Delete replies first
     await sql`DELETE FROM comments WHERE parent_id = ${commentId}`;
     const result = await sql`
       DELETE FROM comments
-      WHERE id = ${commentId} AND user_id = ${session.user.id}
+      WHERE id = ${commentId} AND (user_id = ${session.user.id} OR ${userIsAdmin} = TRUE)
       RETURNING id
     `;
     if (result.length === 0) return { success: false, error: "لا تملك صلاحية حذف هذا التعليق" };
@@ -388,6 +391,7 @@ export async function getPosts(sort: 'latest' | 'trending' | 'foryou' = 'latest'
         u.image_url as avatar_url,
         (SELECT COUNT(*) FROM reactions r WHERE r.post_id = p.id) as helpful_count,
         (SELECT COUNT(*) FROM comments c WHERE c.post_id = p.id) as comments_count,
+        (SELECT json_agg(challenge_id) FROM user_challenges WHERE user_id = u.id AND status = 'completed') as challenge_ids,
         ${currentUserId ? sql`EXISTS(SELECT 1 FROM reactions WHERE post_id = p.id AND user_id = ${currentUserId})` : sql`FALSE`}::boolean as has_reacted,
         ${currentUserId ? sql`EXISTS(SELECT 1 FROM saves WHERE post_id = p.id AND user_id = ${currentUserId})` : sql`FALSE`}::boolean as is_saved,
         ${currentUserId ? sql`EXISTS(SELECT 1 FROM followers WHERE following_id = p.user_id AND follower_id = ${currentUserId})` : sql`FALSE`}::boolean as is_followed
@@ -396,7 +400,10 @@ export async function getPosts(sort: 'latest' | 'trending' | 'foryou' = 'latest'
       ORDER BY ${orderBy}
       LIMIT ${limit} OFFSET ${offset}
     `;
-    return posts;
+    return posts.map((p: any) => ({
+      ...p,
+      challenge_ids: p.challenge_ids || []
+    }));
   } catch (e) {
     console.error("GetPosts Error:", e);
     return [];
@@ -416,6 +423,7 @@ export async function getPostById(id: string) {
         u.image_url as avatar_url,
         (SELECT COUNT(*) FROM reactions r WHERE r.post_id = p.id) as helpful_count,
         (SELECT COUNT(*) FROM comments c WHERE c.post_id = p.id) as comments_count,
+        (SELECT json_agg(challenge_id) FROM user_challenges WHERE user_id = u.id AND status = 'completed') as challenge_ids,
         ${currentUserId ? sql`EXISTS(SELECT 1 FROM reactions WHERE post_id = p.id AND user_id = ${currentUserId})` : sql`FALSE`}::boolean as has_reacted,
         ${currentUserId ? sql`EXISTS(SELECT 1 FROM saves WHERE post_id = p.id AND user_id = ${currentUserId})` : sql`FALSE`}::boolean as is_saved,
         ${currentUserId ? sql`EXISTS(SELECT 1 FROM followers WHERE following_id = p.user_id AND follower_id = ${currentUserId})` : sql`FALSE`}::boolean as is_followed
@@ -423,7 +431,7 @@ export async function getPostById(id: string) {
       JOIN users u ON p.user_id = u.id
       WHERE p.id = ${id}
     `;
-    return posts.length > 0 ? posts[0] : null;
+    return posts.length > 0 ? { ...posts[0], challenge_ids: posts[0].challenge_ids || [] } : null;
   } catch (e) {
     console.error("GetPostById Error:", e);
     return null;
@@ -431,27 +439,46 @@ export async function getPostById(id: string) {
 }
 
 export async function searchPosts(query: string) {
+  if (!query || query.trim().length < 2) return { posts: [], users: [] };
+  
   const session = await getServerSession(authOptions);
   const currentUserId = session?.user?.id;
-  if (!query) return [];
+  const searchTerm = `%${query.trim()}%`;
+
   try {
-    const posts = await sql`
-      SELECT 
-        p.*, 
-        u.username, 
-        u.name,
-        u.image_url as avatar_url,
-        (SELECT COUNT(*) FROM reactions r WHERE r.post_id = p.id) as helpful_count,
-        (SELECT COUNT(*) FROM comments c WHERE c.post_id = p.id) as comments_count,
-        ${currentUserId ? sql`EXISTS(SELECT 1 FROM reactions WHERE post_id = p.id AND user_id = ${currentUserId})` : sql`FALSE`} as has_reacted,
-        ${currentUserId ? sql`EXISTS(SELECT 1 FROM saves WHERE post_id = p.id AND user_id = ${currentUserId})` : sql`FALSE`} as is_saved
-      FROM posts p
-      JOIN users u ON p.user_id = u.id
-      WHERE p.title ILIKE ${'%' + query + '%'} OR p.story ILIKE ${'%' + query + '%'}
-      ORDER BY p.created_at DESC
-    `;
-    return posts;
-  } catch (e) { return []; }
+    const [posts, users] = await Promise.all([
+      sql`
+        SELECT 
+          p.id, p.title, p.story, p.lesson, p.created_at, p.user_id,
+          u.username, u.name, u.image_url as avatar_url,
+          (SELECT json_agg(challenge_id) FROM user_challenges WHERE user_id = u.id AND status = 'completed') as challenge_ids
+        FROM posts p
+        JOIN users u ON p.user_id = u.id
+        WHERE p.title ILIKE ${searchTerm} 
+           OR p.story ILIKE ${searchTerm} 
+           OR p.lesson ILIKE ${searchTerm}
+        ORDER BY p.created_at DESC
+        LIMIT 10
+      `,
+      sql`
+        SELECT 
+          id, username, name, image_url as avatar_url,
+          (SELECT json_agg(challenge_id) FROM user_challenges WHERE user_id = users.id AND status = 'completed') as challenge_ids
+        FROM users
+        WHERE username ILIKE ${searchTerm} 
+           OR name ILIKE ${searchTerm}
+        LIMIT 6
+      `
+    ]);
+
+    return { 
+      posts: posts.map((p: any) => ({ ...p, challenge_ids: p.challenge_ids || [] })), 
+      users: users.map((u: any) => ({ ...u, challenge_ids: u.challenge_ids || [] })) 
+    };
+  } catch (e) { 
+    console.error("Search Error:", e);
+    return { posts: [], users: [] }; 
+  }
 }
 
 export async function searchUsers(query: string) {
@@ -503,8 +530,7 @@ export async function getSavedPosts() {
         u.username, 
         u.name,
         u.image_url as avatar_url,
-        (SELECT COUNT(*) FROM reactions r WHERE r.post_id = p.id) as helpful_count,
-        (SELECT COUNT(*) FROM comments c WHERE c.post_id = p.id) as comments_count,
+        (SELECT json_agg(challenge_id) FROM user_challenges WHERE user_id = u.id AND status = 'completed') as challenge_ids,
         EXISTS(SELECT 1 FROM reactions WHERE post_id = p.id AND user_id = ${session.user.id}) as has_reacted,
         TRUE as is_saved,
         EXISTS(SELECT 1 FROM followers WHERE following_id = p.user_id AND follower_id = ${session.user.id}) as is_followed
@@ -514,7 +540,10 @@ export async function getSavedPosts() {
       WHERE s.user_id = ${session.user.id}
       ORDER BY s.created_at DESC
     `;
-    return posts;
+    return posts.map((p: any) => ({
+      ...p,
+      challenge_ids: p.challenge_ids || []
+    }));
   } catch (e) {
     console.error("GetSavedPosts Error:", e);
     return [];
@@ -551,14 +580,18 @@ export async function getSuggestedUsers(limit = 6) {
   try {
     const users = await sql`
       SELECT 
-        id, username, name, image_url as avatar_url, is_admin,
+        id, username, name, image_url as avatar_url, is_admin, followers_count,
+        (SELECT json_agg(challenge_id) FROM user_challenges WHERE user_id = users.id AND status = 'completed') as challenge_ids,
         ${currentUserId ? sql`EXISTS(SELECT 1 FROM followers WHERE following_id = id AND follower_id = ${currentUserId})` : sql`FALSE`}::boolean as is_followed
       FROM users
       WHERE id != ${currentUserId || '00000000-0000-0000-0000-000000000000'}
       ORDER BY created_at ASC
       LIMIT ${limit}
     `;
-    return users;
+    return users.map((u: any) => ({
+      ...u,
+      challenge_ids: u.challenge_ids || []
+    }));
   } catch (e) { return []; }
 }
 
@@ -758,3 +791,4 @@ async function rehostImage(url: string, userId: string): Promise<string> {
     return url;
   }
 }
+

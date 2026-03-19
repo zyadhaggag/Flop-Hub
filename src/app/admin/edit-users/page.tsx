@@ -8,9 +8,8 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { 
-  User, 
+  User as UserIcon, 
   Mail, 
-  Calendar,
   Search,
   Edit,
   Save,
@@ -18,12 +17,16 @@ import {
   Shield,
   Ban,
   Check,
-  Loader2
+  Loader2,
+  Zap,
+  Clock,
+  Unlock
 } from "lucide-react";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
+import { getUsersAdmin, updateUserStats, setUserTimeout, clearUserTimeout } from "@/lib/admin-actions";
 
-interface User {
+interface AdminUser {
   id: string;
   name: string;
   username: string;
@@ -32,277 +35,240 @@ interface User {
   avatar: string;
   is_admin: boolean;
   created_at: string;
-  is_banned: boolean;
+  timeout_until: string | null;
+  followers_count: number;
+  override_post_count: number | null;
 }
 
 export default function AdminEditUsersPage() {
   const router = useRouter();
-  const [users, setUsers] = useState<User[]>([]);
+  const [users, setUsers] = useState<AdminUser[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
-  const [editingUser, setEditingUser] = useState<User | null>(null);
-  const [loading, setLoading] = useState(false);
-  const [saving, setSaving] = useState(false);
+  const [editingUser, setEditingUser] = useState<AdminUser | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [actionLoading, setActionLoading] = useState<string | null>(null);
+  const [timeoutMinutes, setTimeoutMinutes] = useState("60");
 
   useEffect(() => {
-    // Load users data
-    const mockUsers: User[] = [
-      {
-        id: "1",
-        name: "أحمد محمد",
-        username: "ahmed_mohammed",
-        email: "ahmed@example.com",
-        bio: "مطور ومحب للتقنية، أشارك قصصي وخبراتي هنا.",
-        avatar: "/api/placeholder/user1",
-        is_admin: false,
-        created_at: "2024-01-15",
-        is_banned: false
-      },
-      {
-        id: "2",
-        name: "فاطمة علي",
-        username: "fatima_ali",
-        email: "fatima@example.com",
-        bio: "مصممة ومبدعة، أحب مشاركة الأفكار الإبداعية.",
-        avatar: "/api/placeholder/user2",
-        is_admin: false,
-        created_at: "2024-02-20",
-        is_banned: false
-      },
-      {
-        id: "3",
-        name: "محمد سعيد",
-        username: "mohammed_saeed",
-        email: "mohammed@example.com",
-        bio: "كاتب ومحتوى رقمي، مهتم بالتقنية والابتكار.",
-        avatar: "/api/placeholder/user3",
-        is_admin: false,
-        created_at: "2024-03-10",
-        is_banned: true
-      }
-    ];
-    setUsers(mockUsers);
+    loadUsers();
   }, []);
 
+  async function loadUsers() {
+    setLoading(true);
+    try {
+      const data = await getUsersAdmin();
+      setUsers(data as AdminUser[]);
+    } catch (error) {
+      toast.error("حدث خطأ أثناء تحميل المستخدمين");
+    } finally {
+      setLoading(false);
+    }
+  }
+
   const filteredUsers = users.filter(user => 
-    user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    user.username.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    user.email.toLowerCase().includes(searchTerm.toLowerCase())
+    user.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    user.username?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    user.email?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  const handleEditUser = (user: User) => {
-    setEditingUser({ ...user });
-  };
-
-  const handleSaveUser = async () => {
-    if (!editingUser) return;
-    
-    setSaving(true);
+  const handleUpdateStats = async (userId: string, followers: number, posts: number) => {
+    setActionLoading(userId);
     try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      setUsers(users.map(u => u.id === editingUser.id ? editingUser : u));
-      setEditingUser(null);
-      toast.success("تم تحديث بيانات المستخدم بنجاح");
-    } catch (error) {
-      toast.error("حدث خطأ أثناء تحديث المستخدم");
+      const res = await updateUserStats(userId, { followers, posts });
+      if (res.success) {
+        toast.success("تم تحديث الأرقام الفلكية بنجاح! 🚀");
+        loadUsers();
+      } else {
+        toast.error(res.error || "فشل التحديث");
+      }
+    } catch (e) {
+      toast.error("خطأ تقني");
     } finally {
-      setSaving(false);
+      setActionLoading(null);
     }
   };
 
-  const handleBanUser = async (userId: string, isBanned: boolean) => {
+  const handleSetTimeout = async (userId: string) => {
+    const mins = parseInt(timeoutMinutes);
+    if (isNaN(mins) || mins <= 0) return toast.error("أدخل وقت صحيح");
+    
+    setActionLoading(userId + '-timeout');
     try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      setUsers(users.map(u => 
-        u.id === userId ? { ...u, is_banned: isBanned } : u
-      ));
-      
-      toast.success(isBanned ? "تم حظر المستخدم بنجاح" : "تم فك حظر المستخدم بنجاح");
-    } catch (error) {
-      toast.error("حدث خطأ أثناء تحديث حالة المستخدم");
+      const res = await setUserTimeout(userId, mins);
+      if (res.success) {
+        toast.success(`تم إعطاء تايم أوت لمدة ${mins} دقيقة`);
+        loadUsers();
+      }
+    } finally {
+      setActionLoading(null);
     }
   };
 
-  const handleCancelEdit = () => {
-    setEditingUser(null);
+  const handleClearTimeout = async (userId: string) => {
+    setActionLoading(userId + '-timeout');
+    try {
+      const res = await clearUserTimeout(userId);
+      if (res.success) {
+        toast.success("تم فك التايم أوت");
+        loadUsers();
+      }
+    } finally {
+      setActionLoading(null);
+    }
   };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <Loader2 className="w-10 h-10 text-primary animate-spin" />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background" dir="rtl">
       {/* Header */}
       <div className="bg-card border-b border-border sticky top-0 z-40">
         <div className="max-w-7xl mx-auto px-4 py-4">
-          <div className="flex items-center gap-4">
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => router.back()}
-              className="gap-2"
-            >
-              <X className="w-4 h-4" />
-              العودة للوحة التحكم
-            </Button>
-            <div className="flex items-center gap-3">
-              <div className="w-8 h-8 bg-primary/10 rounded-lg flex items-center justify-center">
-                <User className="w-4 h-4 text-primary" />
-              </div>
-              <h1 className="text-xl font-black">تعديل المستخدمين</h1>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-4">
+              <Button variant="ghost" size="sm" onClick={() => router.back()} className="gap-2">
+                <X className="w-4 h-4" />
+                العودة
+              </Button>
+              <h1 className="text-xl font-black">إدارة جحافل المستخدمين</h1>
             </div>
+            <Badge variant="outline" className="text-primary border-primary">نظام التحكم الشامل</Badge>
           </div>
         </div>
       </div>
 
-      {/* Main Content */}
       <div className="max-w-7xl mx-auto p-4 py-8">
-        {/* Search Bar */}
-        <div className="mb-6">
-          <div className="relative max-w-md">
+        <div className="mb-8 flex flex-col md:flex-row gap-4 items-center justify-between">
+          <div className="relative w-full max-w-md">
             <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
             <Input
-              placeholder="بحث عن مستخدم..."
+              placeholder="ابحث بالحرف عن أي مستخدم..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="pr-10 h-12 rounded-xl"
+              className="pr-10 h-12 rounded-2xl bg-muted/50 border-none"
             />
           </div>
+          <p className="text-sm font-bold text-muted-foreground">عدد النتائج: {filteredUsers.length}</p>
         </div>
 
-        {/* Users Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {filteredUsers.map((user) => (
-            <Card key={user.id} className="overflow-hidden">
-              <CardHeader className="pb-3">
-                <div className="flex items-center gap-3">
-                  <Avatar className="w-12 h-12">
-                    <AvatarImage src={user.avatar || "/api/placeholder/user"} />
-                    <AvatarFallback className="font-black bg-primary text-white">
-                      {user.name.charAt(0)}
-                    </AvatarFallback>
-                  </Avatar>
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2">
-                      <h3 className="font-black">{user.name}</h3>
-                      {user.is_admin && (
-                        <Badge className="bg-yellow-500 text-white text-xs">
-                          <Shield className="w-3 h-3 ml-1" />
-                          أدمن
-                        </Badge>
-                      )}
-                      {user.is_banned && (
-                        <Badge className="bg-red-500 text-white text-xs">
-                          <Ban className="w-3 h-3 ml-1" />
-                          محظور
-                        </Badge>
-                      )}
+            <Card key={user.id} className="overflow-hidden border-border/50 bg-card/50 backdrop-blur-sm">
+              <CardContent className="p-6">
+                <div className="flex flex-col md:flex-row gap-6">
+                  {/* User Info Section */}
+                  <div className="flex-1 space-y-4">
+                    <div className="flex items-center gap-4">
+                      <Avatar className="w-16 h-16 border-2 border-primary/20">
+                        <AvatarImage src={user.avatar || "/api/placeholder/user"} />
+                        <AvatarFallback className="font-black bg-primary/10 text-primary text-xl">
+                          {user.name?.[0]}
+                        </AvatarFallback>
+                      </Avatar>
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <h3 className="text-lg font-black">{user.name}</h3>
+                          {user.is_admin && <Badge className="bg-amber-500 hover:bg-amber-600">أدمن</Badge>}
+                          {user.timeout_until && new Date(user.timeout_until) > new Date() && (
+                            <Badge variant="destructive" className="animate-pulse">تايم أوت</Badge>
+                          )}
+                        </div>
+                        <p className="text-sm text-muted-foreground">@{user.username}</p>
+                        <p className="text-xs text-muted-foreground mt-1">{user.email}</p>
+                      </div>
                     </div>
-                    <p className="text-sm text-muted-foreground">@{user.username}</p>
+
+                    {/* Astronomical Stats Section */}
+                    <div className="p-4 rounded-2xl bg-primary/5 border border-primary/10 space-y-3">
+                      <div className="flex items-center gap-2 text-primary">
+                        <Zap className="w-4 h-4 fill-current" />
+                        <span className="text-xs font-black uppercase tracking-tighter">تعديل الأرقام الفلكية</span>
+                      </div>
+                      <div className="grid grid-cols-2 gap-3">
+                        <div className="space-y-1">
+                          <span className="text-[10px] text-muted-foreground mr-1">المتابعين</span>
+                          <Input 
+                            type="number" 
+                            defaultValue={user.followers_count}
+                            id={`f-${user.id}`}
+                            className="h-9 rounded-xl text-xs font-bold"
+                          />
+                        </div>
+                        <div className="space-y-1">
+                          <span className="text-[10px] text-muted-foreground mr-1">المنشورات</span>
+                          <Input 
+                            type="number" 
+                            defaultValue={user.override_post_count || 0}
+                            id={`p-${user.id}`}
+                            className="h-9 rounded-xl text-xs font-bold"
+                          />
+                        </div>
+                      </div>
+                      <Button 
+                        size="sm" 
+                        variant="secondary"
+                        className="w-full h-8 rounded-xl text-xs font-black"
+                        onClick={() => {
+                          const f = (document.getElementById(`f-${user.id}`) as HTMLInputElement).value;
+                          const p = (document.getElementById(`p-${user.id}`) as HTMLInputElement).value;
+                          handleUpdateStats(user.id, parseInt(f), parseInt(p));
+                        }}
+                        disabled={actionLoading === user.id}
+                      >
+                        {actionLoading === user.id ? <Loader2 className="w-3 h-3 animate-spin" /> : "تطبيق الأرقام الفلكية"}
+                      </Button>
+                    </div>
+                  </div>
+
+                  {/* Actions Section */}
+                  <div className="w-full md:w-48 flex flex-col gap-3 justify-center border-t md:border-t-0 md:border-r border-border/50 pt-4 md:pt-0 md:pr-6">
+                    <div className="space-y-2">
+                       <span className="text-[10px] font-black text-muted-foreground uppercase mr-1">نظام التايم أوت</span>
+                       <div className="flex gap-2">
+                         <Input 
+                            type="number" 
+                            placeholder="دقيقة"
+                            value={timeoutMinutes}
+                            onChange={(e) => setTimeoutMinutes(e.target.value)}
+                            className="h-9 w-20 rounded-xl text-xs"
+                         />
+                         <Button 
+                            size="sm" 
+                            variant="destructive"
+                            className="flex-1 h-9 rounded-xl text-xs font-black"
+                            onClick={() => handleSetTimeout(user.id)}
+                            disabled={actionLoading === user.id + '-timeout'}
+                         >
+                           {actionLoading === user.id + '-timeout' ? <Loader2 className="w-3 h-3 animate-spin"/> : "تايم أوت"}
+                         </Button>
+                       </div>
+                       {user.timeout_until && new Date(user.timeout_until) > new Date() && (
+                         <Button 
+                           size="sm" 
+                           variant="outline"
+                           className="w-full h-9 rounded-xl text-xs font-black border-green-500/50 text-green-600 hover:bg-green-50"
+                           onClick={() => handleClearTimeout(user.id)}
+                         >
+                           <Unlock className="w-3 h-3 ml-2" />
+                           فك التايم أوت
+                         </Button>
+                       )}
+                    </div>
+
+                    <div className="pt-4 mt-auto">
+                       <div className="flex items-center gap-2 text-[10px] text-muted-foreground font-bold">
+                          <Clock className="w-3 h-3" />
+                          <span>انضم في: {user.created_at}</span>
+                       </div>
+                    </div>
                   </div>
                 </div>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                {editingUser?.id === user.id ? (
-                  // Edit Mode
-                  <div className="space-y-3">
-                    <div className="space-y-2">
-                      <label className="text-xs font-black text-muted-foreground uppercase tracking-widest">الاسم الكامل</label>
-                      <Input
-                        value={editingUser.name}
-                        onChange={(e) => setEditingUser({ ...editingUser, name: e.target.value })}
-                        className="h-10 rounded-xl"
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <label className="text-xs font-black text-muted-foreground uppercase tracking-widest">البريد الإلكتروني</label>
-                      <Input
-                        type="email"
-                        value={editingUser.email}
-                        onChange={(e) => setEditingUser({ ...editingUser, email: e.target.value })}
-                        className="h-10 rounded-xl"
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <label className="text-xs font-black text-muted-foreground uppercase tracking-widest">البايو</label>
-                      <Textarea
-                        value={editingUser.bio}
-                        onChange={(e) => setEditingUser({ ...editingUser, bio: e.target.value })}
-                        className="min-h-[80px] rounded-xl resize-none"
-                      />
-                    </div>
-                    <div className="flex gap-2">
-                      <Button
-                        onClick={handleSaveUser}
-                        disabled={saving}
-                        className="flex-1 h-10 rounded-xl gap-2"
-                      >
-                        {saving ? (
-                          <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                        ) : (
-                          <>
-                            <Save className="w-4 h-4" />
-                            حفظ
-                          </>
-                        )}
-                      </Button>
-                      <Button
-                        variant="outline"
-                        onClick={handleCancelEdit}
-                        className="flex-1 h-10 rounded-xl gap-2"
-                      >
-                        <X className="w-4 h-4" />
-                        إلغاء
-                      </Button>
-                    </div>
-                  </div>
-                ) : (
-                  // View Mode
-                  <div className="space-y-3">
-                    <div>
-                      <h4 className="text-sm font-black text-muted-foreground uppercase tracking-widest">البريد الإلكتروني</h4>
-                      <p className="text-sm">{user.email}</p>
-                    </div>
-                    <div>
-                      <h4 className="text-sm font-black text-muted-foreground uppercase tracking-widest">البايو</h4>
-                      <p className="text-sm text-muted-foreground leading-relaxed">{user.bio}</p>
-                    </div>
-                    <div>
-                      <h4 className="text-sm font-black text-muted-foreground uppercase tracking-widest">تاريخ الإنشاء</h4>
-                      <p className="text-sm text-muted-foreground">{user.created_at}</p>
-                    </div>
-                    <div className="flex gap-2">
-                      <Button
-                        onClick={() => handleEditUser(user)}
-                        className="flex-1 h-10 rounded-xl gap-2"
-                        variant="outline"
-                      >
-                        <Edit className="w-4 h-4" />
-                        تعديل
-                      </Button>
-                      <Button
-                        onClick={() => handleBanUser(user.id, !user.is_banned)}
-                        className={`flex-1 h-10 rounded-xl gap-2 ${
-                          user.is_banned 
-                            ? "bg-green-500 hover:bg-green-600 text-white" 
-                            : "bg-red-500 hover:bg-red-600 text-white"
-                        }`}
-                      >
-                        {user.is_banned ? (
-                          <>
-                            <Check className="w-4 h-4" />
-                            فك الحظر
-                          </>
-                        ) : (
-                          <>
-                            <Ban className="w-4 h-4" />
-                            حظر
-                          </>
-                        )}
-                      </Button>
-                    </div>
-                  </div>
-                )}
               </CardContent>
             </Card>
           ))}

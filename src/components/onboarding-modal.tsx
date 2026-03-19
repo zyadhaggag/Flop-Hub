@@ -9,7 +9,8 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Camera, Image as ImageIcon, Sparkles, Loader2, ArrowLeft, Check, Plus, X } from "lucide-react";
+import { Camera, Image as ImageIcon, Sparkles, Loader2, ArrowLeft, Check, Plus, X, Trophy, ShieldCheck } from "lucide-react";
+import { CHALLENGES } from "@/lib/frames-challenges";
 import { updateProfile } from "@/lib/actions";
 import { ProfileBannerSelector } from "./profile-banner-selector";
 import { uploadImage } from "@/lib/supabase";
@@ -17,7 +18,7 @@ import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { detectPlatform, getPlatformIcon, getPlatformLabel, SocialLink } from "@/lib/social-links";
 
-const TOTAL_STEPS = 4;
+const TOTAL_STEPS = 6;
 
 // Matches all 15 presets in ProfileBannerSelector
 const BANNER_STYLES: Record<string, React.CSSProperties> = {
@@ -38,7 +39,7 @@ const BANNER_STYLES: Record<string, React.CSSProperties> = {
   'preset-15': { backgroundImage: 'linear-gradient(135deg, #fa709a 0%, #fee140 100%)' },
 };
 
-const STEP_LABELS = ["الغلاف", "الصورة", "معلوماتي", "روابطي"];
+const STEP_LABELS = ["الغلاف", "الصورة", "معلوماتي", "روابطي", "الشروط", "التحديات"];
 
 export function OnboardingModal() {
   const { data: session, update } = useSession();
@@ -53,6 +54,8 @@ export function OnboardingModal() {
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
   const [socialLinks, setSocialLinks] = useState<SocialLink[]>([]);
   const [newLinkUrl, setNewLinkUrl] = useState("");
+  const [acceptTerms, setAcceptTerms] = useState(false);
+  const [acceptContent, setAcceptContent] = useState(false);
 
   useEffect(() => {
     if (session?.user && !session.user.bio && !session.user.banner_url) {
@@ -292,6 +295,75 @@ export function OnboardingModal() {
               </div>
             </div>
           )}
+
+          {step === 5 && (
+            <div className="space-y-5 animate-in slide-in-from-left-4 duration-300">
+              <div className="text-center space-y-2 pb-2">
+                <div className="w-14 h-14 rounded-2xl bg-primary/10 flex items-center justify-center mx-auto">
+                  <ShieldCheck className="w-7 h-7 text-primary" />
+                </div>
+                <h3 className="font-black text-lg">الشروط والخصوصية</h3>
+                <p className="text-xs text-muted-foreground font-medium">وافق على الشروط للمتابعة</p>
+              </div>
+
+              <label className={cn(
+                "flex items-start gap-3 p-4 rounded-2xl border cursor-pointer transition-all",
+                acceptTerms ? "bg-primary/5 border-primary/30" : "bg-muted/30 border-border/50 hover:border-primary/20"
+              )}>
+                <input type="checkbox" checked={acceptTerms} onChange={(e) => setAcceptTerms(e.target.checked)} className="mt-1 accent-primary w-4 h-4" />
+                <div>
+                  <span className="text-sm font-black block">أوافق على شروط الاستخدام وسياسة الخصوصية</span>
+                  <span className="text-[10px] text-muted-foreground">بالموافقة، أنت تقبل شروط استخدام منصة FlopHub وسياسة حماية بياناتك الشخصية.</span>
+                </div>
+              </label>
+
+              <label className={cn(
+                "flex items-start gap-3 p-4 rounded-2xl border cursor-pointer transition-all",
+                acceptContent ? "bg-primary/5 border-primary/30" : "bg-muted/30 border-border/50 hover:border-primary/20"
+              )}>
+                <input type="checkbox" checked={acceptContent} onChange={(e) => setAcceptContent(e.target.checked)} className="mt-1 accent-primary w-4 h-4" />
+                <div>
+                  <span className="text-sm font-black block">أتعهد بنشر محتوى حقيقي عن الفشل والأخطاء</span>
+                  <span className="text-[10px] text-muted-foreground">أتعهد بأن أشارك تجارب فشل حقيقية وأخطاء واقعية بهدف التعلم، بدون محتوى مزيف أو مضلل.</span>
+                </div>
+              </label>
+
+              {!acceptTerms || !acceptContent ? (
+                <p className="text-[11px] text-red-500 text-center font-bold">يجب الموافقة على جميع الشروط للمتابعة</p>
+              ) : (
+                <p className="text-[11px] text-primary text-center font-bold">✓ تم قبول جميع الشروط</p>
+              )}
+            </div>
+          )}
+
+          {step === 6 && (
+            <div className="space-y-4 animate-in slide-in-from-left-4 duration-300">
+              <div className="text-center space-y-2 pb-2">
+                <div className="w-14 h-14 rounded-2xl bg-primary/10 flex items-center justify-center mx-auto">
+                  <Trophy className="w-7 h-7 text-primary" />
+                </div>
+                <h3 className="font-black text-lg">تحديات FlopHub</h3>
+                <p className="text-xs text-muted-foreground font-medium">أكمل التحديات لفتح إطارات مميزة لصورتك!</p>
+              </div>
+              <div className="space-y-2 max-h-[250px] overflow-y-auto no-scrollbar">
+                {CHALLENGES.map((ch) => (
+                  <div key={ch.id} className="flex items-center gap-3 p-3 rounded-2xl bg-muted/30 border border-border/50">
+                    <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center text-xl shrink-0">
+                      {ch.emoji}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <span className="text-sm font-black block">{ch.titleAr}</span>
+                      <span className="text-[10px] text-muted-foreground">{ch.descriptionAr}</span>
+                    </div>
+                    <div className="text-[10px] font-bold text-primary bg-primary/10 px-2 py-1 rounded-lg shrink-0">
+                      {ch.rewardAr}
+                    </div>
+                  </div>
+                ))}
+              </div>
+              <p className="text-[10px] text-muted-foreground text-center pt-1">يتم تتبع تقدمك تلقائياً · لا حاجة لتسجيل شيء</p>
+            </div>
+          )}
         </div>
 
         {/* Fixed footer */}
@@ -308,7 +380,11 @@ export function OnboardingModal() {
           )}
           <div className="flex-1" />
           {step < TOTAL_STEPS ? (
-            <Button onClick={handleNext} className="h-11 px-8 rounded-xl font-black gap-2">
+            <Button 
+              onClick={handleNext} 
+              disabled={step === 5 && (!acceptTerms || !acceptContent)}
+              className="h-11 px-8 rounded-xl font-black gap-2"
+            >
               التالي
               <ArrowLeft className="w-4 h-4" />
             </Button>

@@ -39,6 +39,13 @@ const BANNER_STYLES: Record<string, { backgroundImage: string; backgroundColor?:
 
 function getBannerStyle(banner: string | null): React.CSSProperties {
   if (!banner) return {};
+  // Handle custom gradient format: "custom-{hex1}-{hex2}"
+  if (banner.startsWith('custom-')) {
+    const parts = banner.replace('custom-', '').split('-');
+    if (parts.length === 2) {
+      return { backgroundImage: `linear-gradient(135deg, #${parts[0]}, #${parts[1]})` };
+    }
+  }
   const key = banner.startsWith('preset-') ? banner.replace('preset-', 'banner-') : null;
   if (key && BANNER_STYLES[key]) {
     return BANNER_STYLES[key];
@@ -319,7 +326,7 @@ export default function SettingsPage() {
             </div>
           </div>
 
-          <div className="flex gap-2 bg-muted/30 p-1.5 rounded-2xl border border-border/50 overflow-x-auto no-scrollbar">
+          <div className="flex justify-center gap-2 bg-muted/30 p-1.5 rounded-2xl border border-border/50 overflow-x-auto no-scrollbar">
             {tabs.map((tab) => (
               <button
                 key={tab.id}
@@ -443,8 +450,8 @@ export default function SettingsPage() {
                               <span className="text-[10px] text-muted-foreground truncate max-w-[150px]">{link.url}</span>
                             </div>
                           </div>
-                          <button onClick={() => handleRemoveSocialLink(i)} className="p-2 text-muted-foreground hover:text-red-500 opacity-0 group-hover:opacity-100 transition-all">
-                            <X className="w-4 h-4" />
+                          <button onClick={() => handleRemoveSocialLink(i)} className="p-2 text-red-400/60 hover:text-red-500 hover:bg-red-500/10 rounded-lg transition-all" title="حذف الرابط">
+                            <Trash2 className="w-4 h-4" />
                           </button>
                         </div>
                       );

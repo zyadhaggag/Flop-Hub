@@ -19,7 +19,15 @@ import { getNotifications, markAllNotificationsRead, markNotificationRead, check
 import { cn } from "@/lib/utils";
 import { useTheme } from "next-themes";
 import Link from "next/link";
-import { LogoutModal } from "@/components/logout-modal";
+import dynamic from "next/dynamic";
+import { ProfileFrame } from "@/components/profile-frame";
+import { getUserChallengeData } from "@/lib/challenge-actions";
+import { getUserAppearance } from "@/lib/frames-challenges";
+
+const LogoutModal = dynamic(() => import("@/components/logout-modal").then(mod => mod.LogoutModal), {
+  ssr: false,
+  loading: () => null,
+});
 
 export default function NavbarActions() {
   const { data: session } = useSession();
@@ -29,6 +37,7 @@ export default function NavbarActions() {
   const [notifications, setNotifications] = useState<any[]>([]);
   const [isAdminUser, setIsAdminUser] = useState(false);
   const [showLogoutModal, setShowLogoutModal] = useState(false);
+  const [appearance, setAppearance] = useState<any>({ frame: 'none', nameColorClass: '', badges: [] });
 
   const fetchNotifications = async () => {
     if (session) {
@@ -40,7 +49,13 @@ export default function NavbarActions() {
   useEffect(() => {
     setMounted(true);
     fetchNotifications();
-    if (session) checkIsAdmin().then(setIsAdminUser);
+    if (session) {
+      checkIsAdmin().then(setIsAdminUser);
+      getUserChallengeData().then(data => {
+        const app = getUserAppearance(data.challengeStates);
+        setAppearance(app);
+      });
+    }
   }, [session]);
 
   const handleMarkAllRead = async () => {
@@ -144,18 +159,22 @@ export default function NavbarActions() {
       </DropdownMenu>
       
       <DropdownMenu>
-        <DropdownMenuTrigger className="relative h-10 w-10 rounded-full overflow-hidden border-2 border-border hover:border-primary transition-colors bg-muted flex items-center justify-center font-tajawal cursor-pointer group shadow-sm focus:outline-none">
-          {avatarUrl ? (
-            <NextImage 
-              src={avatarUrl} 
-              alt={userName} 
-              fill
-              className="object-cover group-hover:scale-110 transition-transform" 
-              sizes="40px"
-            />
-          ) : (
-            <span className="text-sm font-black">{userInitial}</span>
-          )}
+        <DropdownMenuTrigger className="relative outline-none focus:outline-none cursor-pointer group">
+          <ProfileFrame tier={isAdminUser ? 'admin' : appearance.frame} size="sm" showBadge={false}>
+            <div className="relative h-10 w-10 rounded-full overflow-hidden border-2 border-border hover:border-primary transition-colors bg-muted flex items-center justify-center font-tajawal shadow-sm">
+              {avatarUrl ? (
+                <NextImage 
+                  src={avatarUrl} 
+                  alt={userName} 
+                  fill
+                  className="object-cover group-hover:scale-110 transition-transform" 
+                  sizes="40px"
+                />
+              ) : (
+                <span className="text-sm font-black">{userInitial}</span>
+              )}
+            </div>
+          </ProfileFrame>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" className="w-64 font-tajawal p-2 rounded-2xl border-border shadow-xl bg-popover text-popover-foreground">
           <div className="p-3">

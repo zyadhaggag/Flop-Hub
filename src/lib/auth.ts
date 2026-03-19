@@ -11,6 +11,10 @@ declare module "next-auth" {
       bio?: string | null;
       banner_url?: string | null;
       social_links?: any[] | null;
+      is_admin?: boolean;
+      timeout_until?: string | null;
+      timeout_reason?: string | null;
+      timeout_by?: string | null;
     } & DefaultSession["user"]
   }
 
@@ -20,6 +24,10 @@ declare module "next-auth" {
     bio?: string | null;
     banner_url?: string | null;
     social_links?: any[] | null;
+    is_admin?: boolean;
+    timeout_until?: string | null;
+    timeout_reason?: string | null;
+    timeout_by?: string | null;
   }
 }
 
@@ -30,6 +38,10 @@ declare module "next-auth/jwt" {
     bio?: string | null;
     banner_url?: string | null;
     social_links?: any[] | null;
+    is_admin?: boolean;
+    timeout_until?: string | null;
+    timeout_reason?: string | null;
+    timeout_by?: string | null;
   }
 }
 
@@ -52,7 +64,7 @@ export const authOptions: NextAuthOptions = {
         
         try {
           const users = await sql`
-            SELECT id, email, name, password, image_url, username, banner_url, bio, social_links
+            SELECT id, email, name, password, image_url, username, banner_url, bio, social_links, is_admin, timeout_until, timeout_reason, timeout_by
             FROM users 
             WHERE email = ${credentials.email}
           `;
@@ -70,6 +82,10 @@ export const authOptions: NextAuthOptions = {
             banner_url: user.banner_url,
             bio: user.bio,
             social_links: user.social_links,
+            is_admin: user.is_admin,
+            timeout_until: user.timeout_until,
+            timeout_reason: user.timeout_reason,
+            timeout_by: user.timeout_by,
           };
         } catch (error) {
           console.error("Auth error:", error);
@@ -88,7 +104,7 @@ export const authOptions: NextAuthOptions = {
         
         try {
           // Check if user exists
-          const existingUsers = await sql`SELECT id, username, banner_url, bio, social_links FROM users WHERE email = ${user.email}`;
+          const existingUsers = await sql`SELECT id, username, banner_url, bio, social_links, is_admin, timeout_until FROM users WHERE email = ${user.email}`;
           
           if (existingUsers.length === 0) {
             // Create user for first time
@@ -105,10 +121,11 @@ export const authOptions: NextAuthOptions = {
             const result = await sql`
               INSERT INTO users (email, name, username, image_url)
               VALUES (${user.email}, ${user.name}, ${finalUsername}, ${user.image || "/api/placeholder/user"})
-              RETURNING id, username
+              RETURNING id, username, is_admin
             `;
             user.id = result[0].id.toString();
             user.username = result[0].username;
+            user.is_admin = result[0].is_admin;
           } else {
             user.id = existingUsers[0].id.toString();
             user.username = existingUsers[0].username;
@@ -116,6 +133,8 @@ export const authOptions: NextAuthOptions = {
             user.bio = existingUsers[0].bio;
             user.social_links = existingUsers[0].social_links;
             user.image = existingUsers[0].image_url || "/api/placeholder/user";
+            user.is_admin = existingUsers[0].is_admin;
+            user.timeout_until = existingUsers[0].timeout_until;
           }
           return true;
         } catch (error) {
@@ -134,6 +153,10 @@ export const authOptions: NextAuthOptions = {
         token.banner_url = user.banner_url;
         token.bio = user.bio;
         token.social_links = user.social_links;
+        token.is_admin = user.is_admin;
+        token.timeout_until = user.timeout_until;
+        token.timeout_reason = user.timeout_reason;
+        token.timeout_by = user.timeout_by;
       }
       
       // Handle session update
@@ -144,6 +167,7 @@ export const authOptions: NextAuthOptions = {
         if (session.banner_url) token.banner_url = session.banner_url;
         if (session.bio) token.bio = session.bio;
         if (session.social_links) token.social_links = session.social_links;
+        if (session.timeout_until !== undefined) token.timeout_until = session.timeout_until;
       }
       
       return token;
@@ -157,6 +181,10 @@ export const authOptions: NextAuthOptions = {
         session.user.banner_url = token.banner_url;
         session.user.bio = token.bio;
         session.user.social_links = token.social_links;
+        session.user.is_admin = token.is_admin;
+        session.user.timeout_until = token.timeout_until;
+        session.user.timeout_reason = token.timeout_reason;
+        session.user.timeout_by = token.timeout_by;
       }
       return session;
     },

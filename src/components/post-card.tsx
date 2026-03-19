@@ -26,7 +26,12 @@ import {
   Crown,
   Plus,
   Lightbulb,
-  Send
+  Send,
+  Trophy,
+  Award,
+  Globe,
+  Zap,
+  Gem
 } from "lucide-react";
 import { toggleHelpful, deletePost, editPost, addComment, getComments, toggleFollow, toggleSave, editComment, deleteComment } from "@/lib/actions";
 import { useEffect, useState } from "react";
@@ -35,6 +40,8 @@ import { toast } from "sonner";
 import { useSession } from "next-auth/react";
 import { cn } from "@/lib/utils";
 import { Input } from "@/components/ui/input";
+import { ProfileFrame } from "@/components/profile-frame";
+import { computeFrameTier, getUserAppearance } from "@/lib/frames-challenges";
 
 interface PostCardProps {
   id: string;
@@ -56,9 +63,17 @@ interface PostCardProps {
   isSaved?: boolean;
   isFollowed?: boolean;
   category?: string | null;
+  challenge_ids?: string[];
 }
 
-export function PostCard({ id, user, time, title, story, lesson, imageUrl, helpfulCount, commentsCount, hasReacted: initialHasReacted, isSaved: initialIsSaved, isFollowed: initialIsFollowed, category }: PostCardProps) {
+const BADGE_ICONS: Record<string, React.ReactNode> = {
+  social_pro: <Globe className="w-3.5 h-3.5 text-blue-400 fill-blue-400/10" />,
+  inspirer: <Lightbulb className="w-3.5 h-3.5 text-amber-400 fill-amber-400/10" />,
+  icon: <Trophy className="w-3.5 h-3.5 text-yellow-500 fill-yellow-500/10" />,
+  legend: <Gem className="w-3.5 h-3.5 text-cyan-400 fill-cyan-400/10" />,
+};
+
+export function PostCard({ id, user, time, title, story, lesson, imageUrl, helpfulCount, commentsCount, hasReacted: initialHasReacted, isSaved: initialIsSaved, isFollowed: initialIsFollowed, category, challenge_ids = [] }: PostCardProps) {
   const { data: session } = useSession();
   const [reacted, setReacted] = useState(initialHasReacted);
   const [saved, setSaved] = useState(initialIsSaved);
@@ -246,26 +261,35 @@ export function PostCard({ id, user, time, title, story, lesson, imageUrl, helpf
   const getReplies = (parentId: string) => comments.filter(c => c.parent_id === parentId);
   const userInitial = user.name ? user.name[0] : '?';
 
+  // Compute appearance from challenges
+  const appearance = getUserAppearance((challenge_ids || []).map((cid: string) => ({ challenge_id: cid, status: 'completed' })));
+  const frameTier = user.is_admin ? 'admin' : appearance.frame;
+
   return (
     <Card suppressHydrationWarning className="p-0 rounded-xl sm:rounded-[2.5rem] border-border/40 shadow-sm dark:shadow-none hover:shadow-2xl hover:dark:shadow-primary/5 transition-all duration-500 relative bg-card group overflow-hidden">
       {/* Header */}
       <div className="p-3 sm:p-5 flex items-center justify-between border-b border-border/30 bg-muted/30">
         <div className="flex items-center gap-3">
           <Link href={`/u/${user.handle}`}>
-            <Avatar className="w-11 h-11 border-2 border-background ring-2 ring-primary/5 hover:ring-primary/20 transition-all cursor-pointer shadow-sm">
-              <AvatarImage src={user.avatar || "/api/placeholder/user"} />
-              <AvatarFallback className="bg-primary/10 text-primary font-black text-sm">
-                {userInitial}
-              </AvatarFallback>
-            </Avatar>
+            <ProfileFrame tier={frameTier} size="sm" showBadge={true}>
+              <Avatar className="w-11 h-11 hover:scale-105 transition-all cursor-pointer shadow-sm">
+                <AvatarImage src={user.avatar || "/api/placeholder/user"} />
+                <AvatarFallback className="bg-primary/10 text-primary font-black text-sm">
+                  {userInitial}
+                </AvatarFallback>
+              </Avatar>
+            </ProfileFrame>
           </Link>
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2">
               <div className="flex flex-col min-w-0">
                 <div className="flex items-center gap-1.5">
-                  <Link href={`/u/${user.handle}`} className="text-sm font-black hover:underline truncate">
+                  <Link href={`/u/${user.handle}`} className={cn("text-sm font-black hover:underline truncate", appearance.nameColorClass)}>
                     {user.name}
                   </Link>
+                  {appearance.badges.map((badge, idx) => (
+                    <span key={idx} className="text-xs drop-shadow-sm">{badge}</span>
+                  ))}
                   {user.is_admin && (
                     <div className="flex items-center gap-0.5 scale-90 -ml-0.5">
                       <Crown className="w-3 h-3 text-amber-500 fill-amber-500/20" />
@@ -406,7 +430,7 @@ export function PostCard({ id, user, time, title, story, lesson, imageUrl, helpf
             </div>
           </div>
         ) : (
-          <div className="space-y-5">
+          <div className="space-y-6">
             <Link href={`/post/${id}`}>
               <h3 className="font-black text-xl sm:text-2xl leading-tight text-foreground hover:text-primary transition-colors cursor-pointer line-clamp-3 decoration-primary/30 underline-offset-8 group-hover:underline" style={{ overflowWrap: 'anywhere', wordBreak: 'break-word' }}>
                 {title}
@@ -430,11 +454,21 @@ export function PostCard({ id, user, time, title, story, lesson, imageUrl, helpf
             
             {imageUrl && (
               <div className="relative aspect-[16/9] w-full overflow-hidden rounded-2xl sm:rounded-[2.5rem] border border-border/40 shadow-xl shadow-black/5 mt-4 group/image">
-                 <img 
+                 {/* Mission Strip / Ribbon for top earners */}
+                 {(frameTier === 'platinum' || frameTier === 'diamond') && (
+                   <div className="absolute top-6 -right-12 bg-gradient-to-r from-amber-600 via-yellow-400 to-amber-600 text-white px-12 py-1.5 rotate-45 z-20 shadow-xl border-y border-white/30 flex items-center justify-center gap-1.5">
+                     <Trophy className="w-3.5 h-3.5 drop-shadow-sm" />
+                     <span className="text-[10px] font-black uppercase tracking-widest drop-shadow-md">فائز بالـتـحـدي</span>
+                   </div>
+                 )}
+                 
+                 <NextImage 
                    src={imageUrl} 
                    alt={title} 
-                   loading="lazy"
-                   className="w-full h-full object-cover transition-transform duration-1000 group-hover/image:scale-110" 
+                   fill
+                   sizes="(max-width: 640px) 100vw, (max-width: 1024px) 600px, 800px"
+                   quality={imageUrl.endsWith('.png') ? 85 : 75}
+                   className="object-cover transition-transform duration-1000 group-hover/image:scale-110" 
                  />
                  <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent pointer-events-none" />
               </div>

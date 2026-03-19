@@ -33,12 +33,11 @@ export function HomeClientWrapper({
   const [posts, setPosts] = useState(initialPosts);
   const [sort, setSort] = useState<'latest' | 'trending' | 'foryou'>('foryou');
   const [loadingMore, setLoadingMore] = useState(false);
-  const [hasMore, setHasMore] = useState(initialPosts.length === 5);
+  const PAGE_SIZE = 4;
+  const [hasMore, setHasMore] = useState(initialPosts.length === PAGE_SIZE);
   const [isLoading, setIsLoading] = useState(false);
   const [page, setPage] = useState(1);
   const [isClient, setIsClient] = useState(false);
-
-  const PAGE_SIZE = 5;
 
   useEffect(() => {
     setIsClient(true);
@@ -99,9 +98,9 @@ export function HomeClientWrapper({
                     ? "bg-primary text-primary-foreground shadow-lg shadow-primary/25 scale-[1.02] animate-pulse"
                     : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
                 }`}
-                style={{
-                  animationDelay: isClient ? `${index * 100}ms` : '0ms'
-                }}
+                style={isClient ? {
+                  animationDelay: `${index * 100}ms`
+                } : undefined}
               >
                 <Icon className={`w-4 h-4 transition-all duration-300 ${isActive ? 'scale-110 rotate-12' : 'group-hover:scale-110'}`} />
                 <span className="relative z-10">{tab.label}</span>
@@ -129,7 +128,9 @@ export function HomeClientWrapper({
             <div 
               key={post.id} 
               className="animate-in fade-in slide-in-from-bottom-8 duration-700"
-              style={{ animationDelay: isClient ? `${index * 100}ms` : '0ms' }}
+              style={isClient ? {
+                animationDelay: `${index * 100}ms`
+              } : undefined}
             >
               <PostCard 
                 id={post.id} 

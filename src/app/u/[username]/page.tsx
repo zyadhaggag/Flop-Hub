@@ -16,6 +16,8 @@ import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/lib/auth";
 import { Metadata } from "next";
 import { getPlatformIcon, getPlatformColor } from "@/lib/social-links";
+import { ProfileFrame } from "@/components/profile-frame";
+import { getUserAppearance } from "@/lib/frames-challenges";
 
 export const revalidate = 60; // ISR – revalidate every 60 seconds
 
@@ -49,6 +51,13 @@ function getBannerStyle(bannerUrl: string | null, isAdmin: boolean = false): Rea
     };
   }
   if (!bannerUrl) return {};
+  // Handle custom gradient format: "custom-{hex1}-{hex2}"
+  if (bannerUrl.startsWith('custom-')) {
+    const parts = bannerUrl.replace('custom-', '').split('-');
+    if (parts.length === 2) {
+      return { background: `linear-gradient(135deg, #${parts[0]}, #${parts[1]})` };
+    }
+  }
   if (bannerUrl.startsWith('preset-')) {
     const ps = PRESET_STYLES[bannerUrl];
     return ps ? { background: ps.background, backgroundSize: ps.size || 'cover' } : {};
@@ -73,7 +82,9 @@ export default async function ProfilePage({ params }: { params: Promise<{ userna
   const session = await getServerSession(authOptions);
 
   const users = await sql`
-    SELECT id, username, name, email, bio, image_url, banner_url, created_at, social_links, is_admin
+    SELECT id, username, name, email, bio, image_url, banner_url, created_at, social_links, is_admin, 
+           followers_count, override_post_count,
+      (SELECT json_agg(challenge_id) FROM user_challenges WHERE user_id = users.id AND status = 'completed') as challenge_ids
     FROM users 
     WHERE LOWER(TRIM(username)) = LOWER(TRIM(${username}))
   `;
@@ -110,10 +121,22 @@ export default async function ProfilePage({ params }: { params: Promise<{ userna
   ]);
 
   const isFollowing = isFollowingRes.length > 0;
-  const postCount = Number((postCountRes[0] as any)?.count || 0);
-  const followersCount = Number((followersCountRes[0] as any)?.count || 0);
+  
+  // Apply astronomical overrides if they exist
+  const postCount = user.override_post_count !== null 
+    ? Number(user.override_post_count) 
+    : Number((postCountRes[0] as any)?.count || 0);
+    
+  const followersCount = user.followers_count > 0 
+    ? Number(user.followers_count) 
+    : Number((followersCountRes[0] as any)?.count || 0);
+    
   const followingCount = Number((followingCountRes[0] as any)?.count || 0);
   const userInitial = user.name?.[0] || user.username?.[0] || "؟";
+  
+  const challenge_ids = (user.challenge_ids || []) as string[];
+  const appearance = getUserAppearance(challenge_ids.map(id => ({ challenge_id: id, status: 'completed' })));
+  const frameTier = user.is_admin ? 'admin' : appearance.frame;
 
   const socialLinks = user.social_links
     ? (typeof user.social_links === 'string' ? JSON.parse(user.social_links) : user.social_links)
@@ -151,17 +174,19 @@ export default async function ProfilePage({ params }: { params: Promise<{ userna
               user.is_admin && "bg-gradient-to-b from-transparent via-amber-50/5 to-transparent"
             )}>
               <div className="absolute -top-12 sm:-top-16 right-6 sm:right-8">
-                <Avatar className={cn(
-                  "w-24 h-24 sm:w-32 sm:h-32 border-4 shadow-2xl group-hover:scale-105 transition-transform duration-500",
-                  user.is_admin ? "border-amber-400/50 ring-4 ring-amber-500/20" : "border-card"
-                )}>
-                  <AvatarImage src={user.image_url || "/api/placeholder/user"} />
-                  <AvatarFallback className={cn("text-2xl sm:text-3xl font-black", user.is_admin ? "bg-gradient-to-br from-amber-400 to-amber-600 text-white" : "bg-primary/10 text-primary")}>
-                    {userInitial}
-                  </AvatarFallback>
-                </Avatar>
-                {user.is_admin && (
-                  <div className="absolute -top-1 sm:-top-2 -right-1 sm:-right-2 bg-gradient-to-br from-amber-400 to-amber-600 text-white p-1 sm:p-1.5 rounded-full shadow-lg border-2 border-amber-300/50 animate-pulse">
+                <ProfileFrame tier={frameTier} size="lg" showBadge={true}>
+                  <Avatar className={cn(
+                    "w-24 h-24 sm:w-32 sm:h-32 border-4 shadow-2xl group-hover:scale-105 transition-transform duration-500",
+                    user.is_admin ? "border-transparent" : "border-card"
+                  )}>
+                    <AvatarImage src={user.image_url || "/api/placeholder/user"} />
+                    <AvatarFallback className={cn("text-2xl sm:text-3xl font-black", user.is_admin ? "bg-gradient-to-br from-amber-400 to-amber-600 text-white" : "bg-primary/10 text-primary")}>
+                      {userInitial}
+                    </AvatarFallback>
+                  </Avatar>
+                </ProfileFrame>
+                {user.is_admin && !appearance.badges.includes('👑') && (
+                  <div className="absolute -top-1 sm:-top-2 -right-1 sm:-right-2 bg-gradient-to-br from-amber-400 to-amber-600 text-white p-1 sm:p-1.5 rounded-full shadow-lg border-2 border-amber-300/50 animate-pulse z-20">
                     <Crown className="w-3 h-3 sm:w-4 sm:h-4" />
                   </div>
                 )}
@@ -172,8 +197,11 @@ export default async function ProfilePage({ params }: { params: Promise<{ userna
                   <div className="flex items-center gap-2">
                     <h1 className={cn(
                       "text-2xl sm:text-3xl font-black tracking-tight",
-                      user.is_admin && "bg-gradient-to-r from-amber-600 via-amber-500 to-amber-600 bg-clip-text text-transparent"
+                      appearance.nameColorClass || (user.is_admin && "bg-gradient-to-r from-amber-600 via-amber-500 to-amber-600 bg-clip-text text-transparent")
                     )}>{user.name || user.username}</h1>
+                    {appearance.badges.map((badge, idx) => (
+                      <span key={idx} className="text-xl drop-shadow-sm">{badge}</span>
+                    ))}
                     {user.is_admin && (
                       <div className="flex items-center gap-1 bg-gradient-to-r from-amber-400 to-amber-600 text-white px-2 py-0.5 rounded-lg shadow-lg shadow-amber-500/30 animate-pulse">
                         <span className="text-[10px] font-black uppercase tracking-widest">ADMIN</span>
@@ -283,10 +311,11 @@ export default async function ProfilePage({ params }: { params: Promise<{ userna
                       story={post.story}
                       lesson={post.lesson}
                       imageUrl={post.image_url}
-                      helpfulCount={post.reactions_count}
+                      helpfulCount={post.helpful_count}
                       commentsCount={post.comments_count}
-                      hasReacted={post.is_helpful}
+                      hasReacted={post.has_reacted}
                       category={post.category}
+                      challenge_ids={challenge_ids}
                     />
                   ))}
                 </div>
