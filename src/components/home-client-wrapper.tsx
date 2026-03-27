@@ -7,6 +7,7 @@ import { Sparkles, TrendingUp, Clock, Loader2, Plus, ArrowDown, Zap } from "luci
 import { useState, useEffect } from "react";
 import dynamic from "next/dynamic";
 import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 
 const CreatePostModal = dynamic(() => import("./create-post-modal").then(mod => mod.CreatePostModal), {
   ssr: false,
@@ -42,7 +43,12 @@ export function HomeClientWrapper({
     setIsLoading(true);
     setSort(value as any);
     setPage(1);
-    const newPosts = await getPosts(value as any, PAGE_SIZE, 0);
+    
+    // Optimized: Use Promise.all for parallel operations
+    const [newPosts] = await Promise.all([
+      getPosts(value as any, PAGE_SIZE, 0)
+    ]);
+    
     setPosts(newPosts);
     setHasMore(newPosts.length === PAGE_SIZE);
     setIsLoading(false);
@@ -85,18 +91,25 @@ export function HomeClientWrapper({
             const Icon = tab.icon;
             const isActive = sort === tab.value;
             return (
-              <button
+              <div
                 key={tab.value}
-                onClick={() => handleSortChange(tab.value)}
-                className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-bold transition-all duration-300 relative overflow-hidden group ${
+                className={cn(
+                  "flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-bold transition-all duration-300 relative overflow-hidden group cursor-pointer",
                   isActive
-                    ? "bg-primary text-primary-foreground shadow-lg shadow-primary/25 scale-[1.02]"
+                    ? "text-white shadow-lg shadow-primary/25 scale-[1.02]"
                     : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
-                }`}
+                )}
+                onClick={() => handleSortChange(tab.value)}
+                style={{
+                  background: isActive 
+                    ? "linear-gradient(135deg, #7c3aed 0%, #3b82f6 100%)"
+                    : "transparent",
+                  color: isActive ? 'white' : undefined
+                }}
               >
                 <Icon className={`w-4 h-4 transition-all duration-300 ${isActive ? 'scale-110' : 'group-hover:scale-110'}`} />
                 <span className="relative z-10">{tab.label}</span>
-              </button>
+              </div>
             );
           })}
         </div>

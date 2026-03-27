@@ -69,46 +69,46 @@ export function RightSidebar({
             <span>رواد النجاح</span>
           </div>
 
-          <div className="space-y-3 relative z-10">
+          <div className="space-y-4 relative z-10">
             {staticUsers.map((user: any) => {
               const isFollowed = followedIds.has(user.id);
               return (
                 <div key={user.id} className="group relative">
                   {/* Admin Shine Effect */}
                   {user.is_admin && (
-                    <div className="absolute -inset-0.5 bg-gradient-to-r from-amber-500 via-yellow-400 to-amber-500 rounded-2xl blur-[2px] opacity-10 group-hover:opacity-30 transition-opacity" />
+                    <div className="absolute -inset-0.5 bg-gradient-to-r from-primary via-secondary to-primary rounded-2xl blur-[2px] opacity-10 group-hover:opacity-30 transition-opacity" />
                   )}
                   
                   <div className={cn(
                     "relative flex items-center justify-between p-3 rounded-2xl transition-all border border-transparent",
                     user.is_admin 
-                      ? "bg-gradient-to-b from-amber-500/10 to-transparent border-amber-500/20 hover:border-amber-500/40 shadow-sm" 
+                      ? "bg-gradient-to-b from-primary/10 to-transparent border-primary/20 hover:border-primary/40 shadow-sm" 
                       : "hover:bg-muted/40"
                   )}>
                     <Link href={`/u/${user.username}`} className="flex items-center gap-3 flex-1 min-w-0">
                       <div className="relative">
                         <Avatar className={cn(
                           "w-10 h-10 border-2 transition-transform group-hover:scale-105",
-                          user.is_admin ? "border-amber-500/50 shadow-md shadow-amber-500/20" : "border-background"
+                          user.is_admin ? "border-primary/50 shadow-md shadow-primary/20" : "border-background"
                         )}>
                           <AvatarImage src={user.avatar_url || "/api/placeholder/user"} />
-                          <AvatarFallback className={cn("font-black text-xs", user.is_admin ? "bg-amber-500/10 text-amber-600" : "bg-primary/5 text-primary")}>
+                          <AvatarFallback className={cn("font-black text-xs", user.is_admin ? "bg-primary/10 text-primary" : "bg-primary/5 text-primary")}>
                             {user.name?.[0] || "?"}
                           </AvatarFallback>
                         </Avatar>
                         {user.is_admin && (
-                          <div className="absolute -top-1 -right-1 bg-amber-500 text-white p-0.5 rounded-full shadow-lg border border-background">
+                          <div className="absolute -top-1 -right-1 bg-primary text-white p-0.5 rounded-full shadow-lg border border-background">
                             <Crown className="w-2.5 h-2.5" />
                           </div>
                         )}
                       </div>
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-1">
-                          <p className={cn("text-xs font-black truncate", user.is_admin ? "text-amber-600 dark:text-amber-500" : "text-foreground")}>
+                          <p className={cn("text-xs font-black truncate", user.is_admin ? "text-primary dark:text-primary" : "text-foreground")}>
                             {user.name}
                           </p>
                           {user.is_admin && (
-                            <span className="text-[7px] font-black bg-amber-500 text-white px-1 py-0.5 rounded-[3px] uppercase tracking-tighter shadow-sm">ADMIN</span>
+                            <span className="text-[7px] font-black bg-primary text-white px-1 py-0.5 rounded-[3px] uppercase tracking-tighter shadow-sm">ADMIN</span>
                           )}
                         </div>
                         <div className="flex flex-col">
@@ -123,23 +123,23 @@ export function RightSidebar({
                     </Link>
                     
                     {isFollowed ? (
-                      <div className="flex items-center gap-1 text-[10px] font-black text-primary/70 bg-primary/5 border border-primary/10 rounded-xl px-3 h-8 shrink-0 whitespace-nowrap cursor-default shadow-sm">
+                      <div className="flex items-center gap-1 text-[10px] font-black text-primary/70 bg-gradient-to-r from-primary/5 to-secondary/5 border border-primary/10 rounded-xl px-3 h-8 shrink-0 whitespace-nowrap cursor-default shadow-sm">
                         <Check className="w-3 h-3" />
-                        <span>متابع</span>
+                        <span>تم المتابعة</span>
                       </div>
                     ) : (
                       <Button
                         size="sm"
                         onClick={() => handleFollow(user.id)}
                         disabled={loadingId === user.id}
-                        className="rounded-xl gap-1.5 font-black h-8 px-3 text-[11px] shrink-0 bg-primary text-white shadow-md shadow-primary/20 hover:shadow-primary/40 active:scale-95 disabled:opacity-60 transition-all"
+                        className="rounded-xl gap-1.5 font-black h-8 px-3 text-[11px] shrink-0 bg-gradient-to-r from-primary to-secondary text-white shadow-md shadow-primary/20 hover:shadow-primary/40 active:scale-95 disabled:opacity-60 transition-all border-none"
                       >
                         {loadingId === user.id ? (
                           <Loader2 className="w-3.5 h-3.5 animate-spin" />
                         ) : (
                           <>
                             <UserPlus className="w-3.5 h-3.5" />
-                            <span>تابع</span>
+                            <span>متابعة</span>
                           </>
                         )}
                       </Button>

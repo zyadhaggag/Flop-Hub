@@ -130,13 +130,13 @@ export function ChallengesClient() {
 
       {/* Header */}
       <div className="relative bg-card rounded-[2.5rem] border border-border overflow-hidden shadow-sm p-8 group">
-        <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-amber-500/5 transition-all duration-700 group-hover:opacity-80" />
+        <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-secondary/5 transition-all duration-700 group-hover:opacity-80" />
         <div className="absolute top-0 right-0 w-64 h-64 bg-primary/10 rounded-full blur-[100px] -mr-32 -mt-32 animate-pulse" />
-        <div className="absolute bottom-0 left-0 w-48 h-48 bg-amber-500/10 rounded-full blur-[80px] -ml-24 -mb-24 animate-pulse" />
+        <div className="absolute bottom-0 left-0 w-48 h-48 bg-secondary/10 rounded-full blur-[80px] -ml-24 -mb-24 animate-pulse" />
 
         <div className="relative space-y-8">
           <div className="flex flex-col sm:flex-row items-center gap-6 text-center sm:text-right">
-            <div className="w-20 h-20 rounded-3xl bg-gradient-to-br from-primary to-amber-500 flex items-center justify-center shadow-2xl rotate-3 transition-transform hover:rotate-0">
+            <div className="w-20 h-20 rounded-3xl bg-gradient-to-br from-primary to-secondary flex items-center justify-center shadow-2xl rotate-3 transition-transform hover:rotate-0">
               <Trophy className="w-10 h-10 text-white" />
             </div>
             <div>
@@ -159,7 +159,7 @@ export function ChallengesClient() {
                 <motion.div 
                   initial={{ width: 0 }}
                   animate={{ width: `${totalCount > 0 ? (completedCount / totalCount) * 100 : 0}%` }}
-                  className="h-full bg-gradient-to-r from-primary via-primary to-amber-400 rounded-full shadow-[0_0_12px_rgba(var(--primary),0.3)] transition-all duration-1000"
+                  className="h-full bg-gradient-to-r from-primary via-primary to-secondary rounded-full shadow-[0_0_12px_rgba(var(--primary),0.3)] transition-all duration-1000"
                 />
               </div>
             </div>
@@ -256,7 +256,7 @@ function ChallengeCard({ progress: p, state, onAccept, onClaim, onCelebrate }: {
       className={cn(
         "relative bg-card rounded-[2.5rem] border-2 overflow-hidden transition-all duration-500 group",
         isCompleted ? "border-primary/20 bg-primary/[0.01]" 
-          : canClaim ? "border-amber-400/50 bg-amber-500/[0.04] shadow-2xl shadow-amber-500/10"
+          : canClaim ? "border-secondary/50 bg-secondary/[0.04] shadow-2xl shadow-secondary/10"
           : isActive ? "border-primary/10 bg-muted/5 shadow-sm"
           : "border-border/40 hover:border-primary/30 hover:shadow-xl hover:shadow-primary/5 shadow-sm"
       )}>
@@ -271,7 +271,7 @@ function ChallengeCard({ progress: p, state, onAccept, onClaim, onCelebrate }: {
           <div className={cn(
             "w-24 h-24 rounded-[2.5rem] flex items-center justify-center text-5xl shrink-0 transition-all duration-500 transform group-hover:rotate-6 shadow-lg",
             isCompleted ? "bg-primary/10 text-primary border border-primary/20" : 
-            canClaim ? "bg-amber-500/10 animate-pulse text-amber-500 border border-amber-500/20" : 
+            canClaim ? "bg-secondary/10 animate-pulse text-secondary border border-secondary/20" : 
             "bg-muted text-muted-foreground group-hover:bg-primary/5 group-hover:text-primary border border-border/10"
           )}>
             {isCompleted ? <CheckCircle2 className="w-12 h-12" /> : canClaim ? <Star className="w-12 h-12" /> : ch.emoji}
@@ -317,7 +317,7 @@ function ChallengeCard({ progress: p, state, onAccept, onClaim, onCelebrate }: {
                   animate={{ width: `${p.percentage}%` }}
                   className={cn("h-full rounded-full transition-all duration-1000",
                     isCompleted ? "bg-primary shadow-[0_0_12px_rgba(var(--primary),0.3)]" : 
-                    canClaim ? "bg-gradient-to-r from-amber-500 to-amber-300 shadow-[0_0_12px_rgba(251,191,36,0.5)]" : 
+                    canClaim ? "bg-gradient-to-r from-secondary to-primary shadow-[0_0_12px_rgba(var(--secondary),0.5)]" : 
                     "bg-gradient-to-r from-primary/80 to-primary"
                   )}
                 />
@@ -334,7 +334,7 @@ function ChallengeCard({ progress: p, state, onAccept, onClaim, onCelebrate }: {
             isCompleted 
               ? "bg-primary/[0.04] border-primary/20 ring-1 ring-primary/5 shadow-inner" 
               : canClaim 
-                ? "bg-amber-500/[0.06] border-amber-500/30 ring-8 ring-amber-500/5 pulse-subtle shadow-lg" 
+                ? "bg-secondary/[0.06] border-secondary/30 ring-8 ring-secondary/5 pulse-subtle shadow-lg" 
                 : "bg-muted/50 border-border/60 shadow-sm"
           )}>
             <div className="relative shrink-0">
@@ -350,7 +350,7 @@ function ChallengeCard({ progress: p, state, onAccept, onClaim, onCelebrate }: {
                  <div className={cn(
                     "w-14 h-14 rounded-2xl flex items-center justify-center transition-all duration-500 group-hover:scale-110 shadow-sm",
                     isCompleted ? "bg-primary/20 text-primary" : 
-                    canClaim ? "bg-amber-500/20 text-amber-600 animate-bounce-subtle" : 
+                    canClaim ? "bg-secondary/20 text-secondary animate-bounce-subtle" : 
                     "bg-muted text-muted-foreground border border-border/20",
                     ch.rewardDetail.includes('name-') ? "hidden" : "" // Name color is handled by text
                  )}>
@@ -382,7 +382,7 @@ function ChallengeCard({ progress: p, state, onAccept, onClaim, onCelebrate }: {
                 <span className="hidden sm:inline">مُمتلك</span>
               </div>
             ) : canClaim ? (
-                <div className="hidden sm:flex bg-amber-500 text-white px-4 py-2 rounded-2xl font-black text-[10px] animate-pulse shadow-lg">
+                <div className="hidden sm:flex bg-secondary text-white px-4 py-2 rounded-2xl font-black text-[10px] animate-pulse shadow-lg">
                     جاهز للاستلام
                 </div>
             ) : (
@@ -415,7 +415,7 @@ function ChallengeCard({ progress: p, state, onAccept, onClaim, onCelebrate }: {
                 size="lg"
                 onClick={async () => { onCelebrate(); }}
                 disabled={actionLoading}
-                className="w-full h-16 rounded-[2rem] font-black text-xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-500 text-white shadow-2xl shadow-amber-500/30 hover:shadow-amber-500/50 active:scale-[0.98] transition-all animate-bounce-subtle flex items-center justify-center gap-4"
+                className="w-full h-16 rounded-[2rem] font-black text-xl bg-gradient-to-r from-primary to-secondary hover:from-secondary hover:to-primary text-white shadow-2xl shadow-primary/30 hover:shadow-primary/50 active:scale-[0.98] transition-all animate-bounce-subtle flex items-center justify-center gap-4"
               >
                 <div className="flex items-center gap-4">
                   <Gift className="w-7 h-7" />

@@ -21,23 +21,39 @@ import { detectPlatform, getPlatformIcon, getPlatformLabel, SocialLink } from "@
 const TOTAL_STEPS = 6;
 
 // Matches all 15 presets in ProfileBannerSelector
-const BANNER_STYLES: Record<string, React.CSSProperties> = {
-  'preset-1':  { backgroundImage: 'linear-gradient(135deg, #6366f1 0%, #a855f7 50%, #ec4899 100%)' },
-  'preset-2':  { backgroundImage: 'linear-gradient(135deg, #3b82f6 0%, #2dd4bf 100%)' },
-  'preset-3':  { backgroundImage: 'linear-gradient(135deg, #f59e0b 0%, #ef4444 100%)' },
-  'preset-4':  { backgroundImage: 'linear-gradient(135deg, #10b981 0%, #3b82f6 100%)' },
-  'preset-5':  { backgroundImage: 'linear-gradient(135deg, #000000 0%, #1e293b 100%)' },
-  'preset-6':  { backgroundImage: 'radial-gradient(#ffffff 0.5px, transparent 0.5px)', backgroundColor: '#000', backgroundSize: '20px 20px' },
-  'preset-7':  { backgroundImage: 'linear-gradient(#1f2937 1px, transparent 1px), linear-gradient(90deg, #1f2937 1px, transparent 1px)', backgroundColor: '#111827', backgroundSize: '30px 30px' },
-  'preset-8':  { backgroundImage: 'radial-gradient(circle at center, #7c3aed 0%, #000 100%)' },
-  'preset-9':  { backgroundImage: 'linear-gradient(45deg, #ff00cc, #3333ff)' },
-  'preset-10': { backgroundImage: 'repeating-linear-gradient(45deg, #222 0, #222 1px, transparent 0, transparent 50%)', backgroundColor: '#1a1a1a', backgroundSize: '10px 10px' },
-  'preset-11': { backgroundImage: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)' },
-  'preset-12': { backgroundImage: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)' },
-  'preset-13': { backgroundImage: 'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)' },
-  'preset-14': { backgroundImage: 'linear-gradient(135deg, #43e97b 0%, #38f9d7 100%)' },
-  'preset-15': { backgroundImage: 'linear-gradient(135deg, #fa709a 0%, #fee140 100%)' },
+const BANNER_STYLES: Record<string, { backgroundImage: string; backgroundColor?: string; backgroundSize?: string }> = {
+  'banner-1':  { backgroundImage: 'linear-gradient(135deg, #6366f1 0%, #a855f7 50%, #ec4899 100%)' },
+  'banner-2':  { backgroundImage: 'linear-gradient(135deg, #3b82f6 0%, #2dd4bf 100%)' },
+  'banner-3':  { backgroundImage: 'linear-gradient(135deg, #f59e0b 0%, #ef4444 100%)' },
+  'banner-4':  { backgroundImage: 'linear-gradient(135deg, #10b981 0%, #3b82f6 100%)' },
+  'banner-5':  { backgroundImage: 'linear-gradient(135deg, #000000 0%, #1e293b 100%)' },
+  'banner-6':  { backgroundImage: 'radial-gradient(#ffffff 0.5px, transparent 0.5px)', backgroundColor: '#000', backgroundSize: '20px 20px' },
+  'banner-7':  { backgroundImage: 'linear-gradient(#1f2937 1px, transparent 1px), linear-gradient(90deg, #1f2937 1px, transparent 1px)', backgroundColor: '#111827', backgroundSize: '30px 30px' },
+  'banner-8':  { backgroundImage: 'radial-gradient(circle at center, #7c3aed 0%, #000 100%)' },
+  'banner-9':  { backgroundImage: 'linear-gradient(45deg, #ff00cc, #3333ff)' },
+  'banner-10': { backgroundImage: 'repeating-linear-gradient(45deg, #222 0, #222 1px, transparent 0, transparent 50%)', backgroundColor: '#1a1a1a', backgroundSize: '10px 10px' },
+  'banner-11': { backgroundImage: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)' },
+  'banner-12': { backgroundImage: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)' },
+  'banner-13': { backgroundImage: 'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)' },
+  'banner-14': { backgroundImage: 'linear-gradient(135deg, #43e97b 0%, #38f9d7 100%)' },
+  'banner-15': { backgroundImage: 'linear-gradient(135deg, #fa709a 0%, #fee140 100%)' },
 };
+
+function getBannerStyle(banner: string | null): React.CSSProperties {
+  if (!banner) return {};
+  if (banner.startsWith('custom-')) {
+    const parts = banner.replace('custom-', '').split('-');
+    if (parts.length === 2) {
+      return { backgroundImage: `linear-gradient(135deg, #${parts[0]}, #${parts[1]})` };
+    }
+  }
+  const key = banner.startsWith('preset-') ? banner.replace('preset-', 'banner-') : null;
+  if (key && BANNER_STYLES[key]) return BANNER_STYLES[key];
+  if (banner.startsWith('http') || banner.startsWith('/')) {
+    return { backgroundImage: `url(${banner})`, backgroundSize: 'cover', backgroundPosition: 'center' };
+  }
+  return {};
+}
 
 const STEP_LABELS = ["الغلاف", "الصورة", "معلوماتي", "روابطي", "الشروط", "التحديات"];
 
@@ -132,7 +148,7 @@ export function OnboardingModal() {
 
   if (!isOpen) return null;
 
-  const bannerStyle = banner ? BANNER_STYLES[banner] : null;
+  const bannerStyle = getBannerStyle(banner);
 
   return (
     <Dialog open={isOpen} onOpenChange={() => {}}>
@@ -183,7 +199,7 @@ export function OnboardingModal() {
               <div className="space-y-3">
                 <label className="text-sm font-black text-foreground block">تنسيق الغلاف <span className="text-muted-foreground font-medium">(اختياري)</span></label>
                 <div className="relative h-24 rounded-2xl border-2 border-dashed border-primary/20 bg-muted/30 overflow-hidden flex items-center justify-center">
-                  {bannerStyle ? (
+                  {banner ? (
                     <div 
                       className="absolute inset-0" 
                       suppressHydrationWarning
@@ -279,17 +295,26 @@ export function OnboardingModal() {
                 {socialLinks.map((link, i) => {
                   const Icon = getPlatformIcon(link.platform);
                   return (
-                    <div key={i} className="flex items-center justify-between p-3 rounded-xl bg-muted/40 border border-border/50">
+                    <a 
+                      key={i} 
+                      href={link.url.startsWith('http') ? link.url : `https://${link.url}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center justify-between p-3 rounded-xl bg-muted/40 border border-border/50 hover:border-primary/30 transition-all hover:bg-muted/50 group/link cursor-pointer"
+                    >
                       <div className="flex items-center gap-3">
                         <div className="p-2 rounded-lg bg-card text-primary shadow-sm">
                           <Icon className="w-4 h-4" />
                         </div>
                         <span className="text-sm font-black">{link.name}</span>
                       </div>
-                      <button onClick={() => handleRemoveSocialLink(i)} className="text-muted-foreground hover:text-red-500 transition-colors">
+                      <button 
+                        onClick={(e) => { e.preventDefault(); handleRemoveSocialLink(i); }} 
+                        className="text-muted-foreground hover:text-red-500 transition-colors relative z-20"
+                      >
                         <X className="w-4 h-4" />
                       </button>
-                    </div>
+                    </a>
                   );
                 })}
               </div>
@@ -383,6 +408,7 @@ export function OnboardingModal() {
             <Button 
               onClick={handleNext} 
               disabled={step === 5 && (!acceptTerms || !acceptContent)}
+              variant="brand"
               className="h-11 px-8 rounded-xl font-black gap-2"
             >
               التالي

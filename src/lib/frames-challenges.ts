@@ -27,8 +27,8 @@ export const FRAME_TIERS: Record<FrameTier, FrameConfig> = {
     tier: 'bronze',
     label: 'Bronze',
     labelAr: 'برونزي',
-    borderClass: 'border-amber-700/60 ring-1 ring-amber-700/20',
-    glowClass: 'shadow-[0_0_10px_rgba(180,83,9,0.2)]',
+    borderClass: 'border-slate-500/60 ring-1 ring-slate-500/20',
+    glowClass: 'shadow-[0_0_10px_rgba(100,116,139,0.2)]',
     badgeEmoji: '🥉',
     minPosts: 1,
   },
@@ -45,8 +45,8 @@ export const FRAME_TIERS: Record<FrameTier, FrameConfig> = {
     tier: 'gold',
     label: 'Gold',
     labelAr: 'ذهبي',
-    borderClass: 'border-amber-400 ring-2 ring-amber-400/30',
-    glowClass: 'shadow-[0_0_20px_rgba(251,191,36,0.4)]',
+    borderClass: 'border-secondary ring-2 ring-secondary/30',
+    glowClass: 'shadow-[0_0_20px_rgba(59,130,246,0.4)]',
     badgeEmoji: '🥇',
     minPosts: 15,
   },
@@ -72,8 +72,8 @@ export const FRAME_TIERS: Record<FrameTier, FrameConfig> = {
     tier: 'admin',
     label: 'Admin',
     labelAr: 'مشرف',
-    borderClass: 'border-amber-500 border-2',
-    glowClass: 'shadow-[0_0_25px_rgba(245,158,11,0.5)]',
+    borderClass: 'border-primary border-2',
+    glowClass: 'shadow-[0_0_25px_rgba(124,58,237,0.5)]',
     badgeEmoji: '👑',
     minPosts: 0,
   },
@@ -304,7 +304,7 @@ export function computeChallengeProgress(stats: {
 export const DIFFICULTY_CONFIG = {
   easy: { labelAr: 'سهل', color: 'text-emerald-500', bg: 'bg-emerald-500/10', border: 'border-emerald-500/20' },
   medium: { labelAr: 'متوسط', color: 'text-blue-500', bg: 'bg-blue-500/10', border: 'border-blue-500/20' },
-  hard: { labelAr: 'صعب', color: 'text-amber-500', bg: 'bg-amber-500/10', border: 'border-amber-500/20' },
+  hard: { labelAr: 'صعب', color: 'text-secondary', bg: 'bg-secondary/10', border: 'border-secondary/20' },
   legendary: { labelAr: 'أسطوري', color: 'text-purple-500', bg: 'bg-purple-500/10', border: 'border-purple-500/20' },
 };
 
@@ -344,7 +344,7 @@ export function getUserAppearance(challengeStates: { challenge_id: string, statu
   if (completedIds.includes('hundred-reactions')) {
     appearance.nameColorClass = 'bg-gradient-to-r from-cyan-400 via-blue-500 to-purple-600 bg-clip-text text-transparent font-black drop-shadow-sm';
   } else if (completedIds.includes('fifty-reactions') || completedIds.includes('fifty-followers')) {
-    appearance.nameColorClass = 'bg-gradient-to-r from-amber-500 to-amber-300 bg-clip-text text-transparent font-black';
+    appearance.nameColorClass = 'bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent font-black';
   } else if (completedIds.includes('ten-followers')) {
     appearance.nameColorClass = 'text-slate-400 font-bold';
   }

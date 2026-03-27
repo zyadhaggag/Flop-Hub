@@ -22,9 +22,10 @@ import { useState, useEffect } from "react";
 import { useTheme } from "next-themes";
 import { Sidebar, menuItems } from "./sidebar";
 import { cn } from "@/lib/utils";
+import { Logo } from "./logo";
 import { searchPosts } from "@/lib/actions";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
-import { usePreloadRoute } from "@/hooks/use-preload-route";
+
 import { ProfileFrame } from "./profile-frame";
 
 const NavbarActions = dynamic(() => import("./navbar-actions"), { 
@@ -40,8 +41,7 @@ export function Navbar() {
   const [isSearching, setIsSearching] = useState(false);
   const [showResults, setShowResults] = useState(false);
 
-  // Preload common routes for faster navigation
-  usePreloadRoute(['/saved', '/settings', '/post']);
+
 
   useEffect(() => setMounted(true), []);
 
@@ -67,18 +67,16 @@ export function Navbar() {
 
   return (
     <nav className="sticky top-0 z-50 w-full border-b border-border bg-background backdrop-blur-md transition-colors duration-300">
+      <div className="absolute top-0 left-0 right-0 h-[2px] bg-brand-gradient opacity-80" />
       <div className="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between gap-4">
         <div className="flex items-center gap-3">
           {/* Hamburger menu removed in favor of BottomNav */}
 
           {/* Logo */}
-          <Link href="/" className="flex items-center gap-3 group">
-            <div className="relative w-9 h-9 flex items-center justify-center group-hover:scale-110 transition-transform duration-500">
-              <img src="/logo.svg" alt="FlopHub" className="w-full h-full object-contain" />
+          <Link href="/" className="flex items-center group">
+            <div className="h-10 transition-transform duration-500 hover:scale-105 active:scale-95">
+              <Logo size="md" />
             </div>
-            <span className="text-xl font-black text-foreground hidden sm:block font-tajawal tracking-tight">
-              FlopHub
-            </span>
           </Link>
         </div>
 
@@ -121,7 +119,7 @@ export function Navbar() {
                           <div className="flex flex-col">
                             <div className="flex items-center gap-1.5">
                                <span className="text-sm font-bold group-hover:text-primary transition-colors">{user.name}</span>
-                               {user.is_admin && <Trophy className="w-3 h-3 text-amber-500" />}
+                               {user.is_admin && <Trophy className="w-3 h-3 text-primary" />}
                             </div>
                             <span className="text-[10px] text-muted-foreground">@{user.username}</span>
                           </div>

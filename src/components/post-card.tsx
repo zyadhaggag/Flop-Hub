@@ -31,7 +31,17 @@ import {
   Award,
   Globe,
   Zap,
-  Gem
+  Gem,
+  Monitor,
+  Stethoscope,
+  Compass,
+  Briefcase,
+  BookOpen,
+  Users,
+  User,
+  Wallet,
+  Palette,
+  MoreHorizontal as OtherIcon
 } from "lucide-react";
 import { toggleHelpful, deletePost, editPost, addComment, getComments, toggleFollow, toggleSave, editComment, deleteComment } from "@/lib/actions";
 import { useEffect, useState } from "react";
@@ -68,9 +78,9 @@ interface PostCardProps {
 
 const BADGE_ICONS: Record<string, React.ReactNode> = {
   social_pro: <Globe className="w-3.5 h-3.5 text-blue-400 fill-blue-400/10" />,
-  inspirer: <Lightbulb className="w-3.5 h-3.5 text-amber-400 fill-amber-400/10" />,
-  icon: <Trophy className="w-3.5 h-3.5 text-yellow-500 fill-yellow-500/10" />,
-  legend: <Gem className="w-3.5 h-3.5 text-cyan-400 fill-cyan-400/10" />,
+  inspirer: <Lightbulb className="w-3.5 h-3.5 text-primary fill-primary/10" />,
+  icon: <Trophy className="w-3.5 h-3.5 text-secondary fill-secondary/10" />,
+  legend: <Gem className="w-3.5 h-3.5 text-accent fill-accent/10" />,
 };
 
 export function PostCard({ id, user, time, title, story, lesson, imageUrl, helpfulCount, commentsCount, hasReacted: initialHasReacted, isSaved: initialIsSaved, isFollowed: initialIsFollowed, category, challenge_ids = [] }: PostCardProps) {
@@ -292,8 +302,8 @@ export function PostCard({ id, user, time, title, story, lesson, imageUrl, helpf
                   ))}
                   {user.is_admin && (
                     <div className="flex items-center gap-0.5 scale-90 -ml-0.5">
-                      <Crown className="w-3 h-3 text-amber-500 fill-amber-500/20" />
-                      <span className="text-[8px] font-black bg-amber-500 text-white px-1 py-0.5 rounded-[4px] uppercase tracking-tighter">ADMIN</span>
+                      <Crown className="w-3 h-3 text-primary fill-primary/20" />
+                      <span className="text-[8px] font-black bg-primary text-white px-1 py-0.5 rounded-[4px] uppercase tracking-tighter">ADMIN</span>
                     </div>
                   )}
                 </div>
@@ -303,20 +313,35 @@ export function PostCard({ id, user, time, title, story, lesson, imageUrl, helpf
                   {category && (
                     <>
                       <span className="w-1 h-1 rounded-full bg-muted-foreground/20" />
-                      <span className="text-primary bg-primary/5 px-2 py-0.5 rounded-full border border-primary/10">
-                        {category === 'tech' ? '💻 تقني' : 
-                         category === 'medical' ? '🏥 طبي' :
-                         category === 'sports' ? '⚽ رياضي' :
-                         category === 'religious' ? '🕌 ديني' :
-                         category === 'business' ? '💼 تجاري' :
-                         category === 'education' ? '📚 تعليمي' :
-                         category === 'social' ? '👥 اجتماعي' :
-                         category === 'personal' ? '🙋 شخصي' :
-                         category === 'financial' ? '💰 مالي' :
-                         category === 'creative' ? '🎨 إبداعي' :
-                         category === 'career' ? '👔 مهني' :
-                         category === 'relationship' ? '❤️ عاطفي' :
-                         '📌 أخرى'}
+                      <span className="flex items-center gap-1.5 text-primary bg-primary/5 px-2.5 py-1 rounded-full border border-primary/10">
+                        {category === 'tech' ? <Monitor className="w-3 h-3" /> : 
+                         category === 'medical' ? <Stethoscope className="w-3 h-3" /> :
+                         category === 'sports' ? <Trophy className="w-3 h-3" /> :
+                         category === 'religious' ? <Compass className="w-3 h-3" /> :
+                         category === 'business' ? <Briefcase className="w-3 h-3" /> :
+                         category === 'education' ? <BookOpen className="w-3 h-3" /> :
+                         category === 'social' ? <Users className="w-3 h-3" /> :
+                         category === 'personal' ? <User className="w-3 h-3" /> :
+                         category === 'financial' ? <Wallet className="w-3 h-3" /> :
+                         category === 'creative' ? <Palette className="w-3 h-3" /> :
+                         category === 'career' ? <Zap className="w-3 h-3" /> :
+                         category === 'relationship' ? <Heart className="w-3 h-3" /> :
+                         <OtherIcon className="w-3 h-3" />}
+                        <span className="text-[10px] font-black uppercase tracking-tight">
+                          {category === 'tech' ? 'تقني' : 
+                          category === 'medical' ? 'طبي' :
+                          category === 'sports' ? 'رياضي' :
+                          category === 'religious' ? 'ديني' :
+                          category === 'business' ? 'تجاري' :
+                          category === 'education' ? 'تعليمي' :
+                          category === 'social' ? 'اجتماعي' :
+                          category === 'personal' ? 'شخصي' :
+                          category === 'financial' ? 'مالي' :
+                          category === 'creative' ? 'إبداعي' :
+                          category === 'career' ? 'مهني' :
+                          category === 'relationship' ? 'عاطفي' :
+                          'أخرى'}
+                        </span>
                       </span>
                     </>
                   )}
@@ -339,12 +364,12 @@ export function PostCard({ id, user, time, title, story, lesson, imageUrl, helpf
                   {isFollowing ? (
                     <>
                       <Check className="w-3.5 h-3.5" />
-                      <span className="text-[11px]">متابع</span>
+                      <span className="text-[11px]">تم المتابعة</span>
                     </>
                   ) : (
                     <>
                       <UserPlus className="w-3.5 h-3.5" />
-                      <span className="text-[11px]">تابع</span>
+                      <span className="text-[11px]">متابعة</span>
                     </>
                   )}
                 </Button>
@@ -456,10 +481,10 @@ export function PostCard({ id, user, time, title, story, lesson, imageUrl, helpf
               <div className="relative aspect-[16/9] w-full overflow-hidden rounded-2xl sm:rounded-[2.5rem] border border-border/40 shadow-xl shadow-black/5 mt-4 group/image">
                  {/* Mission Strip / Ribbon for top earners */}
                  {(frameTier === 'platinum' || frameTier === 'diamond') && (
-                   <div className="absolute top-6 -right-12 bg-gradient-to-r from-amber-600 via-yellow-400 to-amber-600 text-white px-12 py-1.5 rotate-45 z-20 shadow-xl border-y border-white/30 flex items-center justify-center gap-1.5">
-                     <Trophy className="w-3.5 h-3.5 drop-shadow-sm" />
-                     <span className="text-[10px] font-black uppercase tracking-widest drop-shadow-md">فائز بالـتـحـدي</span>
-                   </div>
+                    <div className="absolute top-6 -right-12 bg-gradient-to-r from-primary via-secondary to-primary text-white px-12 py-1.5 rotate-45 z-20 shadow-xl border-y border-white/30 flex items-center justify-center gap-1.5">
+                      <Trophy className="w-3.5 h-3.5 drop-shadow-sm" />
+                      <span className="text-[10px] font-black uppercase tracking-widest drop-shadow-md">فائز بالـتـحـدي</span>
+                    </div>
                  )}
                  
                  <NextImage 
@@ -492,12 +517,12 @@ export function PostCard({ id, user, time, title, story, lesson, imageUrl, helpf
         <div className="flex items-center justify-between pt-6 border-t border-border/20">
           <div className="flex items-center gap-3">
             <Button 
-              variant="ghost" 
+              variant={reacted ? "brand" : "ghost"} 
               size="sm" 
               onClick={handleHelpful}
               className={cn(
                 "rounded-2xl gap-2.5 h-11 px-6 transition-all duration-500 border border-transparent",
-                reacted ? "bg-primary text-white shadow-lg shadow-primary/30" : "text-muted-foreground hover:bg-primary/5 hover:text-primary hover:border-primary/10"
+                !reacted && "text-muted-foreground hover:bg-primary/5 hover:text-primary hover:border-primary/10"
               )}
             >
                <Lightbulb className={cn("w-4 h-4 transition-transform duration-500", reacted && "fill-white scale-110")} />
@@ -548,7 +573,7 @@ export function PostCard({ id, user, time, title, story, lesson, imageUrl, helpf
         <form onSubmit={handleAddComment} className="flex gap-3 items-center">
           <Avatar className="w-8 h-8 shrink-0 border border-border/50">
             <AvatarImage src={session?.user?.image || "/api/placeholder/user"} />
-            <AvatarFallback className="text-[10px]">{session?.user?.name?.[0] || '?'}</AvatarFallback>
+            <AvatarFallback className="bg-brand-gradient text-white text-[10px] font-bold">{session?.user?.name?.[0] || '?'}</AvatarFallback>
           </Avatar>
           <div className="flex-1 relative group">
             <Input 
@@ -562,7 +587,7 @@ export function PostCard({ id, user, time, title, story, lesson, imageUrl, helpf
               type="submit" 
               disabled={loadingComments || !newComment.trim()} 
               size="icon" 
-              className="absolute left-1 top-1 h-8 w-8 rounded-xl bg-primary hover:scale-105 transition-transform shadow-lg shadow-primary/20"
+              className="absolute left-1 top-1 h-8 w-8 rounded-xl bg-brand-gradient text-white hover:scale-105 transition-transform shadow-lg shadow-primary/20"
             >
               <Send className="w-4 h-4" />
             </Button>

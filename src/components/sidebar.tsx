@@ -41,7 +41,7 @@ export function Sidebar({ onPostClick, className }: { onPostClick?: () => void, 
             className={cn(
               "flex items-center gap-3 px-5 py-3.5 rounded-2xl transition-all duration-300 group relative overflow-hidden",
               isActive 
-                ? "bg-primary text-white shadow-xl shadow-primary/20 scale-[1.02]" 
+                ? "bg-brand-gradient text-white shadow-xl shadow-primary/20 scale-[1.02]" 
                 : "hover:bg-primary/5 text-muted-foreground hover:text-primary"
             )}
           >
@@ -53,8 +53,8 @@ export function Sidebar({ onPostClick, className }: { onPostClick?: () => void, 
 
       <div className="mt-8 p-4 rounded-2xl bg-card border border-border shadow-sm dark:shadow-none space-y-3 relative overflow-hidden group hover:shadow-md transition-shadow">
         <div className="absolute top-0 right-0 w-24 h-24 bg-primary/5 rounded-full blur-3xl -mr-12 -mt-12 group-hover:bg-primary/10 transition-colors" />
-        <div className="flex items-center gap-2 text-primary font-bold relative">
-          <Quote className="w-4 h-4" />
+        <div className="flex items-center gap-2 text-brand-gradient font-bold relative">
+          <Quote className="w-4 h-4 text-primary" />
           <span className="text-sm">فلسفتنا</span>
         </div>
         <p className="text-xs text-muted-foreground leading-relaxed relative italic">

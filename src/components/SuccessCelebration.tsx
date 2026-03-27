@@ -64,7 +64,7 @@ export function SuccessCelebration({
           {/* Decorative Background */}
           <div className="absolute inset-0 bg-gradient-to-b from-primary/10 via-transparent to-primary/5 pointer-events-none" />
           <div className="absolute top-0 right-0 w-32 h-32 bg-primary/10 rounded-full blur-3xl -mr-16 -mt-16" />
-          <div className="absolute bottom-0 left-0 w-32 h-32 bg-amber-500/10 rounded-full blur-3xl -ml-16 -mb-16" />
+          <div className="absolute bottom-0 left-0 w-32 h-32 bg-secondary/10 rounded-full blur-3xl -ml-16 -mb-16" />
 
           <div className="relative p-8 flex flex-col items-center text-center space-y-6">
             <button 
@@ -80,7 +80,7 @@ export function SuccessCelebration({
                 initial={{ rotate: -15, scale: 0.8 }}
                 animate={{ rotate: 0, scale: 1 }}
                 transition={{ type: "spring", damping: 10 }}
-                className="w-24 h-24 rounded-3xl bg-gradient-to-br from-primary to-amber-500 flex items-center justify-center shadow-xl shadow-primary/20"
+                className="w-24 h-24 rounded-3xl bg-gradient-to-br from-primary to-secondary flex items-center justify-center shadow-xl shadow-primary/20"
               >
                 <Trophy className="w-12 h-12 text-white" />
               </motion.div>
@@ -89,7 +89,7 @@ export function SuccessCelebration({
                 transition={{ duration: 2, repeat: Infinity }}
                 className="absolute -top-2 -right-2 w-10 h-10 bg-white rounded-full flex items-center justify-center shadow-lg border border-primary/10"
               >
-                <Sparkles className="w-6 h-6 text-amber-500" />
+                <Sparkles className="w-6 h-6 text-primary" />
               </motion.div>
             </div>
 

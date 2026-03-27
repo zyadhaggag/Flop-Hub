@@ -11,7 +11,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Lightbulb, Loader2, Sparkles, Check, ChevronDown, ImagePlus, X, AlertCircle } from "lucide-react";
+import { Lightbulb, Loader2, Sparkles, Check, ChevronDown, ImagePlus, X, AlertCircle, Monitor, Stethoscope, Trophy, Compass, Briefcase, BookOpen, Users, User, Wallet, Palette, Zap, Heart, MoreHorizontal } from "lucide-react";
 import { useState, useMemo, useRef, useCallback } from "react";
 import { createPost } from "@/lib/actions";
 import { uploadImage } from "@/lib/supabase";
@@ -20,19 +20,19 @@ import { cn } from "@/lib/utils";
 import { useSession } from "next-auth/react";
 
 const CATEGORIES = [
-  { id: "tech", label: "تقني", emoji: "💻" },
-  { id: "medical", label: "طبي", emoji: "🏥" },
-  { id: "sports", label: "رياضي", emoji: "⚽" },
-  { id: "religious", label: "ديني", emoji: "🕌" },
-  { id: "business", label: "تجاري", emoji: "💼" },
-  { id: "education", label: "تعليمي", emoji: "📚" },
-  { id: "social", label: "اجتماعي", emoji: "👥" },
-  { id: "personal", label: "شخصي", emoji: "🙋" },
-  { id: "financial", label: "مالي", emoji: "💰" },
-  { id: "creative", label: "إبداعي", emoji: "🎨" },
-  { id: "career", label: "مهني", emoji: "👔" },
-  { id: "relationship", label: "عاطفي", emoji: "❤️" },
-  { id: "other", label: "أخرى", emoji: "📌" },
+  { id: "tech", label: "تقني", icon: Monitor },
+  { id: "medical", label: "طبي", icon: Stethoscope },
+  { id: "sports", label: "رياضي", icon: Trophy },
+  { id: "religious", label: "ديني", icon: Compass },
+  { id: "business", label: "تجاري", icon: Briefcase },
+  { id: "education", label: "تعليمي", icon: BookOpen },
+  { id: "social", label: "اجتماعي", icon: Users },
+  { id: "personal", label: "شخصي", icon: User },
+  { id: "financial", label: "مالي", icon: Wallet },
+  { id: "creative", label: "إبداعي", icon: Palette },
+  { id: "career", label: "مهني", icon: Zap },
+  { id: "relationship", label: "عاطفي", icon: Heart },
+  { id: "other", label: "أخرى", icon: MoreHorizontal },
 ];
 
 // Client-side image compression — resize to max 800px and compress to quality 0.7
@@ -232,7 +232,12 @@ export function CreatePostModal({ open, onOpenChange }: { open: boolean, onOpenC
                 className="w-full h-14 rounded-2xl bg-background border border-border px-4 py-3 text-sm font-black flex items-center justify-between hover:border-primary/50 transition-colors"
               >
                 <span className={selectedCat ? "text-foreground" : "text-muted-foreground"}>
-                  {selectedCat ? `${selectedCat.emoji} ${selectedCat.label}` : "اختر تصنيف المنشور..."}
+                  {selectedCat ? (
+                    <div className="flex items-center gap-2">
+                       <selectedCat.icon className="w-4 h-4 text-primary" />
+                       <span>{selectedCat.label}</span>
+                    </div>
+                  ) : "اختر تصنيف المنشور..."}
                 </span>
                 <ChevronDown className={cn("h-4 w-4 transition-transform", showCategoryDropdown && "rotate-180")} />
               </button>
@@ -255,8 +260,8 @@ export function CreatePostModal({ open, onOpenChange }: { open: boolean, onOpenC
                             : "hover:bg-muted/50 text-foreground"
                         )}
                       >
-                        <span className="text-xl bg-muted/50 w-10 h-10 rounded-xl flex items-center justify-center">
-                          {cat.emoji}
+                        <span className="bg-muted/50 w-10 h-10 rounded-xl flex items-center justify-center">
+                          <cat.icon className="w-5 h-5 text-primary" />
                         </span>
                         <div className="flex flex-col items-start flex-1">
                           <span>{cat.label}</span>

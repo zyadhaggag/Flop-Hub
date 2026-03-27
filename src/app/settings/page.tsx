@@ -498,8 +498,8 @@ export default function SettingsPage() {
                     </div>
                     <Button 
                       disabled={loading}
-                      type="submit"
-                      className="w-full h-14 rounded-2xl text-base font-black bg-primary hover:bg-primary/90 transition-all shadow-lg shadow-primary/20"
+                      variant="brand"
+                      className="w-full h-14 rounded-2xl text-base font-black transition-all shadow-lg shadow-primary/20"
                     >
                       {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : "حفظ التغييرات"}
                     </Button>
@@ -536,7 +536,8 @@ export default function SettingsPage() {
                     </div>
                     <Button 
                       disabled={loading || !password || !newPassword}
-                      className="w-full h-14 rounded-2xl text-base font-black bg-primary hover:bg-primary/90 transition-all shadow-lg shadow-primary/20"
+                      variant="brand"
+                      className="w-full h-14 rounded-2xl text-base font-black transition-all shadow-lg shadow-primary/20"
                     >
                       {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : "تحديث كلمة المرور"}
                     </Button>

@@ -38,14 +38,14 @@ const PRESET_STYLES: Record<string, { background: string; size?: string }> = {
   'preset-13': { background: 'linear-gradient(to right, #11998e, #38ef7d)' },
   'preset-14': { background: 'linear-gradient(to right, #ff9966, #ff5e62)' },
   'preset-15': { background: 'radial-gradient(circle, #fe8c00 0%, #f83600 100%)' },
-  'admin-gold': { background: 'linear-gradient(135deg, #FFD700 0%, #FFA500 25%, #FF8C00 50%, #FFD700 75%, #FFA500 100%)', size: '200% 200%' },
+  'admin-brand': { background: 'linear-gradient(135deg, #7c3aed 0%, #3b82f6 50%, #7c3aed 100%)', size: '200% 200%' },
 };
 
 function getBannerStyle(bannerUrl: string | null, isAdmin: boolean = false): React.CSSProperties {
   if (isAdmin && !bannerUrl) {
-    // Default gold theme for admin
+    // Default brand theme for admin
     return { 
-      background: 'linear-gradient(135deg, #FFD700 0%, #FFA500 25%, #FF8C00 50%, #FFD700 75%, #FFA500 100%)',
+      background: 'linear-gradient(135deg, #7c3aed 0%, #3b82f6 50%, #7c3aed 100%)',
       backgroundSize: '200% 200%',
       animation: 'goldShimmer 3s ease-in-out infinite'
     };
@@ -153,25 +153,25 @@ export default async function ProfilePage({ params }: { params: Promise<{ userna
           {/* Cover & Profile Header */}
           <div className={cn(
             "relative bg-card rounded-[2rem] sm:rounded-[2.5rem] border border-border shadow-sm overflow-hidden group transition-all duration-500",
-            user.is_admin && "ring-4 ring-amber-500/30 shadow-amber-500/20 shadow-2xl bg-gradient-to-br from-amber-50/5 via-yellow-50/2 to-transparent"
+            user.is_admin && "ring-4 ring-primary/30 shadow-primary/20 shadow-2xl bg-gradient-to-br from-primary/5 via-secondary/2 to-transparent"
           )}>
             {/* Banner */}
             <div
               className={cn(
                 "h-32 sm:h-44 relative transition-all duration-700",
-                !user.banner_url && (user.is_admin ? "bg-gradient-to-br from-amber-500/20 via-yellow-200/5 to-transparent" : "bg-gradient-to-br from-primary/20 via-violet-500/10 to-transparent")
+                !user.banner_url && (user.is_admin ? "bg-gradient-to-br from-primary/20 via-secondary/5 to-transparent" : "bg-gradient-to-br from-primary/20 via-violet-500/10 to-transparent")
               )}
               style={getBannerStyle(user.banner_url, user.is_admin)}
             >
               <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
               {user.is_admin && (
-                <div className="absolute inset-0 bg-gradient-to-br from-amber-500/10 via-transparent to-transparent pointer-events-none" />
+                <div className="absolute inset-0 bg-gradient-to-br from-primary/10 via-transparent to-transparent pointer-events-none" />
               )}
             </div>
 
             <div className={cn(
               "px-6 sm:px-8 pb-8 relative",
-              user.is_admin && "bg-gradient-to-b from-transparent via-amber-50/5 to-transparent"
+              user.is_admin && "bg-gradient-to-b from-transparent via-primary/5 to-transparent"
             )}>
               <div className="absolute -top-12 sm:-top-16 right-6 sm:right-8">
                 <ProfileFrame tier={frameTier} size="lg" showBadge={true}>
@@ -180,13 +180,13 @@ export default async function ProfilePage({ params }: { params: Promise<{ userna
                     user.is_admin ? "border-transparent" : "border-card"
                   )}>
                     <AvatarImage src={user.image_url || "/api/placeholder/user"} />
-                    <AvatarFallback className={cn("text-2xl sm:text-3xl font-black", user.is_admin ? "bg-gradient-to-br from-amber-400 to-amber-600 text-white" : "bg-primary/10 text-primary")}>
+                    <AvatarFallback className={cn("text-2xl sm:text-3xl font-black", user.is_admin ? "bg-gradient-to-br from-primary to-secondary text-white" : "bg-primary/10 text-primary")}>
                       {userInitial}
                     </AvatarFallback>
                   </Avatar>
                 </ProfileFrame>
                 {user.is_admin && !appearance.badges.includes('👑') && (
-                  <div className="absolute -top-1 sm:-top-2 -right-1 sm:-right-2 bg-gradient-to-br from-amber-400 to-amber-600 text-white p-1 sm:p-1.5 rounded-full shadow-lg border-2 border-amber-300/50 animate-pulse z-20">
+                  <div className="absolute -top-1 sm:-top-2 -right-1 sm:-right-2 bg-gradient-to-br from-primary to-secondary text-white p-1 sm:p-1.5 rounded-full shadow-lg border-2 border-white/20 animate-pulse z-20">
                     <Crown className="w-3 h-3 sm:w-4 sm:h-4" />
                   </div>
                 )}
@@ -197,20 +197,20 @@ export default async function ProfilePage({ params }: { params: Promise<{ userna
                   <div className="flex items-center gap-2">
                     <h1 className={cn(
                       "text-2xl sm:text-3xl font-black tracking-tight",
-                      appearance.nameColorClass || (user.is_admin && "bg-gradient-to-r from-amber-600 via-amber-500 to-amber-600 bg-clip-text text-transparent")
+                      appearance.nameColorClass || (user.is_admin && "bg-gradient-to-r from-primary via-secondary to-primary bg-clip-text text-transparent")
                     )}>{user.name || user.username}</h1>
                     {appearance.badges.map((badge, idx) => (
                       <span key={idx} className="text-xl drop-shadow-sm">{badge}</span>
                     ))}
                     {user.is_admin && (
-                      <div className="flex items-center gap-1 bg-gradient-to-r from-amber-400 to-amber-600 text-white px-2 py-0.5 rounded-lg shadow-lg shadow-amber-500/30 animate-pulse">
+                      <div className="flex items-center gap-1 bg-gradient-to-r from-primary to-secondary text-white px-2 py-0.5 rounded-lg shadow-lg shadow-primary/30 animate-pulse">
                         <span className="text-[10px] font-black uppercase tracking-widest">ADMIN</span>
                       </div>
                     )}
                   </div>
                   <p className={cn(
                     "text-primary font-bold text-sm tracking-widest uppercase opacity-70",
-                    user.is_admin && "text-amber-600/80"
+                    user.is_admin && "text-primary/80"
                   )}>@{user.username}</p>
                 </div>
 
@@ -234,15 +234,15 @@ export default async function ProfilePage({ params }: { params: Promise<{ userna
                 )}
 
                 <div className="flex flex-wrap items-center justify-center gap-4 sm:gap-8 pt-1">
-                  <div className="flex flex-col">
+                  <div className="flex flex-col items-center">
                     <span className="font-black text-xl sm:text-2xl text-foreground tracking-tight">{followersCount}</span>
                     <span className="text-[10px] text-muted-foreground uppercase tracking-widest font-bold">متابع</span>
                   </div>
-                  <div className="flex flex-col">
+                  <div className="flex flex-col items-center">
                     <span className="font-black text-xl sm:text-2xl text-foreground tracking-tight">{followingCount}</span>
                     <span className="text-[10px] text-muted-foreground uppercase tracking-widest font-bold">يتابع</span>
                   </div>
-                  <div className="flex flex-col">
+                  <div className="flex flex-col items-center">
                     <span className="font-black text-xl sm:text-2xl text-foreground tracking-tight">{postCount}</span>
                     <span className="text-[10px] text-muted-foreground uppercase tracking-widest font-bold">منشور</span>
                   </div>
@@ -262,19 +262,19 @@ export default async function ProfilePage({ params }: { params: Promise<{ userna
                           : link.platform === 'email' ? `mailto:${link.url}`
                             : `https://${link.url}`;
                       return (
-                        <a
-                          key={i}
+                        <a 
+                          key={i} 
                           href={href}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="flex items-center gap-3 p-3 rounded-2xl bg-muted/30 border border-border/50 hover:border-primary/30 transition-all group/link hover:bg-muted/50 shadow-sm"
+                          className="flex items-center gap-3 p-3 rounded-2xl bg-muted/30 border border-border/50 hover:border-primary/30 transition-all group/link hover:bg-muted/50 shadow-sm cursor-pointer w-full"
                         >
-                          <div className="p-2 rounded-xl bg-card shadow-sm group-hover/link:scale-110 transition-transform" style={{ color }}>
+                          <div className="p-2 rounded-xl bg-card shadow-sm group-hover/link:scale-110 transition-transform flex-shrink-0">
                             <Icon className="w-4 h-4" />
                           </div>
                           <div className="flex flex-col min-w-0">
                             <span className="text-[11px] font-black truncate">{link.name}</span>
-                            <span className="text-[10px] text-muted-foreground font-bold truncate opacity-60">انقر للمواصلة</span>
+                            <span className="text-[10px] text-muted-foreground font-bold truncate">رابط التواصل</span>
                           </div>
                         </a>
                       );
@@ -303,7 +303,7 @@ export default async function ProfilePage({ params }: { params: Promise<{ userna
                         id: user.id,
                         name: user.name,
                         handle: user.username,
-                        avatar: user.image_url || "",
+                        avatar: user.image_url || "/api/placeholder/user",
                         is_admin: user.is_admin
                       }}
                       time={post.created_at}

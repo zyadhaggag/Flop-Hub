@@ -183,8 +183,8 @@ export default function AdminPage() {
         {stats && (
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <StatCard icon={Users} label="المستخدمون" value={stats.totalUsers} color="text-blue-500" bg="bg-blue-500/10" />
-            <StatCard icon={FileText} label="المنشورات" value={stats.totalPosts} color="text-emerald-500" bg="bg-emerald-500/10" />
-            <StatCard icon={MessageSquare} label="التعليقات" value={stats.totalComments} color="text-amber-500" bg="bg-amber-500/10" />
+            <StatCard icon={FileText} label="المنشورات" value={stats.totalPosts} color="text-primary" bg="bg-primary/10" />
+            <StatCard icon={MessageSquare} label="التعليقات" value={stats.totalComments} color="text-secondary" bg="bg-secondary/10" />
           </div>
         )}
 
@@ -241,7 +241,7 @@ export default function AdminPage() {
                     <Button
                       size="icon"
                       variant="ghost"
-                      className="h-8 w-8 rounded-lg hover:bg-amber-500/10 hover:text-amber-500"
+                      className="h-8 w-8 rounded-lg hover:bg-secondary/10 hover:text-secondary"
                       onClick={(e) => { e.stopPropagation(); handleResetAvatar(u.id); }}
                       title="إعادة تعيين الصورة"
                     >

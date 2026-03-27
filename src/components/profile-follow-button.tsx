@@ -38,7 +38,7 @@ export function ProfileFollowButton({ userId, initialIsFollowing }: ProfileFollo
 
     // If already following, don't allow unfollow
     if (isFollowing) {
-      toast.error("المتابعة دائمة - لا يمكن إلغاء المتابعة");
+      toast.error("متابعة دائمة - لا يمكن إلغاء المتابعة");
       return;
     }
 
@@ -59,18 +59,19 @@ export function ProfileFollowButton({ userId, initialIsFollowing }: ProfileFollo
   return (
     <Button 
       onClick={handleFollow}
+      suppressHydrationWarning
       disabled={isLoading || isFollowing}
       className={cn(
         "rounded-2xl gap-2 font-black h-11 px-8 transition-all shadow-lg active:scale-95",
         isFollowing 
-          ? "bg-gradient-to-r from-amber-500 to-amber-600 text-white border border-amber-400/30 cursor-not-allowed opacity-90" 
+          ? "bg-gradient-to-r from-secondary to-primary text-white border border-white/20 cursor-not-allowed opacity-90" 
           : "bg-primary text-white shadow-primary/20 hover:shadow-primary/40 hover:scale-105"
       )}
     >
       {isFollowing ? (
         <>
-          <Lock className="w-4 h-4" />
-          <span>متابع بشكل دائم</span>
+          <UserCheck className="w-4 h-4" />
+          <span>تم المتابعة</span>
         </>
       ) : (
         <>

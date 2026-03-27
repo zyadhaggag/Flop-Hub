@@ -15,7 +15,7 @@ export function CreatePost() {
       <div className="flex items-center gap-4">
         <Avatar className="w-12 h-12 border-2 border-background ring-2 ring-primary/10 group-hover:ring-primary/30 transition-all">
           <AvatarImage src={avatarUrl || "/api/placeholder/user"} />
-          <AvatarFallback className="bg-primary/5 text-primary font-black text-lg">
+          <AvatarFallback className="bg-brand-gradient text-white font-black text-lg">
             {userInitial}
           </AvatarFallback>
         </Avatar>

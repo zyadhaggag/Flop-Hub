@@ -33,7 +33,7 @@ export const metadata: Metadata = {
   },
   description: "شارك قصص فشلك، وتعلم من الآخرين. الفشل هو بداية النجاح.",
   icons: {
-    icon: "/top.svg",
+    icon: "/favicon.png",
   },
 };
 
@@ -56,7 +56,7 @@ export default function RootLayout({
         <meta httpEquiv="X-Content-Type-Options" content="nosniff" />
         <meta httpEquiv="Referrer-Policy" content="strict-origin-when-cross-origin" />
       </head>
-      <body className="font-tajawal antialiased bg-background text-foreground overflow-x-hidden min-h-screen selection:bg-primary/20 transition-colors duration-300 pb-20 md:pb-0">
+      <body className="font-tajawal antialiased bg-background text-foreground min-h-screen selection:bg-primary/20 transition-colors duration-300 pb-20 md:pb-0">
         <NextTopLoader 
           color="#7c3aed"
           initialPosition={0.08}

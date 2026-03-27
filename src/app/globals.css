@@ -28,6 +28,35 @@
   --color-input: hsl(var(--input));
   --color-ring: hsl(var(--ring));
 }
+ 
+.bg-brand-gradient {
+  background: linear-gradient(135deg, #7c3aed 0%, #3b82f6 100%);
+}
+
+.text-brand-gradient {
+  background: linear-gradient(135deg, #7c3aed 0%, #3b82f6 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* Fix for light mode text visibility */
+.dark .text-muted-foreground {
+  color: hsl(var(--muted-foreground));
+}
+
+.light .text-muted-foreground {
+  color: hsl(var(--muted-foreground));
+}
+
+/* Ensure tab text is visible in both modes */
+.dark .text-foreground {
+  color: hsl(var(--foreground));
+}
+
+.light .text-foreground {
+  color: hsl(var(--foreground));
+}
 
 /* Gold shimmer animation for admin profiles */
 @keyframes goldShimmer {
@@ -74,6 +103,64 @@
     opacity: 1;
     transform: translateX(0);
   }
+}
+
+/* Restore normal scroll behavior */
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  overflow-x: auto;
+  overflow-y: auto;
+}
+
+/* Custom scrollbar styling for better UX */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: hsl(var(--muted) / 0.1);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: hsl(var(--primary) / 0.3);
+  border-radius: 4px;
+  transition: background 0.2s;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: hsl(var(--primary) / 0.5);
+}
+
+/* Firefox scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: hsl(var(--muted) / 0.1);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: hsl(var(--primary) / 0.3);
+  border-radius: 4px;
+  transition: background 0.2s;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: hsl(var(--primary) / 0.5);
+}
+
+/* Ensure content fits within viewport */
+.main-content {
+  max-width: 100%;
+  overflow-x: visible;
 }
 
 @keyframes scaleIn {
@@ -126,6 +213,43 @@
   animation: bounceIn 0.8s ease-out forwards;
 }
 
+/* Custom scrollbar styling */
+.custom-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: hsl(var(--muted)) transparent;
+}
+
+.custom-scrollbar::-webkit-scrollbar {
+  width: 6px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: hsl(var(--muted) / 0.1);
+  border-radius: 3px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: hsl(var(--primary) / 0.3);
+  border-radius: 3px;
+  transition: background 0.2s;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: hsl(var(--primary) / 0.5);
+}
+
+.dark .custom-scrollbar::-webkit-scrollbar-track {
+  background: hsl(var(--muted) / 0.2);
+}
+
+.dark .custom-scrollbar::-webkit-scrollbar-thumb {
+  background: hsl(var(--primary) / 0.4);
+}
+
+.dark .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: hsl(var(--primary) / 0.6);
+}
+
 /* Stagger animation delays */
 .animate-delay-100 { animation-delay: 0.1s; }
 .animate-delay-200 { animation-delay: 0.2s; }
@@ -136,47 +260,47 @@
 @layer base {
   :root {
     --background: 0 0% 100%;
-    --foreground: 240 10% 3.9%;
+    --foreground: 240 16% 27%; /* Brand Charcoal */
     --card: 0 0% 100%;
-    --card-foreground: 240 10% 3.9%;
+    --card-foreground: 240 16% 27%;
     --popover: 0 0% 100%;
-    --popover-foreground: 240 10% 3.9%;
-    --primary: 263.4 70% 50.4%;
-    --primary-foreground: 210 40% 98%;
-    --secondary: 240 4.8% 95.9%;
-    --secondary-foreground: 240 5.9% 10%;
-    --muted: 240 4.8% 95.9%;
-    --muted-foreground: 240 3.8% 46.1%;
-    --accent: 240 4.8% 95.9%;
-    --accent-foreground: 240 5.9% 10%;
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 210 40% 98%;
-    --border: 240 5.9% 90%;
-    --input: 240 5.9% 90%;
-    --ring: 263.4 70% 50.4%;
+    --popover-foreground: 240 16% 27%;
+    --primary: 263 83% 58%; /* Brand Purple */
+    --primary-foreground: 0 0% 100%;
+    --secondary: 217 91% 60%; /* Brand Blue */
+    --secondary-foreground: 0 0% 100%;
+    --muted: 240 16% 95%;
+    --muted-foreground: 240 10% 45%;
+    --accent: 238 82% 66%; /* Brand Glow */
+    --accent-foreground: 0 0% 100%;
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 240 16% 90%;
+    --input: 240 16% 90%;
+    --ring: 263 83% 58%;
     --radius: 0.75rem;
   }
 
   .dark {
-    --background: 0 0% 0%;
-    --foreground: 0 0% 98%;
-    --card: 0 0% 0%;
-    --card-foreground: 0 0% 98%;
-    --popover: 0 0% 0%;
-    --popover-foreground: 0 0% 98%;
-    --primary: 263.4 70% 50.4%;
-    --primary-foreground: 210 40% 98%;
-    --secondary: 240 3.7% 15.9%;
-    --secondary-foreground: 0 0% 98%;
-    --muted: 240 3.7% 15.9%;
-    --muted-foreground: 240 5% 64.9%;
-    --accent: 240 3.7% 15.9%;
-    --accent-foreground: 0 0% 98%;
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 0 0% 98%;
-    --border: 240 3.7% 15.9%;
-    --input: 240 3.7% 15.9%;
-    --ring: 263.4 70% 50.4%;
+    --background: 223 43% 10%; /* Brand Deep Navy Background */
+    --foreground: 0 0% 100%;
+    --card: 223 43% 12%;
+    --card-foreground: 0 0% 100%;
+    --popover: 223 43% 10%;
+    --popover-foreground: 0 0% 100%;
+    --primary: 263 83% 58%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 217 91% 60%;
+    --secondary-foreground: 0 0% 100%;
+    --muted: 223 43% 18%;
+    --muted-foreground: 240 10% 70%;
+    --accent: 238 82% 66%;
+    --accent-foreground: 0 0% 100%;
+    --destructive: 0 62% 30%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 223 43% 20%;
+    --input: 223 43% 20%;
+    --ring: 263 83% 58%;
   }
 }
 

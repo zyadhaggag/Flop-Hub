@@ -1,0 +1,17 @@
+<svg width="360" height="100" viewBox="0 0 360 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="hubBgLight" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#7c3aed"/>
+      <stop offset="100%" stop-color="#3b82f6"/>
+    </linearGradient>
+  </defs>
+
+  <!-- "Flop" text in dark charcoal -->
+  <text x="0" y="76" font-family="'Inter', 'Segoe UI', 'Helvetica Neue', Arial, sans-serif" font-size="72" font-weight="800" fill="#3a3a50" letter-spacing="-3">Flop</text>
+
+  <!-- Hub rounded rectangle with gradient -->
+  <rect x="180" y="10" width="148" height="80" rx="18" fill="url(#hubBgLight)"/>
+  
+  <!-- "Hub" text inside box -->
+  <text x="254" y="68" text-anchor="middle" font-family="'Inter', 'Segoe UI', 'Helvetica Neue', Arial, sans-serif" font-size="48" font-weight="700" fill="#ffffff" letter-spacing="-1.5">Hub</text>
+</svg>

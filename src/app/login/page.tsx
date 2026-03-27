@@ -56,8 +56,8 @@ export default function LoginPage() {
       <div className="flex-1 flex flex-col items-center justify-center p-6 bg-background h-full overflow-hidden relative">
         {/* Floating elements for interactivity */}
         <div className="absolute top-20 left-20 w-32 h-32 bg-primary/5 rounded-full animate-pulse" />
-        <div className="absolute bottom-20 right-20 w-24 h-24 bg-amber-500/5 rounded-full animate-bounce" />
-        <div className="absolute top-1/2 left-10 w-16 h-16 bg-purple-500/5 rounded-full animate-spin" style={{ animationDuration: '8s' }} />
+        <div className="absolute bottom-20 right-20 w-24 h-24 bg-secondary/5 rounded-full animate-bounce" />
+        <div className="absolute top-1/2 left-10 w-16 h-16 bg-accent/5 rounded-full animate-spin" style={{ animationDuration: '8s' }} />
         
         <div className={cn(
           "w-full max-w-md space-y-6",
@@ -67,15 +67,15 @@ export default function LoginPage() {
             "text-center space-y-2",
             mounted && "animate-delay-100"
           )}>
-            <div className="inline-flex items-center justify-center mb-4">
-              <div className="relative">
-                <div className="w-16 h-16 bg-gradient-to-br from-primary to-amber-500 rounded-2xl flex items-center justify-center shadow-2xl animate-bounce">
-                  <span className="text-white font-black text-3xl italic font-serif">F</span>
+            <div className="inline-flex items-center justify-center mb-2">
+              <div className="relative group transition-transform duration-500 hover:scale-110">
+                <div className="w-20 h-20 flex items-center justify-center p-1">
+                  <img src="/favicon.png" alt="FlopHub Icon" className="w-full h-full object-contain" />
                 </div>
-                <Sparkles className="absolute -top-2 -right-2 w-4 h-4 text-amber-400 animate-pulse" />
+                <Sparkles className="absolute -top-1 -right-1 w-6 h-6 text-primary animate-pulse" />
               </div>
             </div>
-            <h1 className="text-3xl font-black tracking-tight bg-gradient-to-r from-primary to-amber-500 bg-clip-text text-transparent">مرحباً بعودتك</h1>
+            <h1 className="text-3xl font-black tracking-tight bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">مرحباً بعودتك</h1>
             <p className="text-muted-foreground font-medium text-sm">سجّل دخولك لمشاركة قصتك الملهمة</p>
           </div>
 
@@ -176,12 +176,12 @@ export default function LoginPage() {
       </div>
 
       {/* Left Side: Branding */}
-      <div className="hidden lg:flex flex-1 bg-gradient-to-br from-primary via-purple-600 to-amber-500 relative overflow-hidden flex-col items-center justify-center text-white p-12">
+      <div className="hidden lg:flex flex-1 bg-gradient-to-br from-[#7c3aed] via-purple-600 to-[#3b82f6] relative overflow-hidden flex-col items-center justify-center text-white p-12">
         {/* Animated background elements */}
         <div className="absolute inset-0 opacity-20 pointer-events-none">
            <div className="absolute top-10 right-10 w-[500px] h-[500px] bg-white rounded-full blur-[120px] animate-pulse" />
            <div className="absolute bottom-20 left-10 w-[400px] h-[400px] bg-indigo-200 rounded-full blur-[100px] animate-bounce" />
-           <div className="absolute top-1/2 left-1/2 w-[300px] h-[300px] bg-yellow-200 rounded-full blur-[80px] animate-spin" style={{ animationDuration: '10s' }} />
+           <div className="absolute top-1/2 left-1/2 w-[300px] h-[300px] bg-blue-200 rounded-full blur-[80px] animate-spin" style={{ animationDuration: '10s' }} />
         </div>
 
         <div className={cn(
@@ -190,17 +190,13 @@ export default function LoginPage() {
         )}>
           <div className="space-y-6">
             <div className="flex items-center gap-5">
-              <div className="w-16 h-16 bg-white rounded-2xl flex items-center justify-center shadow-2xl rotate-3 hover:rotate-0 transition-transform duration-500 hover:scale-110">
-                 <span className="text-primary font-black text-4xl italic font-serif">F</span>
-              </div>
-              <div className="flex flex-col">
-                <span className="text-4xl font-black tracking-tighter">FlopHub</span>
-                <span className="text-lg opacity-80 font-bold tracking-widest uppercase">الفشل بداية التعلم</span>
+              <div className="h-16 flex items-center justify-center transition-transform duration-500 hover:scale-110">
+                 <img src="/logo-dark.svg" alt="FlopHub" className="h-full object-contain" />
               </div>
             </div>
             
             <div className="inline-flex items-center gap-3 bg-white/10 px-5 py-2 rounded-full border border-white/20 backdrop-blur-xl shadow-xl hover:scale-105 transition-transform">
-               <Lightbulb className="w-4 h-4 text-yellow-300 fill-yellow-300/30 animate-pulse" />
+               <Lightbulb className="w-4 h-4 text-blue-300 fill-blue-300/30 animate-pulse" />
                <span className="text-xs font-black tracking-tight uppercase">المكان الوحيد للاحتفاء بالفشل 💡</span>
             </div>
           </div>
@@ -224,7 +220,7 @@ export default function LoginPage() {
              )}>
                 <div className="flex items-center gap-2">
                   <span className="text-4xl font-black text-white">+12K</span>
-                  <Users className="w-5 h-5 text-yellow-300" />
+                  <Users className="w-5 h-5 text-blue-300" />
                 </div>
                 <span className="text-xs opacity-60 font-black uppercase tracking-widest">قصة فشل</span>
              </div>
@@ -234,7 +230,7 @@ export default function LoginPage() {
              )}>
                 <div className="flex items-center gap-2">
                   <span className="text-4xl font-black text-white">+4K</span>
-                  <Lightbulb className="w-5 h-5 text-yellow-300" />
+                  <Lightbulb className="w-5 h-5 text-blue-300" />
                 </div>
                 <span className="text-xs opacity-60 font-black uppercase tracking-widest">درس مستخلص</span>
              </div>

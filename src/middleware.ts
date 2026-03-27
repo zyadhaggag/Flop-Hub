@@ -41,6 +41,13 @@ export default withAuth(
 
 export const config = {
   matcher: [
-    "/((?!api/auth|_next/static|_next/image|favicon.ico).*)",
+    /*
+     * Match all request paths except for the ones starting with:
+     * - api (API routes)
+     * - _next/static (static files)
+     * - _next/image (image optimization files)
+     * - all files in public folder (favicon, logos, etc.)
+     */
+    "/((?!api|_next/static|_next/image|favicon\\.ico|favicon\\.png|favicon\\.svg|logo-light\\.svg|logo-dark\\.svg|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)",
   ],
 };

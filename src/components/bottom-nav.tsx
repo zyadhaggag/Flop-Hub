@@ -37,6 +37,7 @@ export function BottomNav() {
               return (
                 <button
                   key={i}
+                  suppressHydrationWarning
                   onClick={() => setIsModalOpen(true)}
                   className="relative -top-3 h-14 w-14 rounded-2xl bg-primary text-white flex items-center justify-center shadow-xl shadow-primary/30 active:scale-90 transition-all border-4 border-background"
                 >
@@ -49,6 +50,7 @@ export function BottomNav() {
               <Link
                 key={i}
                 href={item.href || "#"}
+                suppressHydrationWarning
                 className={cn(
                   "flex flex-col items-center justify-center w-14 h-full transition-all gap-1",
                   isActive ? "text-primary" : "text-muted-foreground"

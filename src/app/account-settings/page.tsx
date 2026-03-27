@@ -88,13 +88,13 @@ export default function AccountSettingsPage() {
 
   const categories = [
     { id: "tech", name: "التقنية", icon: "💻", color: "bg-blue-500" },
-    { id: "business", name: "الأعمال", icon: "💼", color: "bg-green-500" },
-    { id: "life", name: "الحياة", icon: "🌱", color: "bg-yellow-500" },
+    { id: "business", name: "الأعمال", icon: "�", color: "bg-green-500" },
+    { id: "life", name: "الحياة", icon: "💡", color: "bg-yellow-500" },
     { id: "education", name: "التعليم", icon: "📚", color: "bg-purple-500" },
-    { id: "health", name: "الصحة", icon: "🏥", color: "bg-red-500" },
+    { id: "health", name: "الصحة", icon: "❤️", color: "bg-red-500" },
     { id: "creative", name: "الإبداع", icon: "🎨", color: "bg-pink-500" },
-    { id: "sports", name: "الرياضة", icon: "⚽", color: "bg-orange-500" },
-    { id: "travel", name: "السفر", icon: "✈️", color: "bg-cyan-500" },
+    { id: "sports", name: "الرياضة", icon: "⚡", color: "bg-orange-500" },
+    { id: "travel", name: "السفر", icon: "🌍", color: "bg-cyan-500" },
   ];
 
   useEffect(() => {
@@ -236,6 +236,14 @@ export default function AccountSettingsPage() {
                   <div className="flex-1">
                     <h3 className="text-lg font-black mb-1">صورة الملف الشخصي</h3>
                     <p className="text-sm text-muted-foreground">صورة مربعة مقاسها 400x400 بكسل على الأقل</p>
+                    <Button
+                      size="sm"
+                      className="mt-2 rounded-xl gap-2"
+                      onClick={() => setShowImageUploadModal(true)}
+                    >
+                      <Upload className="w-4 h-4" />
+                      تطبيق الصورة
+                    </Button>
                   </div>
                 </div>
 

@@ -87,7 +87,7 @@ export default function NavbarActions() {
 
   const userName = session?.user?.name || "مستخدم";
   const userInitial = userName[0] || "?";
-  const avatarUrl = session?.user?.image;
+  const avatarUrl = session?.user?.image || "/api/placeholder/user";
   const username = session?.user?.username || userName;
 
   return (
@@ -124,10 +124,17 @@ export default function NavbarActions() {
           <DropdownMenuSeparator className="bg-border" />
           {notifications.length > 0 ? (
             notifications.map((n) => {
-              const data = typeof n.data === 'string' ? JSON.parse(n.data) : n.data;
+              let data: any = {};
+              try {
+                data = typeof n.data === 'string' ? JSON.parse(n.data) : n.data;
+              } catch (e) {
+                console.error("Notification parsing error:", e);
+              }
+              
+              const fromUser = data?.fromUser || "رواد";
               const href = n.type === 'helpful' || n.type === 'comment' || n.type === 'reply' 
-                ? `/post/${data.postId}` 
-                : `/u/${data.fromUser}`;
+                ? `/post/${data?.postId || '#'}` 
+                : `/u/${fromUser}`;
 
               return (
                 <Link key={n.id} href={href} onClick={() => markNotificationRead(n.id)}>
@@ -142,9 +149,9 @@ export default function NavbarActions() {
                     </div>
                     <div className="flex flex-col gap-0.5">
                       <span className="text-[13px] font-bold leading-tight">
-                        {n.type === 'helpful' ? `${data.fromUser} رأى درسك مفيداً` : 
-                         n.type === 'follow' ? `${data.fromUser} بدأ بمتابعتك` : 
-                         `${data.fromUser} علق على قصة شاركتها`}
+                        {n.type === 'helpful' ? `${fromUser} أعجبته درستك` : 
+                         n.type === 'follow' ? `${fromUser} بدأ بمتابعتك` : 
+                         `${fromUser} علق على قصة شاركتها`}
                       </span>
                       <span className="text-[10px] text-muted-foreground">{new Date(n.created_at).toLocaleTimeString("ar-SA", { hour: '2-digit', minute: '2-digit' })}</span>
                     </div>
@@ -179,7 +186,7 @@ export default function NavbarActions() {
         <DropdownMenuContent align="end" className="w-64 font-tajawal p-2 rounded-2xl border-border shadow-xl bg-popover text-popover-foreground">
           <div className="p-3">
              <div className="flex flex-col gap-0.5">
-                <span className="font-bold text-sm tracking-tight">{userName}</span>
+                <span className="font-bold text-sm tracking-tight text-brand-gradient">{userName}</span>
                 <span className="text-[10px] text-muted-foreground truncate">@{username}</span>
              </div>
           </div>
