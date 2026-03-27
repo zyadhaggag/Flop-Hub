@@ -5,34 +5,21 @@ const nextConfig: NextConfig = {
   reactCompiler: true,
   images: {
     remotePatterns: [
-      {
-        protocol: 'https',
-        hostname: 'api.dicebear.com',
-      },
-      {
-        protocol: 'https',
-        hostname: '**.supabase.co',
-      },
-      {
-        protocol: 'https',
-        hostname: 'mtjwel.com',
-      },
-      {
-        protocol: 'https',
-        hostname: 'images.unsplash.com',
-      },
-      {
-        protocol: 'https',
-        hostname: 'lh3.googleusercontent.com',
-      },
+      { protocol: 'https', hostname: 'api.dicebear.com' },
+      { protocol: 'https', hostname: '**.supabase.co' },
+      { protocol: 'https', hostname: 'mtjwel.com' },
+      { protocol: 'https', hostname: 'images.unsplash.com' },
+      { protocol: 'https', hostname: 'lh3.googleusercontent.com' },
     ],
-    formats: ['image/webp', 'image/avif'],
-    minimumCacheTTL: 60 * 60 * 24 * 30, // 30 days
+    formats: ['image/avif', 'image/webp'],
+    minimumCacheTTL: 60 * 60 * 24 * 7, // 7 days (images don't change often)
     dangerouslyAllowSVG: true,
     contentSecurityPolicy: "default-src 'self'; script-src 'none'; sandbox;",
+    deviceSizes: [640, 750, 828, 1080, 1200], // Only needed sizes
+    imageSizes: [16, 32, 48, 64, 96, 128, 256],
   },
   experimental: {
-    optimizePackageImports: ['lucide-react', '@radix-ui/react-icons'],
+    optimizePackageImports: ['lucide-react', '@radix-ui/react-icons', 'framer-motion'],
     optimizeCss: true,
     scrollRestoration: true,
   },
@@ -41,7 +28,7 @@ const nextConfig: NextConfig = {
   },
   poweredByHeader: false,
   compress: true,
-  generateEtags: false,
+  generateEtags: true, // ETags help browsers cache better
   httpAgentOptions: {
     keepAlive: true,
   },
@@ -59,8 +46,10 @@ const nextConfig: NextConfig = {
   // Static optimization
   trailingSlash: false,
   
-  // Turbopack config
-  turbopack: {},
+  // Turbopack config — set root to avoid lockfile warning
+  turbopack: {
+    root: __dirname,
+  },
   
   // Performance headers
   async headers() {

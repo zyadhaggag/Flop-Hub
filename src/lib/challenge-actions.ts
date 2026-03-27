@@ -19,7 +19,7 @@ export async function getUserChallengeData() {
       sql`SELECT COALESCE(SUM(p.helpful_count), 0)::int as count FROM posts p WHERE p.user_id = ${session.user.id}`,
       sql`SELECT COUNT(*)::int as count FROM followers WHERE following_id = ${session.user.id}`,
       sql`SELECT social_links FROM users WHERE id = ${session.user.id}`,
-      sql`SELECT challenge_id, status, reward_claimed, accepted_at, completed_at FROM user_challenges WHERE user_id = ${session.user.id}`,
+      sql`SELECT challenge_id, status, reward_claimed, accepted_at, completed_at, celebrated_at FROM user_challenges WHERE user_id = ${session.user.id}`,
     ]);
 
     let socialLinksCount = 0;
@@ -114,6 +114,23 @@ export async function claimChallengeReward(challengeId: string) {
   } catch (e) {
     console.error("claimChallengeReward error:", e);
     return { success: false, error: "حدث خطأ" };
+  }
+}
+
+export async function markChallengeCelebrated(challengeId: string) {
+  const session = await getServerSession(authOptions);
+  if (!session?.user?.id) return { success: false };
+
+  try {
+    await sql`
+      UPDATE user_challenges 
+      SET celebrated_at = NOW() 
+      WHERE user_id = ${session.user.id} AND challenge_id = ${challengeId}
+    `;
+    return { success: true };
+  } catch (e) {
+    console.error("markChallengeCelebrated error:", e);
+    return { success: false };
   }
 }
 

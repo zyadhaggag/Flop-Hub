@@ -9,6 +9,7 @@ import { Toaster } from "sonner";
 import { OnboardingModal } from "@/components/onboarding-modal";
 import NextTopLoader from "nextjs-toploader";
 import { TimeoutOverlay } from "@/components/timeout-overlay";
+import { ChallengeCelebrationManager } from "@/components/ChallengeCelebrationManager";
 
 const inter = Inter({ 
   subsets: ["latin"],
@@ -71,6 +72,7 @@ export default function RootLayout({
           {children}
           <OnboardingModal />
           <TimeoutOverlay />
+          <ChallengeCelebrationManager />
           <BottomNav />
           <Toaster 
             position="top-center" 

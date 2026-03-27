@@ -33,15 +33,10 @@ export function HomeClientWrapper({
   const [posts, setPosts] = useState(initialPosts);
   const [sort, setSort] = useState<'latest' | 'trending' | 'foryou'>('foryou');
   const [loadingMore, setLoadingMore] = useState(false);
-  const PAGE_SIZE = 4;
+  const PAGE_SIZE = 8;
   const [hasMore, setHasMore] = useState(initialPosts.length === PAGE_SIZE);
   const [isLoading, setIsLoading] = useState(false);
   const [page, setPage] = useState(1);
-  const [isClient, setIsClient] = useState(false);
-
-  useEffect(() => {
-    setIsClient(true);
-  }, []);
 
   const handleSortChange = async (value: string) => {
     setIsLoading(true);
@@ -81,7 +76,7 @@ export function HomeClientWrapper({
         </div>
 
         {/* Animated Pill Tabs */}
-        <div className="flex gap-1.5 bg-muted/30 p-1.5 rounded-2xl border border-border/40 w-fit mx-auto animate-in fade-in slide-in-from-bottom-4 duration-700" dir="rtl">
+        <div className="flex gap-1.5 bg-muted/30 p-1.5 rounded-2xl border border-border/40 w-fit mx-auto" dir="rtl">
           {[
             { value: 'foryou', label: 'لك', icon: Sparkles },
             { value: 'trending', label: 'الرائج', icon: TrendingUp },
@@ -95,18 +90,12 @@ export function HomeClientWrapper({
                 onClick={() => handleSortChange(tab.value)}
                 className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-bold transition-all duration-300 relative overflow-hidden group ${
                   isActive
-                    ? "bg-primary text-primary-foreground shadow-lg shadow-primary/25 scale-[1.02] animate-pulse"
+                    ? "bg-primary text-primary-foreground shadow-lg shadow-primary/25 scale-[1.02]"
                     : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
                 }`}
-                style={isClient ? {
-                  animationDelay: `${index * 100}ms`
-                } : undefined}
               >
-                <Icon className={`w-4 h-4 transition-all duration-300 ${isActive ? 'scale-110 rotate-12' : 'group-hover:scale-110'}`} />
+                <Icon className={`w-4 h-4 transition-all duration-300 ${isActive ? 'scale-110' : 'group-hover:scale-110'}`} />
                 <span className="relative z-10">{tab.label}</span>
-                {isActive && (
-                  <div className="absolute inset-0 bg-gradient-to-r from-primary/20 to-primary/10 animate-pulse" />
-                )}
               </button>
             );
           })}
@@ -127,10 +116,8 @@ export function HomeClientWrapper({
           {posts.map((post: any, index) => (
             <div 
               key={post.id} 
-              className="animate-in fade-in slide-in-from-bottom-8 duration-700"
-              style={isClient ? {
-                animationDelay: `${index * 100}ms`
-              } : undefined}
+              className="animate-in fade-in slide-in-from-bottom-4 duration-500"
+              style={{ animationDelay: `${Math.min(index, 3) * 80}ms` }}
             >
               <PostCard 
                 id={post.id} 

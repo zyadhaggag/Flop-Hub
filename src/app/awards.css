@@ -1,0 +1,69 @@
+
+/* Premium Frames and Name Colors */
+
+.frame-bronze {
+  border-color: #b45309;
+  box-shadow: 0 0 10px rgba(180, 83, 9, 0.3);
+}
+
+.frame-silver {
+  border-color: #94a3b8;
+  box-shadow: 0 0 12px rgba(148, 163, 184, 0.3);
+}
+
+.frame-gold {
+  border-color: #fbbf24;
+  box-shadow: 0 0 15px rgba(251, 191, 36, 0.4);
+}
+
+.frame-platinum {
+  border-color: #67e8f9;
+  box-shadow: 0 0 18px rgba(103, 232, 249, 0.4);
+}
+
+.frame-diamond {
+  border-color: #22d3ee;
+  box-shadow: 0 0 20px rgba(34, 211, 238, 0.5);
+  animation: diamond-pulse 3s infinite;
+}
+
+@keyframes diamond-pulse {
+  0% { box-shadow: 0 0 10px rgba(34, 211, 238, 0.3); }
+  50% { box-shadow: 0 0 20px rgba(34, 211, 238, 0.6); }
+  100% { box-shadow: 0 0 10px rgba(34, 211, 238, 0.3); }
+}
+
+/* Premium Name Colors (Gradients) */
+.name-silver {
+  background: linear-gradient(135deg, #94a3b8 0%, #f1f5f9 50%, #94a3b8 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  font-weight: 800;
+}
+
+.name-gold {
+  background: linear-gradient(135deg, #b45309 0%, #fbbf24 50%, #b45309 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  font-weight: 800;
+  text-shadow: 0 0 2px rgba(251, 191, 36, 0.2);
+}
+
+.name-platinum {
+  background: linear-gradient(135deg, #0891b2 0%, #67e8f9 50%, #0891b2 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  font-weight: 800;
+  text-shadow: 0 0 3px rgba(103, 232, 249, 0.3);
+}
+
+.avatar-shield {
+  position: absolute;
+  bottom: -2px;
+  right: -2px;
+  z-index: 10;
+  filter: drop-shadow(0 2px 4px rgba(0,0,0,0.2));
+}

@@ -2,11 +2,15 @@
 
 import { useSession } from "next-auth/react";
 import { useState, useEffect, useTransition } from "react";
-import { Trophy, Sparkles, Lock, Check, Gift, Crown, Star, Zap, Loader2, PartyPopper } from "lucide-react";
+import { 
+  Trophy, Sparkles, Lock, Check, Gift, Crown, Star, Zap, 
+  Loader2, PartyPopper, CheckCircle2, Clock 
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
+import { motion, AnimatePresence } from "framer-motion";
 import {
   CHALLENGES,
   DIFFICULTY_CONFIG,
@@ -14,14 +18,18 @@ import {
   type ChallengeProgress,
   type RewardType,
 } from "@/lib/frames-challenges";
-import { getUserChallengeData, acceptChallenge, claimChallengeReward } from "@/lib/challenge-actions";
+import { getUserChallengeData, acceptChallenge, claimChallengeReward, markChallengeCelebrated } from "@/lib/challenge-actions";
+import { SuccessCelebration } from "./SuccessCelebration";
+import "@/app/awards.css";
 
 const REWARD_ICONS: Record<RewardType, React.ReactNode> = {
-  frame: <Crown className="w-3.5 h-3.5" />,
-  name_color: <Star className="w-3.5 h-3.5" />,
-  kit: <Gift className="w-3.5 h-3.5" />,
-  badge: <Zap className="w-3.5 h-3.5" />,
-  title: <Sparkles className="w-3.5 h-3.5" />,
+  frame: <Crown className="w-5 h-5" />,
+  name_color: <Star className="w-5 h-5" />,
+  kit: <Gift className="w-5 h-5" />,
+  badge: <Zap className="w-5 h-5" />,
+  title: <Sparkles className="w-5 h-5" />,
+  particle: <Sparkles className="w-5 h-5" />,
+  shield: <Trophy className="w-5 h-5" />,
 };
 
 interface ChallengeState {
@@ -36,6 +44,9 @@ export function ChallengesClient() {
   const [challengeStates, setChallengeStates] = useState<ChallengeState[]>([]);
   const [filter, setFilter] = useState<'all' | 'completed' | 'active'>('all');
   const [loading, setLoading] = useState(true);
+  
+  // Celebration state
+  const [celebration, setCelebration] = useState<{ isOpen: boolean; ch?: any; p?: any }>({ isOpen: false });
 
   const fetchData = async () => {
     setLoading(true);
@@ -79,6 +90,10 @@ export function ChallengesClient() {
     }
   };
 
+  const triggerCelebration = (p: ChallengeProgress) => {
+     setCelebration({ isOpen: true, ch: p.challenge, p });
+  };
+
   const filtered = progress.filter(p => {
     const state = getState(p.challenge.id);
     if (filter === 'completed') return state?.status === 'completed';
@@ -97,53 +112,72 @@ export function ChallengesClient() {
   };
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="relative bg-card rounded-[2rem] border border-border overflow-hidden shadow-sm">
-        <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-amber-500/5" />
-        <div className="absolute top-0 right-0 w-64 h-64 bg-primary/5 rounded-full blur-[80px] -mr-32 -mt-32" />
-        <div className="absolute bottom-0 left-0 w-48 h-48 bg-amber-500/5 rounded-full blur-[60px] -ml-24 -mb-24" />
+    <div className="space-y-8 pb-20" dir="rtl">
+      <SuccessCelebration 
+        isOpen={celebration.isOpen}
+        onClose={async () => {
+           if (celebration.ch) await markChallengeCelebrated(celebration.ch.id);
+           setCelebration({ isOpen: false });
+           await fetchData();
+        }}
+        challengeTitle={celebration.ch?.titleAr || ""}
+        rewardTitle={celebration.ch?.rewardAr || ""}
+        onAccept={async () => {
+           await handleClaim(celebration.ch?.id || "");
+           setCelebration({ isOpen: false });
+        }}
+      />
 
-        <div className="relative p-6 sm:p-8 space-y-6">
-          <div className="flex items-center gap-4">
-            <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-primary to-amber-500 flex items-center justify-center shadow-xl">
-              <Trophy className="w-7 h-7 text-white" />
+      {/* Header */}
+      <div className="relative bg-card rounded-[2.5rem] border border-border overflow-hidden shadow-sm p-8 group">
+        <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-amber-500/5 transition-all duration-700 group-hover:opacity-80" />
+        <div className="absolute top-0 right-0 w-64 h-64 bg-primary/10 rounded-full blur-[100px] -mr-32 -mt-32 animate-pulse" />
+        <div className="absolute bottom-0 left-0 w-48 h-48 bg-amber-500/10 rounded-full blur-[80px] -ml-24 -mb-24 animate-pulse" />
+
+        <div className="relative space-y-8">
+          <div className="flex flex-col sm:flex-row items-center gap-6 text-center sm:text-right">
+            <div className="w-20 h-20 rounded-3xl bg-gradient-to-br from-primary to-amber-500 flex items-center justify-center shadow-2xl rotate-3 transition-transform hover:rotate-0">
+              <Trophy className="w-10 h-10 text-white" />
             </div>
             <div>
-              <h1 className="text-2xl sm:text-3xl font-black tracking-tight">التحديات</h1>
-              <p className="text-sm text-muted-foreground font-medium">أكمل التحديات واحصل على مكافآت فخمة</p>
+              <h1 className="text-3xl sm:text-4xl font-black tracking-tight text-foreground">ساحة التحديات العظمى</h1>
+              <p className="text-base text-muted-foreground font-bold mt-1 max-w-md">حول خطواتك إلى إنجازات مرئية وارتدِ ألقابك وجوائزك بكل فخر أمام الجميع.</p>
             </div>
           </div>
 
-          <div className="flex items-center gap-4 p-4 rounded-2xl bg-muted/30 border border-border/50">
-            <div className="text-center">
-              <span className="text-3xl font-black text-primary">{completedCount}</span>
-              <span className="text-lg text-muted-foreground font-bold">/{totalCount}</span>
-              <p className="text-[10px] text-muted-foreground font-bold mt-0.5">تحدي مكتمل</p>
+          <div className="flex flex-col sm:flex-row items-center gap-6 p-6 rounded-[2rem] bg-muted/40 border border-border/60 shadow-inner">
+            <div className="flex items-baseline gap-2">
+              <span className="text-5xl font-black text-primary drop-shadow-sm">{completedCount}</span>
+              <span className="text-xl text-muted-foreground font-black">/{totalCount}</span>
             </div>
-            <div className="flex-1">
-              <div className="h-3 bg-muted rounded-full overflow-hidden">
-                <div 
-                  className="h-full bg-gradient-to-r from-primary to-amber-500 rounded-full transition-all duration-700"
-                  style={{ width: `${totalCount > 0 ? (completedCount / totalCount) * 100 : 0}%` }}
+            <div className="flex-1 w-full space-y-2">
+              <div className="flex justify-between text-xs font-black text-muted-foreground uppercase tracking-widest px-1">
+                <span>مسار الإنجاز</span>
+                <span>{totalCount > 0 ? Math.round((completedCount/totalCount)*100) : 0}%</span>
+              </div>
+              <div className="h-4 bg-muted/50 rounded-full overflow-hidden p-1 ring-1 ring-border/20">
+                <motion.div 
+                  initial={{ width: 0 }}
+                  animate={{ width: `${totalCount > 0 ? (completedCount / totalCount) * 100 : 0}%` }}
+                  className="h-full bg-gradient-to-r from-primary via-primary to-amber-400 rounded-full shadow-[0_0_12px_rgba(var(--primary),0.3)] transition-all duration-1000"
                 />
               </div>
             </div>
           </div>
 
-          <div className="flex gap-2">
+          <div className="flex flex-wrap justify-center sm:justify-start gap-3">
             {(['all', 'active', 'completed'] as const).map((f) => (
               <button
                 key={f}
                 onClick={() => setFilter(f)}
                 className={cn(
-                  "px-4 py-2 rounded-xl text-sm font-bold transition-all",
+                  "px-6 py-3 rounded-2xl text-sm font-black transition-all duration-300 transform active:scale-95",
                   filter === f
-                    ? "bg-primary text-white shadow-lg shadow-primary/20"
-                    : "bg-muted/50 text-muted-foreground hover:bg-muted"
+                    ? "bg-primary text-white shadow-xl shadow-primary/30"
+                    : "bg-muted/80 text-muted-foreground hover:bg-muted hover:text-foreground border border-transparent hover:border-border"
                 )}
               >
-                {f === 'all' ? 'الكل' : f === 'active' ? 'نشطة' : 'مكتملة'}
+                {f === 'all' ? 'عرض الكل' : f === 'active' ? 'تحديات جارية' : 'إنجازات مكتملة'}
               </button>
             ))}
           </div>
@@ -151,25 +185,27 @@ export function ChallengesClient() {
       </div>
 
       {loading ? (
-        <div className="flex items-center justify-center py-16">
-          <Loader2 className="w-8 h-8 animate-spin text-primary" />
+        <div className="flex flex-col items-center justify-center py-24 space-y-4">
+          <Loader2 className="w-12 h-12 animate-spin text-primary" />
+          <p className="text-muted-foreground font-black animate-pulse">جاري تحضير التحديات...</p>
         </div>
       ) : (
-        <>
-          {(Object.entries(grouped) as [keyof typeof DIFFICULTY_CONFIG, ChallengeProgress[]][]).map(([difficulty, items]) => {
+        <div className="space-y-12">
+          {(Object.entries(grouped) as any[]).map(([difficulty, items]: [string, ChallengeProgress[]]) => {
             if (items.length === 0) return null;
-            const config = DIFFICULTY_CONFIG[difficulty];
+            const config = (DIFFICULTY_CONFIG as any)[difficulty];
 
             return (
-              <div key={difficulty} className="space-y-3">
-                <div className="flex items-center gap-2 px-2">
-                  <span className={cn("text-xs font-black uppercase tracking-widest", config.color)}>
+              <div key={difficulty} className="space-y-6">
+                <div className="flex items-center gap-4 px-2">
+                  <div className={cn("w-3 h-3 rounded-full animate-pulse", config.color.replace('text-', 'bg-'))} />
+                  <span className={cn("text-sm font-black uppercase tracking-[0.2em]", config.color)}>
                     {config.labelAr}
                   </span>
-                  <div className="flex-1 h-px bg-border/50" />
+                  <div className="flex-1 h-px bg-gradient-to-r from-border/50 to-transparent" />
                 </div>
 
-                <div className="grid gap-3">
+                <div className="grid gap-6">
                   {items.map((item) => (
                     <ChallengeCard 
                       key={item.challenge.id} 
@@ -177,6 +213,7 @@ export function ChallengesClient() {
                       state={getState(item.challenge.id)}
                       onAccept={handleAccept}
                       onClaim={handleClaim}
+                      onCelebrate={() => triggerCelebration(item)}
                     />
                   ))}
                 </div>
@@ -185,26 +222,27 @@ export function ChallengesClient() {
           })}
 
           {filtered.length === 0 && (
-            <div className="text-center py-16">
-              <Trophy className="w-12 h-12 text-muted-foreground/20 mx-auto mb-4" />
-              <p className="text-muted-foreground font-bold">لا توجد تحديات مطابقة</p>
+            <div className="text-center py-24 bg-muted/20 rounded-[3rem] border-2 border-dashed border-border/50">
+              <Trophy className="w-20 h-20 text-muted-foreground/10 mx-auto mb-6" />
+              <p className="text-muted-foreground text-xl font-black">لم نعثر على أي تحديات في هذا القسم</p>
+              <Button variant="link" onClick={() => setFilter('all')} className="mt-2 font-bold text-primary">العودة للكل</Button>
             </div>
           )}
-        </>
+        </div>
       )}
     </div>
   );
 }
 
-function ChallengeCard({ progress: p, state, onAccept, onClaim }: { 
+function ChallengeCard({ progress: p, state, onAccept, onClaim, onCelebrate }: { 
   progress: ChallengeProgress; 
   state?: ChallengeState;
   onAccept: (id: string) => Promise<void>;
   onClaim: (id: string) => Promise<void>;
+  onCelebrate: () => void;
 }) {
   const { challenge: ch } = p;
-  const diffConfig = DIFFICULTY_CONFIG[ch.difficulty];
-  const [isPending, startTransition] = useTransition();
+  const diffConfig = (DIFFICULTY_CONFIG as any)[ch.difficulty];
   const [actionLoading, setActionLoading] = useState(false);
 
   const isActive = state?.status === 'active';
@@ -213,130 +251,188 @@ function ChallengeCard({ progress: p, state, onAccept, onClaim }: {
   const isPending_ = !state || state.status === 'pending';
 
   return (
-    <div className={cn(
-      "relative bg-card rounded-2xl border overflow-hidden transition-all duration-300 group hover:shadow-lg",
-      isCompleted ? "border-primary/20 bg-primary/[0.02]" 
-        : canClaim ? "border-amber-400/40 bg-amber-500/[0.03] shadow-amber-500/10 shadow-lg"
-        : isActive ? "border-primary/10"
-        : "border-border/50 hover:border-primary/30"
-    )}>
-      <div className={cn("absolute top-0 right-0 w-1 h-full", 
-        isCompleted ? "bg-primary" : canClaim ? "bg-amber-500" : isActive ? "bg-blue-500" : diffConfig.bg)} />
+    <motion.div 
+      layout
+      className={cn(
+        "relative bg-card rounded-[2.5rem] border-2 overflow-hidden transition-all duration-500 group",
+        isCompleted ? "border-primary/20 bg-primary/[0.01]" 
+          : canClaim ? "border-amber-400/50 bg-amber-500/[0.04] shadow-2xl shadow-amber-500/10"
+          : isActive ? "border-primary/10 bg-muted/5 shadow-sm"
+          : "border-border/40 hover:border-primary/30 hover:shadow-xl hover:shadow-primary/5 shadow-sm"
+      )}>
+      
+      {/* Decorative Gradient Overlay */}
+      <div className={cn("absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-700 pointer-events-none",
+         isCompleted ? "bg-gradient-to-br from-primary/5 to-transparent" : "bg-gradient-to-br from-primary/[0.03] to-transparent")} />
 
-      <div className="p-4 sm:p-5 flex gap-4">
-        <div className={cn(
-          "w-14 h-14 rounded-2xl flex items-center justify-center text-2xl shrink-0 transition-transform group-hover:scale-110",
-          isCompleted ? "bg-primary/10" : canClaim ? "bg-amber-500/10 animate-pulse" : "bg-muted/50"
-        )}>
-          {isCompleted ? <Check className="w-7 h-7 text-primary" /> : canClaim ? <PartyPopper className="w-7 h-7 text-amber-500" /> : ch.emoji}
+      <div className="p-6 sm:p-8 flex flex-col sm:flex-row gap-8">
+        {/* Badge Icon Section */}
+        <div className="relative shrink-0 flex items-center justify-center mx-auto sm:mx-0">
+          <div className={cn(
+            "w-24 h-24 rounded-[2.5rem] flex items-center justify-center text-5xl shrink-0 transition-all duration-500 transform group-hover:rotate-6 shadow-lg",
+            isCompleted ? "bg-primary/10 text-primary border border-primary/20" : 
+            canClaim ? "bg-amber-500/10 animate-pulse text-amber-500 border border-amber-500/20" : 
+            "bg-muted text-muted-foreground group-hover:bg-primary/5 group-hover:text-primary border border-border/10"
+          )}>
+            {isCompleted ? <CheckCircle2 className="w-12 h-12" /> : canClaim ? <Star className="w-12 h-12" /> : ch.emoji}
+          </div>
+          
+          {/* Level Badge Overlay */}
+          <div className={cn("absolute -top-1 -right-1 w-10 h-10 rounded-full border-4 border-card flex items-center justify-center shadow-xl", diffConfig.bg)}>
+            <span className={cn("text-[10px] font-black uppercase tracking-tighter", diffConfig.color)}>{ch.difficulty[0]}</span>
+          </div>
         </div>
 
-        <div className="flex-1 min-w-0 space-y-2">
-          <div className="flex items-start justify-between gap-2">
-            <div>
-              <h3 className={cn("font-black text-base", isCompleted ? "text-primary" : "text-foreground")}>{ch.titleAr}</h3>
-              <p className="text-xs text-muted-foreground font-medium mt-0.5">{ch.descriptionAr}</p>
+        <div className="flex-1 min-w-0 space-y-6">
+          <div className="flex flex-col sm:flex-row items-start justify-between gap-4">
+            <div className="space-y-2 text-center sm:text-right w-full sm:w-auto">
+              <h3 className={cn("font-black text-2xl tracking-tight leading-none", isCompleted ? "text-primary" : "text-foreground")}>
+                {ch.titleAr}
+              </h3>
+              <p className="text-sm text-muted-foreground font-bold tracking-tight opacity-80">{ch.descriptionAr}</p>
             </div>
-            <span className={cn("text-[9px] font-black uppercase tracking-wider px-2 py-1 rounded-lg shrink-0", diffConfig.color, diffConfig.bg)}>
-              {diffConfig.labelAr}
-            </span>
+            
+            <div className="flex gap-2 mx-auto sm:mx-0">
+              <span className={cn("text-[10px] font-black uppercase tracking-widest px-4 py-2 rounded-2xl border-2 shadow-sm", diffConfig.color, diffConfig.bg, diffConfig.border)}>
+                 تحدي {diffConfig.labelAr}
+              </span>
+            </div>
           </div>
 
-          {/* Progress bar */}
+          {/* Progress Section */}
           {(isActive || isCompleted) && (
-            <div className="space-y-1">
-              <div className="h-2 bg-muted rounded-full overflow-hidden">
-                <div 
-                  className={cn("h-full rounded-full transition-all duration-700",
-                    isCompleted ? "bg-primary" : canClaim ? "bg-amber-500" : "bg-gradient-to-r from-primary/60 to-primary"
+            <div className="space-y-3 bg-muted/40 p-5 rounded-[2rem] border border-border/40 shadow-inner">
+              <div className="flex justify-between items-center px-2">
+                <span className="text-xs font-black text-muted-foreground uppercase flex items-center gap-2">
+                  <Clock className="w-4 h-4" />
+                  تقدمك نحو الجائزة
+                </span>
+                <span className={cn("text-base font-black animate-in fade-in zoom-in", isCompleted ? "text-primary" : "text-foreground")}>
+                   {p.current} <span className="text-muted-foreground font-black opacity-40">/ {ch.target}</span>
+                </span>
+              </div>
+              <div className="h-5 bg-muted/80 rounded-full overflow-hidden p-1.5 ring-1 ring-border/20">
+                <motion.div 
+                  initial={{ width: 0 }}
+                  animate={{ width: `${p.percentage}%` }}
+                  className={cn("h-full rounded-full transition-all duration-1000",
+                    isCompleted ? "bg-primary shadow-[0_0_12px_rgba(var(--primary),0.3)]" : 
+                    canClaim ? "bg-gradient-to-r from-amber-500 to-amber-300 shadow-[0_0_12px_rgba(251,191,36,0.5)]" : 
+                    "bg-gradient-to-r from-primary/80 to-primary"
                   )}
-                  style={{ width: `${p.percentage}%` }}
                 />
               </div>
-              <div className="flex justify-between">
-                <span className="text-[10px] text-muted-foreground font-bold">{p.current} / {ch.target}</span>
-                <span className="text-[10px] font-bold text-primary">{Math.round(p.percentage)}%</span>
+              <div className="flex justify-end px-2">
+                <span className="text-[10px] font-black text-primary/60">{Math.round(p.percentage)}% مكتمل</span>
               </div>
             </div>
           )}
 
-          {/* Reward */}
+          {/* Premium Reward Card Component */}
           <div className={cn(
-            "flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-bold ring-1 ring-inset",
+            "relative flex items-center gap-6 px-6 py-6 rounded-[2.5rem] text-sm overflow-hidden transition-all duration-500 border-2",
             isCompleted 
-              ? "bg-primary/10 text-primary ring-primary/20" 
+              ? "bg-primary/[0.04] border-primary/20 ring-1 ring-primary/5 shadow-inner" 
               : canClaim 
-                ? "bg-amber-500/10 text-amber-600 ring-amber-500/20" 
-                : "bg-muted/50 text-muted-foreground ring-border/50"
+                ? "bg-amber-500/[0.06] border-amber-500/30 ring-8 ring-amber-500/5 pulse-subtle shadow-lg" 
+                : "bg-muted/50 border-border/60 shadow-sm"
           )}>
-            {/* Visual Reward Ornament */}
             <div className="relative shrink-0">
-              {ch.rewardType === 'frame' ? (
-                <div className={cn(
-                  "w-8 h-8 rounded-full border-2 bg-muted/30 flex items-center justify-center",
-                  ch.rewardDetail === 'bronze' ? "border-amber-700/60 shadow-[0_0_8px_rgba(180,83,9,0.2)]" :
-                  ch.rewardDetail === 'silver' ? "border-slate-400 shadow-[0_0_8px_rgba(148,163,184,0.2)]" :
-                  ch.rewardDetail === 'gold' ? "border-amber-400 shadow-[0_0_8px_rgba(251,191,36,0.3)]" :
-                  ch.rewardDetail === 'diamond' ? "border-cyan-400 shadow-[0_0_10px_rgba(34,211,238,0.3)]" :
-                  "border-border"
-                )}>
-                  <Avatar className="w-5 h-5 opacity-40">
-                    <AvatarFallback className="text-[6px] font-black">YU</AvatarFallback>
-                  </Avatar>
-                </div>
-              ) : ch.rewardType === 'badge' ? (
-                <div className="w-8 h-8 rounded-full bg-background/80 shadow-sm flex items-center justify-center text-lg border border-border/50">
-                  {ch.rewardDetail}
-                </div>
-              ) : (
-                <div className={cn("w-8 h-8 rounded-lg flex items-center justify-center", isCompleted ? "bg-primary/20" : "bg-muted")}>
-                  {REWARD_ICONS[ch.rewardType]}
-                </div>
-              )}
+               {ch.rewardType === 'frame' ? (
+                 <div className="relative w-16 h-16 flex items-center justify-center scale-110">
+                    <div className={cn("absolute inset-0 rounded-full z-10 pointer-events-none", ch.rewardDetail)} />
+                    <Avatar className="w-12 h-12 border-2 border-background shadow-sm">
+                      <AvatarFallback className="text-[10px] font-black bg-muted">YU</AvatarFallback>
+                    </Avatar>
+                    {isCompleted && <div className="absolute -bottom-1 -right-1 bg-primary text-white p-1 rounded-full shadow-lg z-20"><Check className="w-3 h-3" /></div>}
+                 </div>
+               ) : (
+                 <div className={cn(
+                    "w-14 h-14 rounded-2xl flex items-center justify-center transition-all duration-500 group-hover:scale-110 shadow-sm",
+                    isCompleted ? "bg-primary/20 text-primary" : 
+                    canClaim ? "bg-amber-500/20 text-amber-600 animate-bounce-subtle" : 
+                    "bg-muted text-muted-foreground border border-border/20",
+                    ch.rewardDetail.includes('name-') ? "hidden" : "" // Name color is handled by text
+                 )}>
+                    {REWARD_ICONS[ch.rewardType] || <Star className="w-6 h-6" />}
+                 </div>
+               )}
             </div>
 
             <div className="flex-1 min-w-0">
-              <span className="block font-black text-[12px] tracking-tight">{ch.rewardAr}</span>
-              <span className="block text-[10px] opacity-70 truncate font-semibold">
-                {ch.rewardType === 'frame' ? 'إطار فخم للملف الشخصي' : 
-                 ch.rewardType === 'badge' ? 'شارة مميزة بجانب اسمك' : 
-                 ch.rewardType === 'name_color' ? 'لون وحركة كاريزمية للاسم' :
-                 ch.rewardDetail}
-              </span>
-            </div>
-            {isCompleted && (
-              <div className="flex items-center gap-1 bg-primary text-white px-2 py-1 rounded-lg font-black text-[9px] shadow-sm">
-                <Check className="w-2.5 h-2.5" />
-                <span>مُمتلك</span>
+              <div className="flex items-center gap-2">
+                 <span className={cn("font-black text-xl tracking-tight drop-shadow-sm", 
+                   ch.rewardDetail.includes('name-') ? ch.rewardDetail : "text-foreground"
+                 )}>
+                   {ch.rewardAr}
+                 </span>
               </div>
+              <p className="text-[12px] text-muted-foreground font-bold mt-1 opacity-70 leading-relaxed">
+                {ch.rewardType === 'frame' ? 'إطار فخم وحصري يحيط بصورتك الشخصية ليراك الجميع بتميز' : 
+                 ch.rewardType === 'badge' ? 'شارة فريدة تظهر بجوار اسمك في كل مكان بالمنصة' : 
+                 ch.rewardType === 'name_color' ? 'تصميم لوني فاخر لاسمك يجعله يبرز بين الجميع' :
+                 ch.rewardType === 'shield' ? 'درع حصري يظهر في ملفك وفي قائمة الشرف' :
+                 ch.descriptionAr}
+              </p>
+            </div>
+
+            {isCompleted ? (
+              <div className="bg-primary text-white px-5 py-2.5 rounded-2xl font-black text-sm shadow-xl shadow-primary/20 flex items-center gap-2 animate-in fade-in slide-in-from-left-4">
+                <CheckCircle2 className="w-5 h-5" />
+                <span className="hidden sm:inline">مُمتلك</span>
+              </div>
+            ) : canClaim ? (
+                <div className="hidden sm:flex bg-amber-500 text-white px-4 py-2 rounded-2xl font-black text-[10px] animate-pulse shadow-lg">
+                    جاهز للاستلام
+                </div>
+            ) : (
+                <div className="bg-muted px-4 py-2 rounded-2xl border border-border/50">
+                    <Lock className="w-5 h-5 opacity-30" />
+                </div>
             )}
-            {!isActive && !isCompleted && <Lock className="w-3.5 h-3.5 opacity-30" />}
           </div>
 
-          {/* Action Buttons */}
-          {isPending_ && (
-            <Button
-              size="sm"
-              onClick={async () => { setActionLoading(true); await onAccept(ch.id); setActionLoading(false); }}
-              disabled={actionLoading}
-              className="w-full h-10 rounded-xl font-black bg-primary text-white shadow-lg shadow-primary/20 hover:shadow-primary/40 active:scale-[0.98] transition-all"
-            >
-              {actionLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : "قبول التحدي 🚀"}
-            </Button>
-          )}
+          {/* Action Area */}
+          <div className="pt-4">
+            {isPending_ && (
+              <Button
+                size="lg"
+                onClick={async () => { setActionLoading(true); await onAccept(ch.id); setActionLoading(false); }}
+                disabled={actionLoading}
+                className="w-full h-16 rounded-[2rem] font-black text-xl bg-primary hover:bg-primary/90 text-white shadow-2xl shadow-primary/25 hover:shadow-primary/40 active:scale-[0.98] transition-all group flex items-center justify-center gap-4"
+              >
+                {actionLoading ? <Loader2 className="w-8 h-8 animate-spin" /> : (
+                  <>
+                    <span>قبول التحدي والبدء 🚀</span>
+                    <PartyPopper className="w-6 h-6 group-hover:rotate-12 transition-transform" />
+                  </>
+                )}
+              </Button>
+            )}
 
-          {canClaim && (
-            <Button
-              size="sm"
-              onClick={async () => { setActionLoading(true); await onClaim(ch.id); setActionLoading(false); }}
-              disabled={actionLoading}
-              className="w-full h-10 rounded-xl font-black bg-gradient-to-r from-amber-500 to-amber-600 text-white shadow-lg shadow-amber-500/20 hover:shadow-amber-500/40 active:scale-[0.98] transition-all animate-pulse"
-            >
-              {actionLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : "تحصيل الجائزة 🎁"}
-            </Button>
-          )}
+            {canClaim && (
+              <Button
+                size="lg"
+                onClick={async () => { onCelebrate(); }}
+                disabled={actionLoading}
+                className="w-full h-16 rounded-[2rem] font-black text-xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-500 text-white shadow-2xl shadow-amber-500/30 hover:shadow-amber-500/50 active:scale-[0.98] transition-all animate-bounce-subtle flex items-center justify-center gap-4"
+              >
+                <div className="flex items-center gap-4">
+                  <Gift className="w-7 h-7" />
+                  <span>تحصيل الجائزة الملكية</span>
+                  <Sparkles className="w-6 h-6 animate-pulse" />
+                </div>
+              </Button>
+            )}
+
+            {isCompleted && (
+                 <div className="text-center">
+                    <p className="text-xs font-black text-primary opacity-60">لقد أنجزت هذا التحدي بنجاح!</p>
+                 </div>
+            )}
+          </div>
         </div>
       </div>
-    </div>
+    </motion.div>
   );
 }

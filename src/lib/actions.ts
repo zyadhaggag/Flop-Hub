@@ -378,31 +378,28 @@ export async function getPosts(sort: 'latest' | 'trending' | 'foryou' = 'latest'
   const currentUserId = session?.user?.id;
 
   try {
-    let orderBy = sql`p.created_at DESC`;
-    if (sort === 'trending') {
-      orderBy = sql`(SELECT COUNT(*) FROM reactions r WHERE r.post_id = p.id) DESC`;
-    }
-
+    // Optimized query: Subqueries for counts are often faster than multiple JOINs + GROUP BY in Postgres for this schema
     const posts = await sql`
       SELECT 
-        p.*, 
-        u.username, 
-        u.name,
-        u.image_url as avatar_url,
-        (SELECT COUNT(*) FROM reactions r WHERE r.post_id = p.id) as helpful_count,
-        (SELECT COUNT(*) FROM comments c WHERE c.post_id = p.id) as comments_count,
-        (SELECT json_agg(challenge_id) FROM user_challenges WHERE user_id = u.id AND status = 'completed') as challenge_ids,
-        ${currentUserId ? sql`EXISTS(SELECT 1 FROM reactions WHERE post_id = p.id AND user_id = ${currentUserId})` : sql`FALSE`}::boolean as has_reacted,
-        ${currentUserId ? sql`EXISTS(SELECT 1 FROM saves WHERE post_id = p.id AND user_id = ${currentUserId})` : sql`FALSE`}::boolean as is_saved,
-        ${currentUserId ? sql`EXISTS(SELECT 1 FROM followers WHERE following_id = p.user_id AND follower_id = ${currentUserId})` : sql`FALSE`}::boolean as is_followed
+        p.id, p.user_id, p.title, p.story, p.lesson, p.image_url, p.category,
+        p.created_at, p.updated_at,
+        u.username, u.name, u.image_url as avatar_url, u.is_admin,
+        (SELECT COUNT(*)::int FROM reactions r WHERE r.post_id = p.id) as helpful_count,
+        (SELECT COUNT(*)::int FROM comments c WHERE c.post_id = p.id AND c.parent_id IS NULL) as comments_count,
+        (SELECT json_agg(uc.challenge_id) FROM user_challenges uc WHERE uc.user_id = u.id AND uc.status = 'completed') as challenge_ids,
+        ${currentUserId ? sql`(SELECT EXISTS(SELECT 1 FROM reactions WHERE post_id = p.id AND user_id = ${currentUserId}))` : sql`FALSE`}::boolean as has_reacted,
+        ${currentUserId ? sql`(SELECT EXISTS(SELECT 1 FROM saves WHERE post_id = p.id AND user_id = ${currentUserId}))` : sql`FALSE`}::boolean as is_saved,
+        ${currentUserId ? sql`(SELECT EXISTS(SELECT 1 FROM followers WHERE following_id = p.user_id AND follower_id = ${currentUserId}))` : sql`FALSE`}::boolean as is_followed
       FROM posts p
       JOIN users u ON p.user_id = u.id
-      ORDER BY ${orderBy}
+      ORDER BY ${sort === 'trending' ? sql`helpful_count DESC, p.created_at DESC` : sql`p.created_at DESC`}
       LIMIT ${limit} OFFSET ${offset}
     `;
     return posts.map((p: any) => ({
       ...p,
-      challenge_ids: p.challenge_ids || []
+      challenge_ids: p.challenge_ids || [],
+      helpful_count: Number(p.helpful_count),
+      comments_count: Number(p.comments_count),
     }));
   } catch (e) {
     console.error("GetPosts Error:", e);
