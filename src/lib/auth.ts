@@ -161,12 +161,12 @@ export const authOptions: NextAuthOptions = {
       
       // Handle session update
       if (trigger === "update" && session) {
-        if (session.username) token.username = session.username;
-        if (session.name) token.name = session.name;
-        if (session.image) token.picture = session.image;
-        if (session.banner_url) token.banner_url = session.banner_url;
-        if (session.bio) token.bio = session.bio;
-        if (session.social_links) token.social_links = session.social_links;
+        if (session.username !== undefined) token.username = session.username;
+        if (session.name !== undefined) token.name = session.name;
+        if (session.image !== undefined) token.picture = session.image;
+        if (session.banner_url !== undefined) token.banner_url = session.banner_url;
+        if (session.bio !== undefined) token.bio = session.bio;
+        if (session.social_links !== undefined) token.social_links = session.social_links;
         if (session.timeout_until !== undefined) token.timeout_until = session.timeout_until;
       }
       

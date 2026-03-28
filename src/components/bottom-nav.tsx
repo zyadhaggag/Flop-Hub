@@ -5,14 +5,20 @@ import { usePathname } from "next/navigation";
 import { Home, Trophy, PlusCircle, Settings, User } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useSession } from "next-auth/react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { CreatePostModal } from "./create-post-modal";
 
 export function BottomNav() {
   const pathname = usePathname();
   const { data: session } = useSession();
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [mounted, setMounted] = useState(false);
 
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  if (!mounted) return null;
   if (pathname === "/login" || pathname === "/signup") return null;
 
   const userHandle = session?.user?.username || session?.user?.name || "profile";

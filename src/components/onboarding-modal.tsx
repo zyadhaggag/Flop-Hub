@@ -62,6 +62,7 @@ export function OnboardingModal() {
   const [isOpen, setIsOpen] = useState(false);
   const [step, setStep] = useState(1);
   const [loading, setLoading] = useState(false);
+  const [hasSuccess, setHasSuccess] = useState(false);
 
   const [name, setName] = useState("");
   const [bio, setBio] = useState("");
@@ -74,11 +75,13 @@ export function OnboardingModal() {
   const [acceptContent, setAcceptContent] = useState(false);
 
   useEffect(() => {
-    if (session?.user && !session.user.bio && !session.user.banner_url) {
+    // Only show if user is logged in, missing vital info, hasn't succeeded yet, AND hasn't deferred it this session
+    const isDeferred = typeof window !== 'undefined' && sessionStorage.getItem("onboarding_deferred");
+    if (session?.user && !session.user.bio && !session.user.banner_url && !hasSuccess && !isDeferred) {
       setIsOpen(true);
       setName(session.user.name || "");
     }
-  }, [session]);
+  }, [session, hasSuccess]);
 
   const handleNext = () => setStep(s => Math.min(s + 1, TOTAL_STEPS));
   const handleBack = () => setStep(s => Math.max(s - 1, 1));
@@ -127,6 +130,7 @@ export function OnboardingModal() {
       });
 
       if (res.success) {
+        setHasSuccess(true);
         await update({ 
           name, 
           bio, 
@@ -135,7 +139,13 @@ export function OnboardingModal() {
           social_links: socialLinks
         });
         toast.success("تم تخصيص حسابك بنجاح! 🎉");
-        setIsOpen(false);
+        
+        // Mark as deferred so it doesn't pop back even if session update is slow
+        sessionStorage.setItem("onboarding_deferred", "true");
+        
+        setTimeout(() => {
+          setIsOpen(false);
+        }, 500);
       } else {
         toast.error(res.error || "حدث خطأ");
       }
