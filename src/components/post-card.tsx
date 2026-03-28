@@ -297,9 +297,6 @@ export function PostCard({ id, user, time, title, story, lesson, imageUrl, helpf
                   <Link href={`/u/${user.handle}`} className={cn("text-sm font-black hover:underline truncate", appearance.nameColorClass)}>
                     {user.name}
                   </Link>
-                  {appearance.badges.map((badge, idx) => (
-                    <span key={idx} className="text-xs drop-shadow-sm">{badge}</span>
-                  ))}
                   {user.is_admin && (
                     <div className="flex items-center gap-0.5 scale-90 -ml-0.5">
                       <Crown className="w-3 h-3 text-primary fill-primary/20" />

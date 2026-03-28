@@ -186,7 +186,7 @@ export default function NavbarActions() {
         <DropdownMenuContent align="end" className="w-64 font-tajawal p-2 rounded-2xl border-border shadow-xl bg-popover text-popover-foreground">
           <div className="p-3">
              <div className="flex flex-col gap-0.5">
-                <span className="font-bold text-sm tracking-tight text-brand-gradient">{userName}</span>
+                <span className={cn("font-bold text-sm tracking-tight", appearance.nameColorClass)}>{userName}</span>
                 <span className="text-[10px] text-muted-foreground truncate">@{username}</span>
              </div>
           </div>

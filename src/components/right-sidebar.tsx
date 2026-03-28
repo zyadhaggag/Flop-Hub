@@ -96,19 +96,17 @@ export function RightSidebar({
                             {user.name?.[0] || "?"}
                           </AvatarFallback>
                         </Avatar>
-                        {user.is_admin && (
-                          <div className="absolute -top-1 -right-1 bg-primary text-white p-0.5 rounded-full shadow-lg border border-background">
-                            <Crown className="w-2.5 h-2.5" />
-                          </div>
-                        )}
                       </div>
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-1">
-                          <p className={cn("text-xs font-black truncate", user.is_admin ? "text-primary dark:text-primary" : "text-foreground")}>
+                           <p className={cn("text-xs font-black truncate", user.is_admin ? "bg-gradient-to-r from-primary via-secondary to-primary bg-clip-text text-transparent" : "text-foreground")}>
                             {user.name}
                           </p>
                           {user.is_admin && (
-                            <span className="text-[7px] font-black bg-primary text-white px-1 py-0.5 rounded-[3px] uppercase tracking-tighter shadow-sm">ADMIN</span>
+                            <div className="flex items-center gap-0.5 scale-75 -ml-1">
+                              <Crown className="w-3 h-3 text-primary fill-primary/20" />
+                              <span className="text-[7px] font-black bg-primary text-white px-1 py-0.5 rounded-[3px] uppercase tracking-tighter shadow-sm">ADMIN</span>
+                            </div>
                           )}
                         </div>
                         <div className="flex flex-col">
@@ -132,7 +130,7 @@ export function RightSidebar({
                         size="sm"
                         onClick={() => handleFollow(user.id)}
                         disabled={loadingId === user.id}
-                        className="rounded-xl gap-1.5 font-black h-8 px-3 text-[11px] shrink-0 bg-gradient-to-r from-primary to-secondary text-white shadow-md shadow-primary/20 hover:shadow-primary/40 active:scale-95 disabled:opacity-60 transition-all border-none"
+                        className="rounded-xl gap-1.5 font-black h-8 px-3 text-[11px] shrink-0 bg-brand-gradient text-white shadow-md shadow-primary/20 hover:shadow-primary/40 active:scale-95 disabled:opacity-60 transition-all border-none"
                       >
                         {loadingId === user.id ? (
                           <Loader2 className="w-3.5 h-3.5 animate-spin" />

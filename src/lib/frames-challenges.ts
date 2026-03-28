@@ -1,16 +1,26 @@
 // Profile Frame & Challenge System
 // Computed from existing data — no DB schema changes needed
 
-export type FrameTier = 'none' | 'bronze' | 'silver' | 'gold' | 'platinum' | 'diamond' | 'admin';
+export type FrameTier = 
+  | 'none' 
+  | 'copper' 
+  | 'bronze' 
+  | 'silver' 
+  | 'gold' 
+  | 'platinum' 
+  | 'emerald' 
+  | 'ruby' 
+  | 'sapphire' 
+  | 'diamond' 
+  | 'obsidian' 
+  | 'admin';
 
 export interface FrameConfig {
   tier: FrameTier;
   label: string;
   labelAr: string;
-  borderClass: string;
-  glowClass: string;
-  badgeEmoji: string;
-  minPosts: number;
+  nameColorClass: string;
+  minPosts?: number;
 }
 
 export const FRAME_TIERS: Record<FrameTier, FrameConfig> = {
@@ -18,64 +28,73 @@ export const FRAME_TIERS: Record<FrameTier, FrameConfig> = {
     tier: 'none',
     label: 'Newcomer',
     labelAr: 'مبتدئ',
-    borderClass: 'border-border',
-    glowClass: '',
-    badgeEmoji: '',
-    minPosts: 0,
+    nameColorClass: 'text-foreground',
+  },
+  copper: {
+    tier: 'copper',
+    label: 'Copper',
+    labelAr: 'نحاسي',
+    nameColorClass: 'text-orange-400 font-bold',
   },
   bronze: {
     tier: 'bronze',
     label: 'Bronze',
     labelAr: 'برونزي',
-    borderClass: 'border-slate-500/60 ring-1 ring-slate-500/20',
-    glowClass: 'shadow-[0_0_10px_rgba(100,116,139,0.2)]',
-    badgeEmoji: '🥉',
-    minPosts: 1,
+    nameColorClass: 'text-amber-600 font-bold',
   },
   silver: {
     tier: 'silver',
     label: 'Silver',
     labelAr: 'فضي',
-    borderClass: 'border-slate-400 ring-2 ring-slate-400/20',
-    glowClass: 'shadow-[0_0_15px_rgba(148,163,184,0.3)]',
-    badgeEmoji: '🥈',
-    minPosts: 5,
+    nameColorClass: 'text-slate-400 font-bold',
   },
   gold: {
     tier: 'gold',
     label: 'Gold',
     labelAr: 'ذهبي',
-    borderClass: 'border-secondary ring-2 ring-secondary/30',
-    glowClass: 'shadow-[0_0_20px_rgba(59,130,246,0.4)]',
-    badgeEmoji: '🥇',
-    minPosts: 15,
+    nameColorClass: 'text-yellow-500 font-black drop-shadow-sm',
   },
   platinum: {
     tier: 'platinum',
     label: 'Platinum',
     labelAr: 'بلاتيني',
-    borderClass: 'border-cyan-300 ring-2 ring-cyan-300/40',
-    glowClass: 'shadow-[0_0_25px_rgba(103,232,249,0.4)] transition-all animate-pulse',
-    badgeEmoji: '💎',
-    minPosts: 20,
+    nameColorClass: 'bg-gradient-to-r from-slate-300 via-slate-100 to-slate-300 bg-clip-text text-transparent font-black drop-shadow-sm',
+  },
+  emerald: {
+    tier: 'emerald',
+    label: 'Emerald',
+    labelAr: 'زمردي',
+    nameColorClass: 'bg-gradient-to-r from-emerald-400 to-teal-500 bg-clip-text text-transparent font-black shadow-emerald-500/20',
+  },
+  ruby: {
+    tier: 'ruby',
+    label: 'Ruby',
+    labelAr: 'ياقوتي',
+    nameColorClass: 'bg-gradient-to-r from-red-500 to-rose-600 bg-clip-text text-transparent font-black shadow-rose-500/20',
+  },
+  sapphire: {
+    tier: 'sapphire',
+    label: 'Sapphire',
+    labelAr: 'زفيري',
+    nameColorClass: 'bg-gradient-to-r from-blue-500 to-indigo-600 bg-clip-text text-transparent font-black shadow-blue-500/20',
   },
   diamond: {
     tier: 'diamond',
     label: 'Diamond',
     labelAr: 'ماسي',
-    borderClass: 'border-cyan-400 border-[3px] ring-4 ring-cyan-400/20',
-    glowClass: 'shadow-[0_0_30px_rgba(34,211,238,0.5)] animate-shimmer',
-    badgeEmoji: '💎',
-    minPosts: 30,
+    nameColorClass: 'bg-gradient-to-r from-cyan-300 via-white to-cyan-300 bg-clip-text text-transparent font-black drop-shadow-[0_0_8px_rgba(34,211,238,0.5)] animate-pulse',
+  },
+  obsidian: {
+    tier: 'obsidian',
+    label: 'Obsidian',
+    labelAr: 'أوبسيديان',
+    nameColorClass: 'bg-gradient-to-r from-neutral-900 via-neutral-700 to-neutral-900 bg-clip-text text-transparent font-black drop-shadow-[0_0_10px_rgba(0,0,0,0.8)] dark:from-neutral-100 dark:via-neutral-400 dark:to-neutral-100',
   },
   admin: {
     tier: 'admin',
     label: 'Admin',
     labelAr: 'مشرف',
-    borderClass: 'border-primary border-2',
-    glowClass: 'shadow-[0_0_25px_rgba(124,58,237,0.5)]',
-    badgeEmoji: '👑',
-    minPosts: 0,
+    nameColorClass: 'bg-gradient-to-r from-primary via-secondary to-primary bg-clip-text text-transparent font-black drop-shadow-md animate-shimmer bg-[length:200%_auto]',
   },
 };
 
@@ -233,36 +252,36 @@ export const CHALLENGES: Challenge[] = [
     id: 'thirty-posts',
     titleAr: 'أسطورة FlopHub',
     descriptionAr: 'انشر 30 منشور خلدت بصمتك',
-    emoji: '💎',
+    emoji: '',
     target: 30,
     category: 'posts',
-    rewardType: 'frame',
-    rewardAr: 'إطار الماس الأسطوري',
-    rewardDetail: 'diamond',
+    rewardType: 'name_color',
+    rewardAr: 'الاسم الماسي الأسطوري',
+    rewardDetail: 'name-diamond',
     difficulty: 'legendary',
   },
   {
     id: 'hundred-reactions',
     titleAr: 'سيد التأثير',
     descriptionAr: 'احصل على 100 تفاعل من النخبة',
-    emoji: '⚡',
+    emoji: '',
     target: 100,
     category: 'reactions',
     rewardType: 'name_color',
-    rewardAr: 'اسم البلاتينيوم الملكي',
-    rewardDetail: 'name-platinum',
+    rewardAr: 'اسم الأوبسيديان الملكي',
+    rewardDetail: 'name-obsidian',
     difficulty: 'legendary',
   },
   {
     id: 'fifty-followers',
     titleAr: 'القمة المطلقة',
     descriptionAr: 'وصلت إلى 50 متابع - أنت الآن مرجع',
-    emoji: '🌐',
+    emoji: '',
     target: 50,
     category: 'followers',
-    rewardType: 'shield',
-    rewardAr: 'درع العرش الماسي',
-    rewardDetail: 'diamond-shield',
+    rewardType: 'name_color',
+    rewardAr: 'اسم الياقوت المتوهج',
+    rewardDetail: 'name-ruby',
     difficulty: 'legendary',
   },
 ];
@@ -327,35 +346,33 @@ export function getUserAppearance(challengeStates: { challenge_id: string, statu
     badges: [],
   };
 
-  // 1. Determine Frame (Highest priority wins)
-  if (completedIds.includes('thirty-posts') || completedIds.includes('hundred-reactions')) {
+  // 1. Determine Tier based on achievements (Metal Progression)
+  if (completedIds.includes('hundred-reactions')) {
+    appearance.frame = 'obsidian';
+  } else if (completedIds.includes('thirty-posts')) {
     appearance.frame = 'diamond';
-  } else if (completedIds.includes('popular-20')) {
+  } else if (completedIds.includes('fifty-followers')) {
+    appearance.frame = 'sapphire';
+  } else if (completedIds.includes('fifty-reactions')) {
+    appearance.frame = 'ruby';
+  } else if (completedIds.includes('fifteen-posts')) {
+    appearance.frame = 'emerald';
+  } else if (completedIds.includes('twenty-reactions')) {
     appearance.frame = 'platinum';
-  } else if (completedIds.includes('fifteen-posts') || completedIds.includes('fifty-followers')) {
+  } else if (completedIds.includes('ten-followers')) {
     appearance.frame = 'gold';
   } else if (completedIds.includes('five-posts')) {
     appearance.frame = 'silver';
   } else if (completedIds.includes('first-post')) {
     appearance.frame = 'bronze';
+  } else if (completedIds.includes('add-social')) {
+    appearance.frame = 'copper';
   }
 
-  // 2. Determine Name Color
-  if (completedIds.includes('hundred-reactions')) {
-    appearance.nameColorClass = 'bg-gradient-to-r from-cyan-400 via-blue-500 to-purple-600 bg-clip-text text-transparent font-black drop-shadow-sm';
-  } else if (completedIds.includes('fifty-reactions') || completedIds.includes('fifty-followers')) {
-    appearance.nameColorClass = 'bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent font-black';
-  } else if (completedIds.includes('ten-followers')) {
-    appearance.nameColorClass = 'text-slate-400 font-bold';
-  }
+  // Set the name color class based on the chosen tier
+  appearance.nameColorClass = FRAME_TIERS[appearance.frame].nameColorClass;
 
-  // 3. Collect Badges (IDs for icons)
-  if (completedIds.includes('add-social')) appearance.badges.push('social_pro');
-  if (completedIds.includes('first-reaction')) appearance.badges.push('inspirer');
-  if (completedIds.includes('hundred-reactions')) appearance.badges.push('icon');
-  if (completedIds.includes('thirty-posts')) appearance.badges.push('legend');
-
-  // 4. Determine Title
+  // 2. Titles (kept as extra flair)
   if (completedIds.includes('fifty-followers')) {
     appearance.title = 'القائد الأعلى';
   } else if (completedIds.includes('twenty-five-followers')) {

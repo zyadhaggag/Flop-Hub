@@ -40,9 +40,24 @@ export function SuccessCelebration({
           return clearInterval(interval);
         }
 
-        const particleCount = 50 * (timeLeft / duration);
-        confetti({ ...defaults, particleCount, origin: { x: randomInRange(0.1, 0.3), y: Math.random() - 0.2 } });
-        confetti({ ...defaults, particleCount, origin: { x: randomInRange(0.7, 0.9), y: Math.random() - 0.2 } });
+        const particleCount = 150 * (timeLeft / duration);
+        // Explosive burst
+        confetti({ 
+          ...defaults, 
+          particleCount, 
+          origin: { x: randomInRange(0.1, 0.3), y: Math.random() - 0.2 },
+          colors: ['#7c3aed', '#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#ec4899'],
+          scalar: 1.2,
+          gravity: 0.8
+        });
+        confetti({ 
+          ...defaults, 
+          particleCount, 
+          origin: { x: randomInRange(0.7, 0.9), y: Math.random() - 0.2 },
+          colors: ['#7c3aed', '#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#ec4899'],
+          scalar: 1.2,
+          gravity: 0.8
+        });
       }, 250);
 
       return () => clearInterval(interval);

@@ -17,40 +17,10 @@ const SIZE_MAP = {
   lg: { wrapper: 'h-[100px] w-[100px] sm:h-[120px] sm:w-[120px]', badge: 'w-7 h-7 text-sm -top-1 -right-1', border: 'border-4' },
 };
 
-export function ProfileFrame({ tier, size = 'md', children, className, showBadge = true }: ProfileFrameProps) {
-  const config = getFrameConfig(tier);
-  const sizeConfig = SIZE_MAP[size];
-
-  if (tier === 'none' || !tier) {
-    return (
-      <div className={cn("relative", className)}>
-        {children}
-      </div>
-    );
-  }
-
+export function ProfileFrame({ children, className }: ProfileFrameProps) {
   return (
-    <div className={cn("relative group/frame inline-block shrink-0", className)}>
-      {/* Frame ring */}
-      <div className={cn(
-        "rounded-full p-[2px] overflow-hidden",
-        sizeConfig.border,
-        config.borderClass,
-        config.glowClass,
-        "transition-all duration-300 group-hover/frame:scale-105"
-      )}>
-        {children}
-      </div>
-
-      {/* Badge */}
-      {showBadge && config.badgeEmoji && (
-        <div className={cn(
-          "absolute flex items-center justify-center rounded-full bg-background shadow-md z-10",
-          sizeConfig.badge
-        )}>
-          <span>{config.badgeEmoji}</span>
-        </div>
-      )}
+    <div className={cn("relative inline-block shrink-0", className)}>
+      {children}
     </div>
   );
 }

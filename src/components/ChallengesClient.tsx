@@ -4,7 +4,7 @@ import { useSession } from "next-auth/react";
 import { useState, useEffect, useTransition } from "react";
 import { 
   Trophy, Sparkles, Lock, Check, Gift, Crown, Star, Zap, 
-  Loader2, PartyPopper, CheckCircle2, Clock 
+  Loader2, PartyPopper, CheckCircle2, Clock, Award, Shield 
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
@@ -24,9 +24,9 @@ import "@/app/awards.css";
 
 const REWARD_ICONS: Record<RewardType, React.ReactNode> = {
   frame: <Crown className="w-5 h-5" />,
-  name_color: <Star className="w-5 h-5" />,
+  name_color: <Award className="w-5 h-5" />,
   kit: <Gift className="w-5 h-5" />,
-  badge: <Zap className="w-5 h-5" />,
+  badge: <Shield className="w-5 h-5" />,
   title: <Sparkles className="w-5 h-5" />,
   particle: <Sparkles className="w-5 h-5" />,
   shield: <Trophy className="w-5 h-5" />,
@@ -255,10 +255,10 @@ function ChallengeCard({ progress: p, state, onAccept, onClaim, onCelebrate }: {
       layout
       className={cn(
         "relative bg-card rounded-[2.5rem] border-2 overflow-hidden transition-all duration-500 group",
-        isCompleted ? "border-primary/20 bg-primary/[0.01]" 
-          : canClaim ? "border-secondary/50 bg-secondary/[0.04] shadow-2xl shadow-secondary/10"
+        isCompleted ? "border-primary/20 bg-gradient-to-br from-primary/[0.02] to-transparent shadow-sm" 
+          : canClaim ? "border-secondary/50 bg-gradient-to-br from-secondary/[0.08] to-primary/[0.02] shadow-2xl shadow-secondary/20"
           : isActive ? "border-primary/10 bg-muted/5 shadow-sm"
-          : "border-border/40 hover:border-primary/30 hover:shadow-xl hover:shadow-primary/5 shadow-sm"
+          : "border-border/40 hover:border-primary/30 hover:shadow-2xl hover:shadow-primary/5 shadow-sm"
       )}>
       
       {/* Decorative Gradient Overlay */}
@@ -268,13 +268,13 @@ function ChallengeCard({ progress: p, state, onAccept, onClaim, onCelebrate }: {
       <div className="p-6 sm:p-8 flex flex-col sm:flex-row gap-8">
         {/* Badge Icon Section */}
         <div className="relative shrink-0 flex items-center justify-center mx-auto sm:mx-0">
-          <div className={cn(
+           <div className={cn(
             "w-24 h-24 rounded-[2.5rem] flex items-center justify-center text-5xl shrink-0 transition-all duration-500 transform group-hover:rotate-6 shadow-lg",
             isCompleted ? "bg-primary/10 text-primary border border-primary/20" : 
             canClaim ? "bg-secondary/10 animate-pulse text-secondary border border-secondary/20" : 
             "bg-muted text-muted-foreground group-hover:bg-primary/5 group-hover:text-primary border border-border/10"
           )}>
-            {isCompleted ? <CheckCircle2 className="w-12 h-12" /> : canClaim ? <Star className="w-12 h-12" /> : ch.emoji}
+            {isCompleted ? <CheckCircle2 className="w-12 h-12" /> : canClaim ? <Star className="w-12 h-12" /> : <Trophy className="w-12 h-12 opacity-20" />}
           </div>
           
           {/* Level Badge Overlay */}
@@ -368,8 +368,8 @@ function ChallengeCard({ progress: p, state, onAccept, onClaim, onCelebrate }: {
                  </span>
               </div>
               <p className="text-[12px] text-muted-foreground font-bold mt-1 opacity-70 leading-relaxed">
-                {ch.rewardType === 'frame' ? 'إطار فخم وحصري يحيط بصورتك الشخصية ليراك الجميع بتميز' : 
-                 ch.rewardType === 'badge' ? 'شارة فريدة تظهر بجوار اسمك في كل مكان بالمنصة' : 
+                {ch.rewardType === 'frame' ? 'لون خاص لاسمك يعكس مكانتك المرموقة بين الأعضاء' : 
+                 ch.rewardType === 'badge' ? 'تمييز بصري فريد لاسمك يجعل حضورك لافتاً دائماً' : 
                  ch.rewardType === 'name_color' ? 'تصميم لوني فاخر لاسمك يجعله يبرز بين الجميع' :
                  ch.rewardType === 'shield' ? 'درع حصري يظهر في ملفك وفي قائمة الشرف' :
                  ch.descriptionAr}

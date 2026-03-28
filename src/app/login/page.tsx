@@ -2,19 +2,21 @@
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Lightbulb, Eye, EyeOff, ArrowLeft, Moon, Sparkles, Zap, Users, Heart } from "lucide-react";
+import { Sun, Moon, Sparkles, Zap, Users, Heart, Lightbulb, Eye, EyeOff, ArrowLeft } from "lucide-react";
 import Link from "next/link";
 import { useState, useEffect } from "react";
 import { signIn } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { useTheme } from "next-themes";
 
 export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
+  const { theme, setTheme, resolvedTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
   const router = useRouter();
 
@@ -51,7 +53,21 @@ export default function LoginPage() {
 
 
   return (
-    <div className="h-screen overflow-hidden flex dir-rtl bg-background dark text-foreground">
+    <div className="h-screen overflow-hidden flex dir-rtl bg-background text-foreground relative">
+      {/* Theme Toggle */}
+      <div className="absolute top-6 left-6 z-50">
+        <Button 
+          variant="ghost" 
+          size="icon" 
+          onClick={() => setTheme(resolvedTheme === 'dark' ? 'light' : 'dark')}
+          className="rounded-full w-10 h-10 bg-muted/40 hover:bg-muted/80 backdrop-blur-sm transition-all"
+        >
+          <Sun className="h-[1.2rem] w-[1.2rem] rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
+          <Moon className="absolute h-[1.2rem] w-[1.2rem] rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
+          <span className="sr-only">تبديل السمة</span>
+        </Button>
+      </div>
+
       {/* Right Side: Form */}
       <div className="flex-1 flex flex-col items-center justify-center p-6 bg-background h-full overflow-hidden relative">
         {/* Floating elements for interactivity */}

@@ -67,8 +67,7 @@ export function Navbar() {
 
   return (
     <nav className="sticky top-0 z-50 w-full border-b border-border bg-background backdrop-blur-md transition-colors duration-300">
-      <div className="absolute top-0 left-0 right-0 h-[2px] bg-brand-gradient opacity-80" />
-      <div className="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between gap-4">
+       <div className="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between gap-4">
         <div className="flex items-center gap-3">
           {/* Hamburger menu removed in favor of BottomNav */}
 
