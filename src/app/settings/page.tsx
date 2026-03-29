@@ -1,11 +1,12 @@
 "use client";
 
+import React, { useState, useEffect } from "react";
+
 import { Navbar } from "@/components/navbar";
 import { Sidebar } from "@/components/sidebar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useSession, signOut } from "next-auth/react";
-import { useState, useEffect } from "react";
 import { updateUsername, updateProfile, updatePassword, deleteAccount } from "@/lib/actions";
 import { uploadImage } from "@/lib/supabase";
 import { toast } from "sonner";
@@ -70,54 +71,68 @@ export default function SettingsPage() {
   const [deleteConfirm, setDeleteConfirm] = useState("");
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const [showSaveWarning, setShowSaveWarning] = useState(false);
+  const pendingNavRef = React.useRef<string | null>(null);
   
+  // Track if we've initialized from session (prevent re-init after saves)
+  const initializedRef = React.useRef(false);
+  // Track the last-saved values so we know what's "clean"
+  const savedDataRef = React.useRef({
+    name: "",
+    username: "",
+    bio: "",
+    banner: null as string | null,
+    socialLinks: "[]" // JSON string for comparison
+  });
+
   // Social Links
   const [socialLinks, setSocialLinks] = useState<SocialLink[]>([]);
   const [newLinkUrl, setNewLinkUrl] = useState("");
   const [newLinkName, setNewLinkName] = useState("");
 
   // New features state
-  const [banner, setBanner] = useState(session?.user?.banner_url || null);
+  const [banner, setBanner] = useState<string | null>(null);
   const [avatarModalOpen, setAvatarModalOpen] = useState(false);
   const [tempAvatar, setTempAvatar] = useState<string | null>(null);
 
+  // Initialize from session ONLY on first load
   useEffect(() => {
-    if (session?.user?.username) setUsername(session.user.username);
-    if (session?.user?.name) setName(session.user.name);
-    if (session?.user?.bio) setBio(session.user.bio);
-    if (session?.user?.banner_url) setBanner(session.user.banner_url);
-    if (session?.user?.social_links) {
-        try {
-            const links = session.user.social_links;
-            setSocialLinks(typeof links === 'string' ? JSON.parse(links) : links);
-        } catch (e) {
-            setSocialLinks([]);
-        }
-    }
+    if (initializedRef.current || !session?.user) return;
+    initializedRef.current = true;
+
+    const n = session.user.name || "";
+    const u = session.user.username || "";
+    const b = session.user.bio || "";
+    const bn = session.user.banner_url || null;
+    let links: SocialLink[] = [];
+    try {
+      const raw = session.user.social_links;
+      links = raw ? (typeof raw === 'string' ? JSON.parse(raw) : raw) : [];
+    } catch { links = []; }
+
+    setName(n);
+    setUsername(u);
+    setBio(b);
+    setBanner(bn);
+    setSocialLinks(links);
+
+    // Store as saved baseline
+    savedDataRef.current = { name: n, username: u, bio: b, banner: bn, socialLinks: JSON.stringify(links) };
   }, [session]);
 
-  // Track changes
+  // Track changes against saved baseline
   useEffect(() => {
-    const originalName = session?.user?.name || "";
-    const originalUsername = session?.user?.username || "";
-    const originalBio = session?.user?.bio || "";
-    const originalBanner = session?.user?.banner_url || null;
-    
-    const hasChanges = 
-      name !== originalName ||
-      username !== originalUsername ||
-      bio !== originalBio ||
-      banner !== originalBanner ||
-      JSON.stringify(socialLinks) !== JSON.stringify(
-        session?.user?.social_links ? 
-          (typeof session.user.social_links === 'string' ? JSON.parse(session.user.social_links) : session.user.social_links) 
-          : []
-      );
-    
+    if (!initializedRef.current) return;
+    const saved = savedDataRef.current;
+    const hasChanges =
+      name !== saved.name ||
+      username !== saved.username ||
+      bio !== saved.bio ||
+      banner !== saved.banner ||
+      JSON.stringify(socialLinks) !== saved.socialLinks;
     setHasUnsavedChanges(hasChanges);
-  }, [name, username, bio, banner, socialLinks, session]);
+  }, [name, username, bio, banner, socialLinks]);
 
-  // Handle page navigation
+  // Browser tab close / refresh warning
   useEffect(() => {
     const handleBeforeUnload = (e: BeforeUnloadEvent) => {
       if (hasUnsavedChanges) {
@@ -125,59 +140,35 @@ export default function SettingsPage() {
         e.returnValue = '';
       }
     };
-
-    const handleRouteChange = () => {
-      if (hasUnsavedChanges) {
-        setShowSaveWarning(true);
-        return false;
-      }
-    };
-
     window.addEventListener('beforeunload', handleBeforeUnload);
-    
-    // Intercept navigation
-    const originalPush = router.push;
-    router.push = (...args) => {
-      if (hasUnsavedChanges) {
-        setShowSaveWarning(true);
-        return;
-      }
-      return originalPush(...args);
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+  }, [hasUnsavedChanges]);
+
+  // Intercept link clicks in the navbar/sidebar to show the warning modal
+  useEffect(() => {
+    if (!hasUnsavedChanges) return;
+    const handleClick = (e: MouseEvent) => {
+      const target = (e.target as HTMLElement).closest('a');
+      if (!target) return;
+      const href = target.getAttribute('href');
+      if (!href || href.startsWith('#') || href.startsWith('mailto:')) return;
+      // Skip if it's the settings page itself
+      if (href === '/settings' || href.startsWith('/settings?')) return;
+      e.preventDefault();
+      e.stopPropagation();
+      pendingNavRef.current = href;
+      setShowSaveWarning(true);
     };
+    document.addEventListener('click', handleClick, true);
+    return () => document.removeEventListener('click', handleClick, true);
+  }, [hasUnsavedChanges]);
 
-    return () => {
-      window.removeEventListener('beforeunload', handleBeforeUnload);
-      router.push = originalPush;
-    };
-  }, [hasUnsavedChanges, router]);
-
-  const handleSaveAndContinue = async () => {
-    await handleUpdateProfile(new Event('submit') as any);
-    setShowSaveWarning(false);
-  };
-
-  const handleDiscardAndContinue = () => {
-    setHasUnsavedChanges(false);
-    setShowSaveWarning(false);
-    // Reset to original values
-    if (session?.user) {
-      setName(session.user.name || "");
-      setUsername(session.user.username || "");
-      setBio(session.user.bio || "");
-      setBanner(session.user.banner_url || null);
-      const links = session.user.social_links ? 
-        (typeof session.user.social_links === 'string' ? JSON.parse(session.user.social_links) : session.user.social_links) 
-        : [];
-      setSocialLinks(links);
-    }
-  };
-
-  const handleUpdateProfile = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const doSaveProfile = async () => {
     setLoading(true);
     try {
       const res = await updateProfile({ name, username, bio, social_links: socialLinks, banner_url: banner || undefined });
       if (res.success && res.user) {
+        // Update session silently
         await update({ 
           name: res.user.name, 
           username: res.user.username, 
@@ -185,19 +176,62 @@ export default function SettingsPage() {
           banner_url: banner,
           social_links: socialLinks
         });
+        // Update saved baseline so diff becomes zero
+        savedDataRef.current = {
+          name: res.user.name,
+          username: res.user.username,
+          bio: res.user.bio || "",
+          banner: banner,
+          socialLinks: JSON.stringify(socialLinks)
+        };
         setName(res.user.name);
         setUsername(res.user.username);
-        setBio(res.user.bio);
+        setBio(res.user.bio || "");
         setHasUnsavedChanges(false);
-        toast.success("تم تحديث الملف الشخصي بنجاح");
+        toast.success("تم تحديث الملف الشخصي بنجاح ✓");
+        return true;
       } else {
-        toast.error(res.error || "حدث خطأ");
+        toast.error(res.error || "حدث خطأ أثناء الحفظ");
+        return false;
       }
     } catch (err) {
       console.error(err);
       toast.error("حدث خطأ غير متوقع");
+      return false;
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleUpdateProfile = async (e: React.FormEvent) => {
+    e.preventDefault();
+    await doSaveProfile();
+  };
+
+  const handleSaveAndContinue = async () => {
+    const ok = await doSaveProfile();
+    setShowSaveWarning(false);
+    if (ok && pendingNavRef.current) {
+      const dest = pendingNavRef.current;
+      pendingNavRef.current = null;
+      router.push(dest);
+    }
+  };
+
+  const handleDiscardAndContinue = () => {
+    // Reset local state to saved baseline
+    const saved = savedDataRef.current;
+    setName(saved.name);
+    setUsername(saved.username);
+    setBio(saved.bio);
+    setBanner(saved.banner);
+    try { setSocialLinks(JSON.parse(saved.socialLinks)); } catch { setSocialLinks([]); }
+    setHasUnsavedChanges(false);
+    setShowSaveWarning(false);
+    if (pendingNavRef.current) {
+      const dest = pendingNavRef.current;
+      pendingNavRef.current = null;
+      router.push(dest);
     }
   };
 

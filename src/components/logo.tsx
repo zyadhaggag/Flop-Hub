@@ -7,9 +7,10 @@ import { useTheme } from "next-themes";
 interface LogoProps {
   className?: string;
   size?: "sm" | "md" | "lg";
+  forceTheme?: "light" | "dark";
 }
 
-export function Logo({ className = "", size = "md" }: LogoProps) {
+export function Logo({ className = "", size = "md", forceTheme }: LogoProps) {
   const { resolvedTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
 
@@ -23,20 +24,24 @@ export function Logo({ className = "", size = "md" }: LogoProps) {
     lg: { width: 240, height: 67 }
   };
 
-  if (!mounted) {
-    return <div className={className} style={{ width: sizes[size].width, height: sizes[size].height }} />;
-  }
+  const activeTheme = forceTheme || resolvedTheme;
 
   return (
-    <div className={className}>
-      <Image
-        src={resolvedTheme === "dark" ? "/logo-dark.svg" : "/logo-light.svg"}
-        alt="FlopHub"
-        width={sizes[size].width}
-        height={sizes[size].height}
-        className="object-contain"
-        priority
-      />
+    <div 
+      className={className} 
+      style={{ width: sizes[size].width, height: sizes[size].height }}
+      suppressHydrationWarning
+    >
+      {mounted && (
+        <Image
+          src={activeTheme === "dark" ? "/logo-dark.svg" : "/logo-light.svg"}
+          alt="FlopHub"
+          width={sizes[size].width}
+          height={sizes[size].height}
+          className="object-contain"
+          priority
+        />
+      )}
     </div>
   );
 }

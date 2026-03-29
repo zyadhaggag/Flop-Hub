@@ -3,11 +3,20 @@ import { Sidebar } from "@/components/sidebar";
 import { getPosts, getSuggestedUsers, getTrendingLessons } from "@/lib/actions";
 import { HomeClientWrapper } from "@/components/home-client-wrapper";
 import { Suspense } from "react";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";
+import { LandingPage } from "@/components/landing-page";
 
 // ISR: revalidate every 30 seconds instead of force-dynamic (much faster)
 export const revalidate = 30;
 
 export default async function Home() {
+  const session = await getServerSession(authOptions);
+
+  if (!session) {
+    return <LandingPage />;
+  }
+
   // Parallel fetching - all 3 queries run simultaneously
   const [posts, suggestedUsers, trendingLessons] = await Promise.all([
     getPosts('latest', 8, 0),
@@ -31,3 +40,4 @@ export default async function Home() {
     </div>
   );
 }
+

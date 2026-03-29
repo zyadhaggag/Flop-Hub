@@ -5,6 +5,7 @@ export default withAuth(
   function middleware(req) {
     const token = req.nextauth.token;
     const isAuthPage = req.nextUrl.pathname.startsWith("/login") || req.nextUrl.pathname.startsWith("/signup");
+    const isRootPage = req.nextUrl.pathname === "/";
 
     if (isAuthPage) {
       if (token) {
@@ -13,7 +14,7 @@ export default withAuth(
       return NextResponse.next();
     }
 
-    if (!token) {
+    if (!token && !isRootPage) {
       return NextResponse.redirect(new URL("/login", req.url));
     }
 
@@ -31,8 +32,9 @@ export default withAuth(
       authorized: ({ token, req }) => {
         const isAuthPage = req.nextUrl.pathname.startsWith("/login") || req.nextUrl.pathname.startsWith("/signup");
         const isPublicApi = req.nextUrl.pathname.startsWith("/api/auth");
+        const isRootPage = req.nextUrl.pathname === "/";
         
-        if (isAuthPage || isPublicApi) return true;
+        if (isAuthPage || isPublicApi || isRootPage) return true;
         return !!token;
       },
     },

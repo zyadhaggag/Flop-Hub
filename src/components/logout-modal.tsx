@@ -48,10 +48,10 @@ export function LogoutModal({ isOpen, onClose }: LogoutModalProps) {
   const handleLogout = async () => {
     setLoading(true);
     try {
-      await signOut({ callbackUrl: "/login" });
+      await signOut({ callbackUrl: "/" });
     } catch (error) {
       console.error("Logout error:", error);
-      router.push("/login");
+      router.push("/");
     }
   };
 
